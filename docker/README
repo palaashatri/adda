@@ -1,0 +1,7 @@
+docker 
+
+* flask : a simple flask application containerised in docker
+* node : a simple node.js application containerised in docker
+* spring : a simple java spring-boot application containerised in docker
+* menstack : a simple express (node.js) application with mongodb, coupled with a mongo-express server containerised in a docker-compose network
+
