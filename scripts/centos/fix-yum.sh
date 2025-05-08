@@ -3,9 +3,9 @@
 # changes remote server for yum to pull updates from
 # packages are definitely not on the latest version, but atleast its something.
 set -ex
-PACKAGES="gdb"
+# PACKAGES="gdb"
 
 sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*.repo
 sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo
 yum clean all; yum makecache
-yum update && yum install $PACKAGES -y
+yum update -y && yum install gdb -y
