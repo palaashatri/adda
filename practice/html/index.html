@@ -12,48 +12,38 @@
       padding: 0;
       height: 100%;
       overflow: hidden;
-      background: #0a1f1f; /* Darker, more accurate green */
+      background: #0a1f1f;
     }
-
-    /* Background with grid pattern and subtle gradient */
     body {
       position: relative;
       font-family: 'Orbitron', sans-serif;
-      color: #e6f3e6; /* Light green text */
+      color: #e6f3e6;
       display: flex;
       justify-content: center;
       align-items: center;
-      background: 
-        linear-gradient(135deg, rgba(0,51,51,0.8), rgba(0,26,26,1)),
-        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(0deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-      background-size: cover, 25px 25px, 25px 25px;
+      background: linear-gradient(135deg, rgba(0,51,51,0.8), rgba(0,26,26,1));
     }
-
-    /* Grid container for layout with adjusted columns */
+    /* Grid container for layout */
     .grid-container {
       display: grid;
-      grid-template-columns: 1fr 500px 300px 1fr; /* Extra columns for centering */
+      grid-template-columns: 1fr 500px 300px 1fr;
       width: 100%;
       height: 100%;
     }
-
-    /* Central orb styling (Xbox logo) with adjusted grid column */
+    /* Central orb styling (Xbox logo) */
     .orb {
-      grid-column: 2 / 3; /* Span from column 2 to 3 */
+      grid-column: 2 / 3;
       display: flex;
       justify-content: center;
       align-items: center;
       transition: transform 0.1s ease-out;
     }
-
     .orb div {
-      /* Initialize our pulse intensity variable */
+      /* CSS variable for pulsing intensity */
       --pulse-intensity: 1;
       width: 350px;
       height: 350px;
       border-radius: 50%;
-      /* The pulsing background and glow */
       background: radial-gradient(circle at center, rgba(255,255,102,0.8) 10%, rgba(0,255,102,0.6) 50%, transparent 70%);
       box-shadow: 0 0 calc(60px * var(--pulse-intensity)) rgba(0,255,102,0.8),
                   0 0 calc(120px * var(--pulse-intensity)) rgba(0,255,102,0.5),
@@ -61,7 +51,6 @@
       position: relative;
       animation: glowPulse 3s ease-in-out infinite;
     }
-
     @keyframes glowPulse {
       0%, 100% { 
         transform: scale(calc(1 * var(--pulse-intensity)));
@@ -72,23 +61,20 @@
         box-shadow: 0 0 calc(80px * var(--pulse-intensity)) rgba(0,255,102,1);
       }
     }
-
-    /* Menu container with adjusted grid column */
+    /* Menu container styling */
     .menu-container {
-      grid-column: 3 / 4; /* Span from column 3 to 4 */
+      grid-column: 3 / 4;
       display: flex;
       align-items: center;
       position: relative;
       transition: transform 0.1s ease-out;
     }
-
     .menu {
       list-style: none;
       padding: 0;
       margin: 0;
       width: 100%;
     }
-
     .menu li {
       position: relative;
       background: linear-gradient(90deg, rgba(0,51,51,0.9), rgba(0,77,77,0.7));
@@ -103,26 +89,20 @@
       box-shadow: 0 0 15px rgba(0,255,102,0.4);
       transition: all 0.3s ease;
     }
-
-    /* Hover effect for menu items */
     .menu li:hover {
-      background: linear-gradient(90deg, #ffff66, #ffff99); /* Brighter yellow gradient */
+      background: linear-gradient(90deg, #ffff66, #ffff99);
       color: #001a1a;
       text-shadow: 0 0 5px rgba(255,255,255,0.8);
       box-shadow: 0 0 25px rgba(255,255,102,0.8);
       transform: translateX(10px);
     }
-
-    /* Animation for the small orb (green side thingy) on hover */
     .menu li:hover .small-orb {
       transform: translateY(-50%) scale(1.2);
       animation: sideOrbPulse 0.6s ease-out infinite alternate;
-      /* Override any "dim" styling so that the orb stays bright when hovered */
       background: radial-gradient(circle, rgba(0,255,102,0.9), transparent);
       box-shadow: 0 0 12px rgba(0,255,102,0.8),
                   0 0 20px rgba(0,255,102,0.5);
     }
-
     @keyframes sideOrbPulse {
       0% {
         box-shadow: 0 0 12px rgba(0,255,102,0.8), 0 0 20px rgba(0,255,102,0.5);
@@ -131,8 +111,6 @@
         box-shadow: 0 0 20px rgba(0,255,102,1), 0 0 30px rgba(0,255,102,0.8);
       }
     }
-
-    /* Small orbs next to menu items */
     .small-orb {
       position: absolute;
       left: -50px;
@@ -146,7 +124,6 @@
                   0 0 20px rgba(0,255,102,0.5);
       transition: transform 0.3s ease;
     }
-
     .small-orb.dim {
       background: radial-gradient(circle, rgba(102,102,102,0.5), transparent);
       box-shadow: 0 0 5px rgba(102,102,102,0.3);
@@ -154,27 +131,28 @@
   </style>
 </head>
 <body>
+  <!-- Main Content Grid -->
   <div class="grid-container">
     <div class="orb">
       <div>
-        <!-- SVG Xbox Logo with distortion filter applied -->
-        <svg width="180" height="180" viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg"
-             style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);" filter="url(#distortFilter)">
+        <!-- SVG Xbox Logo with distortion filter -->
+        <svg width="180" height="180" viewBox="-100 -100 200 200"
+             xmlns="http://www.w3.org/2000/svg"
+             style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"
+             filter="url(#distortFilter)">
           <defs>
-            <!-- Distortion filter definition: feTurbulence + feDisplacementMap -->
+            <!-- Distortion filter definition -->
             <filter id="distortFilter">
               <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise"/>
               <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G"/>
             </filter>
-            <!-- Gradient for sphere background -->
+            <!-- Gradient for orb background -->
             <radialGradient id="sphereGradient" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stop-color="#ffeb3b" />
               <stop offset="100%" stop-color="#00ff00" />
             </radialGradient>
           </defs>
-          <!-- Sphere background -->
           <circle cx="0" cy="0" r="90" fill="url(#sphereGradient)" />
-          <!-- Stylized "X" -->
           <path d="M -60 -60 Q 0 -20 60 60" stroke="white" stroke-width="15" fill="none" stroke-linecap="round" />
           <path d="M -60 60 Q 0 20 60 -60" stroke="white" stroke-width="15" fill="none" stroke-linecap="round" />
         </svg>
@@ -202,23 +180,26 @@
     </div>
   </div>
 
-  <!-- Script to apply separate 3D mouse movement effects and audio-sensitive distortion/pulse -->
+  <!-- Script for updating 3D transformation and audio-based dodge offset -->
   <script>
+    // Global variables to store current mouse rotation and dodge offset for the menu
+    let currentMenuRotateX = 0, currentMenuRotateY = 0;
+    let currentMenuDodgeOffset = 0;
+
     const menuContainer = document.querySelector('.menu-container');
     const orb = document.querySelector('.orb');
 
+    // Update rotation values on mousemove
     document.addEventListener('mousemove', (e) => {
-      // Transform for the menu container:
       const menuRect = menuContainer.getBoundingClientRect();
       const menuCenterX = menuRect.left + menuRect.width / 2;
       const menuCenterY = menuRect.top + menuRect.height / 2;
       const menuOffsetX = e.clientX - menuCenterX;
       const menuOffsetY = e.clientY - menuCenterY;
-      const menuRotateY = menuOffsetX / 20;
-      const menuRotateX = -menuOffsetY / 20;
-      menuContainer.style.transform = `perspective(1000px) rotateX(${menuRotateX}deg) rotateY(${menuRotateY}deg)`;
-
-      // Transform for the orb (Xbox logo):
+      currentMenuRotateY = menuOffsetX / 20;
+      currentMenuRotateX = -menuOffsetY / 20;
+      
+      // Also update the orb's transform (as before)
       const orbRect = orb.getBoundingClientRect();
       const orbCenterX = orbRect.left + orbRect.width / 2;
       const orbCenterY = orbRect.top + orbRect.height / 2;
@@ -229,12 +210,23 @@
       orb.style.transform = `perspective(1000px) rotateX(${orbRotateX}deg) rotateY(${orbRotateY}deg)`;
     });
 
+    // Continuous loop to update the menu container's transform (always applying the dodge offset)
+    function updateMenuTransform() {
+      menuContainer.style.transform =
+        `perspective(1000px) translateX(${currentMenuDodgeOffset}px) rotateX(${currentMenuRotateX}deg) rotateY(${currentMenuRotateY}deg)`;
+      requestAnimationFrame(updateMenuTransform);
+    }
+    updateMenuTransform();
+
     document.addEventListener('mouseleave', () => {
-      menuContainer.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+      currentMenuRotateX = 0;
+      currentMenuRotateY = 0;
+      menuContainer.style.transform = 'perspective(1000px) translateX(0px) rotateX(0deg) rotateY(0deg)';
       orb.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
     });
 
-    // --- Audio-Based Distortion and Pulse Intensity Update on the Xbox Logo ---
+    // Audio-based updates for the orb's distortion and pulse intensity.
+    // Also computing the dodge offset from the orb's pulsing intensity.
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
         const audioContext = new AudioContext();
@@ -244,11 +236,9 @@
         source.connect(analyser);
         const frequencyData = new Uint8Array(analyser.frequencyBinCount);
 
-        // Select the SVG filter elements for distortion
         const svg = document.querySelector('svg');
         const turbulence = svg.querySelector('#distortFilter feTurbulence');
         const displacementMap = svg.querySelector('#distortFilter feDisplacementMap');
-        // And select the orb's inner element to update its pulse intensity
         const orbDiv = document.querySelector('.orb div');
 
         function updateDistortion() {
@@ -258,25 +248,27 @@
             sum += frequencyData[i];
           }
           const average = sum / frequencyData.length;
-
-          // Update the distortion filter:
-          // Increase displacement scale and turbulence baseFrequency as average amplitude increases
-          const scaleValue = Math.min(average / 2, 50);         // scale of displacement (0 to ~50)
-          const baseFrequency = Math.min(average / 5000, 0.05);    // baseFrequency value (0.01 to 0.05)
+          
+          // Update orb distortion with modest sensitivity:
+          const scaleValue = Math.min(average / 2, 50);
+          const baseFrequency = Math.min(average / 5000, 0.05);
           displacementMap.setAttribute('scale', scaleValue.toString());
           turbulence.setAttribute('baseFrequency', baseFrequency.toString());
-
-          // Update pulse intensity on the orb based on sound.
-          // Here, we update a CSS variable (--pulse-intensity) that is used in the keyframes.
-          // Adjust the divisor to set sensitivity; here, even small sound increases intensity noticeably.
-          const newIntensity = Math.min(1 + average / 200, 2);  // ranges from 1 (quiet) to 2 (loud)
+          
+          // Update pulse intensity on the orb:
+          const newIntensity = Math.min(1 + average / 200, 2);
           orbDiv.style.setProperty('--pulse-intensity', newIntensity.toFixed(2));
-
+          
+          // Calculate the dodge offset.
+          // Here, the extra effective width of the orb is 350px * (newIntensity - 1).
+          // We move the menu by half of that value to avoid overlap.
+          currentMenuDodgeOffset = (350 * (newIntensity - 1)) / 2;
+          
           requestAnimationFrame(updateDistortion);
         }
         updateDistortion();
       })
-      .catch(err => console.error("Audio capture error: ", err));
+      .catch(err => console.error("Audio capture error:", err));
   </script>
 </body>
 </html>
