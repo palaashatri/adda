@@ -1,15 +1,18 @@
 # NVIDIA-SMI GUI Monitor
 
-A simple, real-time graphical interface for monitoring NVIDIA GPU status using `nvidia-smi` command output.
+A real-time graphical interface for monitoring NVIDIA GPU status using `nvidia-smi`, with color-coded metrics, process table, and power limit adjustment.
 
 ## Overview
 
-This application provides a user-friendly GUI that displays NVIDIA GPU information in real-time, updating every 2 seconds. It's built using Python's Tkinter library and executes the `nvidia-smi` command to fetch GPU status information.
+This application provides a user-friendly GUI that displays key NVIDIA GPU information in real-time, updating every 2 seconds. It is built with Python's Tkinter library and uses the `nvidia-smi` command to fetch GPU status and running processes.
 
 ## Features
 
 - Real-time GPU monitoring with automatic updates every 2 seconds
-- Clean, scrollable text interface displaying full `nvidia-smi` output
+- Color-coded display for utilization, memory, temperature, and power draw
+- Table of running GPU processes (PID, name, memory usage)
+- Button to open a window for adjusting the GPU power limit (with min/max/current shown)
+- Collapsible section showing the full `nvidia-smi` output
 - Error handling for missing drivers or command failures
 - Cross-platform compatibility (Windows, Linux, macOS)
 - Lightweight and minimal dependencies
@@ -69,26 +72,28 @@ python3 App.py
 
 ### Application Interface
 
-- The application opens a window titled "NVIDIA-SMI Monitor"
-- GPU information is displayed in a scrollable text area
+- The application opens a window titled "NVIDIA-SMI GPU Monitor"
+- The top of the window displays the GPU name and a button to adjust the power limit
+- Key metrics (utilization, memory, temperature, power) are shown in a color-coded table
+- A table lists all running GPU processes (PID, name, memory usage)
+- A button toggles display of the full `nvidia-smi` output in a collapsible section
 - Information updates automatically every 2 seconds
 - Close the window to exit the application
+
+### Adjusting Power Limit
+
+- Click the "Adjust Power Limit" button to open a new window
+- The window displays current, minimum, and maximum power limits
+- Enter a new value within the allowed range and click "Apply"
+- **Note:** Changing the power limit may require administrator/root privileges
 
 ## Configuration
 
 ### Update Interval
-To change the refresh rate, modify the `update_gui()` function in `App.py`:
+To change the refresh rate, modify the `root.after(2000, update_gui)` line in `App.py` (2000 ms = 2 seconds).
 
-```python
-root.after(2000, update_gui)  # Change 2000 (2 seconds) to desired milliseconds
-```
-
-### Window Size
-Adjust the text area dimensions in `App.py`:
-
-```python
-text_area = tk.Text(root, height=30, width=100)  # Modify height and width
-```
+### Color Thresholds
+You can adjust the warning/danger thresholds for utilization, memory, temperature, and power in the respective color functions in `App.py`.
 
 ## Troubleshooting
 
@@ -113,35 +118,8 @@ text_area = tk.Text(root, height=30, width=100)  # Modify height and width
    chmod +x run.sh
    ```
 
-### Error Messages
-
-- **"nvidia-smi not found"**: NVIDIA drivers not installed or not in PATH
-- **"Error: [details]"**: General execution error with specific details
-
-## Development
-
-### Project Structure
-```
-nvidia-smi-gui-pt/
-├── App.py          # Main application file
-├── README.md       # This documentation
-├── run.sh          # Linux/macOS runner script
-├── run.ps1         # Windows PowerShell runner script
-└── requirements.txt # Python dependencies (minimal)
-```
-
-### Code Structure
-
-- `get_nvidia_smi_output()`: Executes nvidia-smi command and handles errors
-- `update_gui()`: Updates the GUI with fresh data and schedules next update
-- Main execution: Sets up Tkinter window and starts the update loop
-
-### Extending the Application
-
-To add features:
-1. Modify `get_nvidia_smi_output()` for different nvidia-smi parameters
-2. Enhance `update_gui()` for custom formatting or filtering
-3. Add menu bars, buttons, or configuration options to the main window
+5. **Setting Power Limit Fails:**
+   - You may need to run the app as administrator/root to change the power limit.
 
 ## Building a Standalone Executable
 
@@ -217,5 +195,7 @@ For issues and questions:
 ### Version 1.0
 - Initial release
 - Real-time nvidia-smi monitoring
+- Color-coded metrics and process table
+- Power limit adjustment window
 - Cross-platform support
-- Error handling for missing drivers
+-
