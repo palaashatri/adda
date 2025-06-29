@@ -143,6 +143,42 @@ To add features:
 2. Enhance `update_gui()` for custom formatting or filtering
 3. Add menu bars, buttons, or configuration options to the main window
 
+## Building a Standalone Executable
+
+You can compile this app into a single-file executable for Windows or Linux using PyInstaller.
+
+### Linux
+
+1. Ensure you have Python 3.6+, pip, and tkinter installed.
+2. Run the build script:
+   ```bash
+   ./build.sh
+   ```
+   The executable `./nvidia-smi-gui-pt` will be created in the project directory.
+
+### Windows
+
+1. Ensure you have Python 3.6+, pip, and tkinter installed.
+2. Run the build script in PowerShell:
+   ```powershell
+   .\build.ps1
+   ```
+   The executable `nvidia-smi-gui-pt.exe` will be created in the project directory.
+
+### Manual Build (Advanced)
+
+You can also run PyInstaller directly:
+```bash
+python -m pip install pyinstaller
+python -m pyinstaller --onefile --name nvidia-smi-gui-pt App.py
+```
+
+### Notes
+- The resulting executable is portable and does not require Python to be installed on the target system.
+- On Linux, you may need to run `chmod +x nvidia-smi-gui-pt` before executing.
+- On Windows, double-click or run from the command line.
+- If you encounter issues with missing libraries (e.g., tkinter), ensure all dependencies are installed on your build system.
+
 ## System Requirements
 
 ### Minimum Requirements
