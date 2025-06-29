@@ -2,6 +2,9 @@
 
 A real-time graphical interface for monitoring NVIDIA GPU status using `nvidia-smi`, with color-coded metrics, process table, and power limit adjustment.
 
+![image](https://github.com/user-attachments/assets/baf6e177-a31d-49b8-9844-453eb241819a)
+
+
 ## Overview
 
 This application provides a user-friendly GUI that displays key NVIDIA GPU information in real-time, updating every 2 seconds. It is built with Python's Tkinter library and uses the `nvidia-smi` command to fetch GPU status and running processes.
