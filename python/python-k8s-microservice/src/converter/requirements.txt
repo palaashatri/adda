@@ -1,5 +1,5 @@
 astroid==2.14.1
-certifi==2023.7.22
+certifi==2024.7.4
 charset-normalizer==3.0.1
 colorama==0.4.6
 decorator==4.4.2
