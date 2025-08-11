@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/palaashatri/Code/adda/practice/c++/hello'
+relocations:     []
+...
