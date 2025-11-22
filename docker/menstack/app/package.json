@@ -10,7 +10,7 @@
   "author": "Nana Janashia",
   "license": "ISC",
   "dependencies": {
-    "body-parser": "^1.20.2",
+    "body-parser": "^1.20.3",
     "express": "^4.17.1",
     "mongodb": "^3.7.4"
   }
