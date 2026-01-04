@@ -21,7 +21,7 @@ platformdirs==2.6.2
 proglog==0.1.10
 pylint==2.16.1
 pymongo==4.6.3
-requests==2.31.0
+requests==2.32.4
 tomlkit==0.11.6
 tqdm==4.66.3
 urllib3==2.6.0
