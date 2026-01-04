@@ -5,7 +5,7 @@ colorama==0.4.6
 decorator==4.4.2
 dill==0.3.6
 dnspython==2.6.1
-idna==3.4
+idna==3.7
 imageio==2.25.0
 imageio-ffmpeg==0.4.8
 isort==5.12.0
