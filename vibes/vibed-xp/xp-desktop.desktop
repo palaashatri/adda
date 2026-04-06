@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=XP Desktop
+Comment=Windows XP-style Wayland desktop environment
+Exec=xp-compositor
+Type=Application
+DesktopNames=XP
