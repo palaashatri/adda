@@ -113,13 +113,19 @@ void WinPlatform::pumpEvents() {
                 shouldQueue = true;
                 break;
             case WM_KEYDOWN:
+                // TODO: Add non-text key handling via WM_KEYDOWN where needed.
+                shouldQueue = false;
+                break;
+            case WM_CHAR:
                 queuedEvent.type = core::EventType::KeyDown;
                 queuedEvent.keyCode = static_cast<int>(message.wParam);
+                queuedEvent.textCode = static_cast<int>(message.wParam);
                 shouldQueue = true;
                 break;
             case WM_KEYUP:
                 queuedEvent.type = core::EventType::KeyUp;
                 queuedEvent.keyCode = static_cast<int>(message.wParam);
+                queuedEvent.textCode = 0;
                 shouldQueue = true;
                 break;
             default:

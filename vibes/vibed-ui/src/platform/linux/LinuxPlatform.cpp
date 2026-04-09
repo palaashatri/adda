@@ -97,12 +97,25 @@ void LinuxPlatform::pumpEvents() {
                 break;
             case KeyPress:
                 queuedEvent.type = core::EventType::KeyDown;
-                queuedEvent.keyCode = event.xkey.keycode;
+                queuedEvent.textCode = 0;
+                {
+                    char textBuffer[8] = {0};
+                    KeySym keySymbol = 0;
+                    const int charCount = XLookupString(&event.xkey, textBuffer, sizeof(textBuffer), &keySymbol, nullptr);
+                    if (charCount > 0) {
+                        const int code = static_cast<unsigned char>(textBuffer[0]);
+                        queuedEvent.keyCode = code;
+                        queuedEvent.textCode = code;
+                    } else {
+                        queuedEvent.keyCode = static_cast<int>(keySymbol);
+                    }
+                }
                 shouldQueue = true;
                 break;
             case KeyRelease:
                 queuedEvent.type = core::EventType::KeyUp;
                 queuedEvent.keyCode = event.xkey.keycode;
+                queuedEvent.textCode = 0;
                 shouldQueue = true;
                 break;
             case ClientMessage:

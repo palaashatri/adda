@@ -1,8 +1,10 @@
 // MIT License
 // Copyright (c) 2026 Palaash
 
+#include <chrono>
 #include <memory>
 #include <string>
+#include <thread>
 
 #include "core/Application.h"
 #include "core/Event.h"
@@ -101,7 +103,7 @@ int main() {
     refreshUi();
 
     bool shouldExit = false;
-    for (int frame = 0; frame < 600 && !shouldExit; ++frame) {
+    while (!shouldExit) {
         if (platform::activePlatform() != nullptr) {
             platform::activePlatform()->pumpEvents();
         }
@@ -116,7 +118,9 @@ int main() {
             tree.onEvent(static_cast<int>(event.type), event.x, event.y);
 
             if (event.type == core::EventType::KeyDown) {
-                if (event.keyCode == 8) {
+                const int inputCode = event.textCode != 0 ? event.textCode : event.keyCode;
+
+                if (inputCode == 8 || inputCode == 127) {
                     if (!editorText.empty()) {
                         editorText.pop_back();
                         dirty = true;
@@ -125,14 +129,14 @@ int main() {
                     continue;
                 }
 
-                if (event.keyCode == 13) {
+                if (inputCode == 13 || inputCode == 10) {
                     editorText.push_back(' ');
                     dirty = true;
                     refreshUi();
                     continue;
                 }
 
-                const char ch = keyCodeToAscii(event.keyCode);
+                const char ch = keyCodeToAscii(inputCode);
                 if (ch != '\0') {
                     editorText.push_back(ch);
                     dirty = true;
@@ -144,6 +148,8 @@ int main() {
         renderer.clear(0xFF101010U);
         tree.draw(renderer);
         renderer.present();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 
     app.shutdown();

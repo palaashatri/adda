@@ -8,6 +8,65 @@
 #if defined(__APPLE__)
 #import <Cocoa/Cocoa.h>
 #import <CoreGraphics/CoreGraphics.h>
+
+@interface VibedContentView : NSView
+@end
+
+@implementation VibedContentView
+
+- (BOOL)acceptsFirstResponder {
+    return YES;
+}
+
+@end
+
+namespace {
+
+void setupMainMenuIfNeeded() {
+    if ([NSApp mainMenu] != nil) {
+        return;
+    }
+
+    NSMenu* mainMenu = [[NSMenu alloc] initWithTitle:@"MainMenu"];
+
+    NSMenuItem* appItem = [[NSMenuItem alloc] initWithTitle:@"Application" action:nil keyEquivalent:@""];
+    [mainMenu addItem:appItem];
+
+    NSMenu* appMenu = [[NSMenu alloc] initWithTitle:@"Application"];
+    NSString* appName = [[NSProcessInfo processInfo] processName];
+    NSString* quitTitle = [@"Quit " stringByAppendingString:appName];
+    NSMenuItem* quitItem = [[NSMenuItem alloc] initWithTitle:quitTitle action:@selector(terminate:) keyEquivalent:@"q"];
+    [appMenu addItem:quitItem];
+    [appItem setSubmenu:appMenu];
+
+    NSMenuItem* fileItem = [[NSMenuItem alloc] initWithTitle:@"File" action:nil keyEquivalent:@""];
+    [mainMenu addItem:fileItem];
+
+    NSMenu* fileMenu = [[NSMenu alloc] initWithTitle:@"File"];
+    NSMenuItem* closeItem = [[NSMenuItem alloc] initWithTitle:@"Close Window" action:@selector(performClose:) keyEquivalent:@"w"];
+    [fileMenu addItem:closeItem];
+    [fileItem setSubmenu:fileMenu];
+
+    [NSApp setMainMenu:mainMenu];
+
+    [closeItem release];
+    [fileMenu release];
+    [fileItem release];
+    [quitItem release];
+    [appMenu release];
+    [appItem release];
+    [mainMenu release];
+}
+
+NSString* keyEventCharacters(NSEvent* event) {
+    NSString* chars = [event charactersIgnoringModifiers];
+    if (chars != nil && [chars length] > 0) {
+        return chars;
+    }
+    return [event characters];
+}
+
+} // namespace
 #endif
 
 namespace platform {
@@ -30,6 +89,8 @@ bool MacPlatform::createWindow(int w, int h, const char* title) {
     @autoreleasepool {
         [NSApplication sharedApplication];
         [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+        setupMainMenuIfNeeded();
+        [NSApp finishLaunching];
 
         const NSUInteger styleMask = NSWindowStyleMaskTitled
             | NSWindowStyleMaskClosable
@@ -42,8 +103,14 @@ bool MacPlatform::createWindow(int w, int h, const char* title) {
             return false;
         }
 
+        VibedContentView* contentView = [[VibedContentView alloc] initWithFrame:frame];
+        [nsWindow setContentView:contentView];
+        [nsWindow makeFirstResponder:contentView];
+        [contentView release];
+
         NSString* windowTitle = [NSString stringWithUTF8String:(title != nullptr ? title : "vibed-ui")];
         [nsWindow setTitle:windowTitle];
+        [nsWindow setAcceptsMouseMovedEvents:YES];
         [nsWindow makeKeyAndOrderFront:nil];
         [NSApp activateIgnoringOtherApps:YES];
 
@@ -95,11 +162,31 @@ void MacPlatform::pumpEvents() {
                     case NSEventTypeKeyDown:
                         queuedEvent.type = core::EventType::KeyDown;
                         queuedEvent.keyCode = static_cast<int>([event keyCode]);
+                        queuedEvent.textCode = 0;
+                        {
+                            NSString* chars = keyEventCharacters(event);
+                            if (chars != nil && [chars length] > 0) {
+                                const unichar ch = [chars characterAtIndex:0];
+                                if (ch <= 0x7F) {
+                                    queuedEvent.textCode = static_cast<int>(ch);
+                                }
+                            }
+                        }
                         shouldQueue = true;
                         break;
                     case NSEventTypeKeyUp:
                         queuedEvent.type = core::EventType::KeyUp;
                         queuedEvent.keyCode = static_cast<int>([event keyCode]);
+                        queuedEvent.textCode = 0;
+                        {
+                            NSString* chars = keyEventCharacters(event);
+                            if (chars != nil && [chars length] > 0) {
+                                const unichar ch = [chars characterAtIndex:0];
+                                if (ch <= 0x7F) {
+                                    queuedEvent.textCode = static_cast<int>(ch);
+                                }
+                            }
+                        }
                         shouldQueue = true;
                         break;
                     default:

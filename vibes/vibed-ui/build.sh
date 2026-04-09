@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 BUILD_DIR="build"
 BUILD_TYPE="Release"
 RUN_DEMO=""
@@ -14,7 +17,7 @@ Usage: ./build.sh [options]
 
 Options:
   --build-type <type>    Build type (Debug, Release). Default: Release
-  --run <demo>           Run a demo after build: demo_basic | demo_controls | demo_text_editor
+    --run <demo>           Run a demo target after build (demo_* target name)
   --install-deps         Attempt to install missing dependencies
   --clean                Remove build directory before configuring
   --help                 Show this help
@@ -22,7 +25,7 @@ Options:
 Examples:
   ./build.sh
   ./build.sh --build-type Debug
-  ./build.sh --run demo_text_editor
+    ./build.sh --run demo_text_editor
   ./build.sh --install-deps --run demo_basic
 EOF
 }
@@ -168,15 +171,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ -n "$RUN_DEMO" ]]; then
-    case "$RUN_DEMO" in
-        demo_basic|demo_controls|demo_text_editor) ;;
-        *)
-            echo "Unsupported demo: $RUN_DEMO"
-            echo "Supported demos: demo_basic, demo_controls, demo_text_editor"
-            exit 1
-            ;;
-    esac
+if [[ -n "$RUN_DEMO" && "$RUN_DEMO" != demo_* ]]; then
+    echo "Unsupported demo target name: $RUN_DEMO"
+    echo "Demo target must start with demo_"
+    exit 1
 fi
 
 OS_NAME="$(uname -s)"

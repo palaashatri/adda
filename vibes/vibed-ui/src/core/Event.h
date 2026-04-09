@@ -26,6 +26,7 @@ public:
     int x = 0;
     int y = 0;
     int keyCode = 0;
+    int textCode = 0;
 };
 
 class EventQueue {

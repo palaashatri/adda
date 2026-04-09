@@ -1,6 +1,8 @@
 @echo off
 setlocal EnableDelayedExpansion
 
+cd /d "%~dp0"
+
 set BUILD_DIR=build
 set BUILD_TYPE=Release
 set RUN_DEMO=
@@ -51,9 +53,9 @@ goto help
 
 :args_done
 if not "%RUN_DEMO%"=="" (
-    if /I not "%RUN_DEMO%"=="demo_basic" if /I not "%RUN_DEMO%"=="demo_controls" if /I not "%RUN_DEMO%"=="demo_text_editor" (
-        echo Unsupported demo: %RUN_DEMO%
-        echo Supported demos: demo_basic, demo_controls, demo_text_editor
+    if /I not "%RUN_DEMO:~0,5%"=="demo_" (
+        echo Unsupported demo target name: %RUN_DEMO%
+        echo Demo target must start with demo_
         exit /b 1
     )
 )
@@ -144,7 +146,7 @@ echo Usage: build.bat [options]
 echo.
 echo Options:
 echo   --build-type ^<type^>    Build type (Debug, Release). Default: Release
-echo   --run ^<demo^>           Run a demo after build: demo_basic ^| demo_controls ^| demo_text_editor
+echo   --run ^<demo^>           Run a demo target after build (demo_* target name)
 echo   --install-deps         Attempt to install missing dependencies with winget
 echo   --clean                Remove build directory before configuring
 echo   --help                 Show this help
