@@ -1,0 +1,30 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+ 
+Vagrant.configure("2") do |config|
+ 
+  # Ubuntu 22.04 LTS — kernel 5.15+ ships with proc_ops support
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.box_version = ">= 20230601.0.0"
+ 
+  # Expose the module source directory into the VM
+  config.vm.synced_folder ".", "/vagrant/lkm", type: "virtualbox"
+ 
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "lkm-dev"
+    vb.memory = "2048"
+    vb.cpus   = 2
+  end
+ 
+  # Provisioning: install build tools and matching kernel headers
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update -qq
+    apt-get install -y --no-install-recommends \
+      build-essential \
+      linux-headers-$(uname -r) \
+      kmod
+    echo "Kernel: $(uname -r)"
+    echo "Provisioning complete. SSH in and cd /vagrant/lkm to build."
+  SHELL
+ 
+end
