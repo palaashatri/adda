@@ -1,5 +1,0 @@
-# Direct on TTY (needs DRM/KMS enabled)
-exec xp-compositor
-
-# Or nested in another Wayland session (for testing)
-WAYLAND_DISPLAY=wayland-1 xp-compositor &
