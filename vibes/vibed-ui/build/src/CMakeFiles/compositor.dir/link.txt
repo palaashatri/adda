@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcompositor.a CMakeFiles/compositor.dir/compositor/Compositor.cpp.o CMakeFiles/compositor.dir/compositor/Surface.cpp.o CMakeFiles/compositor.dir/compositor/WindowManager.cpp.o
+/usr/bin/ranlib libcompositor.a

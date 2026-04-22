@@ -1,0 +1,2 @@
+/usr/bin/ar qc libui.a CMakeFiles/ui.dir/ui/View.cpp.o CMakeFiles/ui.dir/ui/ViewTree.cpp.o CMakeFiles/ui.dir/ui/Layout.cpp.o CMakeFiles/ui.dir/ui/FlexLayout.cpp.o CMakeFiles/ui.dir/ui/Theme.cpp.o CMakeFiles/ui.dir/ui/Color.cpp.o CMakeFiles/ui.dir/ui/Font.cpp.o CMakeFiles/ui.dir/ui/Button.cpp.o CMakeFiles/ui.dir/ui/Label.cpp.o
+/usr/bin/ranlib libui.a
