@@ -3,11 +3,11 @@
 
 #include "Event.h"
 
-#include <vector>
+#include <deque>
 
 namespace {
 
-std::vector<core::Event> g_eventQueue;
+std::deque<core::Event> g_eventQueue;
 
 } // namespace
 
@@ -31,7 +31,7 @@ bool EventQueue::poll(Event& event) {
 	}
 
 	event = g_eventQueue.front();
-	g_eventQueue.erase(g_eventQueue.begin());
+	g_eventQueue.pop_front();
 	return true;
 }
 

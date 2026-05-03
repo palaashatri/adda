@@ -113,8 +113,19 @@ void WinPlatform::pumpEvents() {
                 shouldQueue = true;
                 break;
             case WM_KEYDOWN:
-                // TODO: Add non-text key handling via WM_KEYDOWN where needed.
-                shouldQueue = false;
+                {
+                    const int vk = static_cast<int>(message.wParam);
+                    const bool isNonTextKey =
+                        (vk == VK_LEFT || vk == VK_RIGHT || vk == VK_UP || vk == VK_DOWN ||
+                         vk == VK_ESCAPE || vk == VK_DELETE || vk == VK_HOME || vk == VK_END ||
+                         vk == VK_PRIOR || vk == VK_NEXT || (vk >= VK_F1 && vk <= VK_F24));
+                    if (isNonTextKey) {
+                        queuedEvent.type = core::EventType::KeyDown;
+                        queuedEvent.keyCode = vk;
+                        queuedEvent.textCode = 0;
+                        shouldQueue = true;
+                    }
+                }
                 break;
             case WM_CHAR:
                 queuedEvent.type = core::EventType::KeyDown;

@@ -135,19 +135,24 @@ bool Theme::loadFromJson(const std::string& path) {
     const std::string json = stream.str();
 
     std::string colorValue;
+    bool anyLoaded = false;
     if (extractQuotedValue(json, "background", colorValue)) {
         colors["background"] = parseHexColor(colorValue);
+        anyLoaded = true;
     }
     if (extractQuotedValue(json, "text", colorValue)) {
         colors["text"] = parseHexColor(colorValue);
+        anyLoaded = true;
     }
     if (extractQuotedValue(json, "primary", colorValue)) {
         colors["primary"] = parseHexColor(colorValue);
+        anyLoaded = true;
     }
 
     int numberValue = 0;
     if (extractIntegerValue(json, "cornerRadius", numberValue)) {
         radii["default"] = numberValue;
+        anyLoaded = true;
     }
 
     std::string fontName;
@@ -158,9 +163,10 @@ bool Theme::loadFromJson(const std::string& path) {
         } else {
             fonts["default"] = Font(fontName, 12);
         }
+        anyLoaded = true;
     }
 
-    return true;
+    return anyLoaded;
 }
 
 const Color& Theme::color(const std::string& name) const {

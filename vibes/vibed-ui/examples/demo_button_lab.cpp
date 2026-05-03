@@ -17,6 +17,7 @@
 
 int main() {
     core::Application app;
+    app.setWindowSize(900, 620);
     if (!app.initialize()) {
         return 1;
     }
@@ -61,7 +62,7 @@ int main() {
     b4->setOnClick([&]() { updateStatus("Danger"); });
     b5->setOnClick([&]() {
         darkBg = !darkBg;
-        root->setBackgroundColor(darkBg ? 0xFF1C1C2AU : 0xFFE6E6F0U);
+        root->setBackgroundColor(darkBg ? 0xFF1C1C2AU : 0xFF505060U);
         updateStatus("Toggle BG");
     });
     b6->setOnClick([&]() {

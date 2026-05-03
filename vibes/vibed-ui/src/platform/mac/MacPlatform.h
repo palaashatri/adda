@@ -17,7 +17,8 @@ public:
     void blit(const uint8_t* buffer, int w, int h) override;
 
 private:
-    void* window = nullptr; // NSWindow*
+    void* window = nullptr;         // NSWindow*
+    void* windowDelegate = nullptr; // VibedWindowDelegate*
 };
 
 } // namespace platform

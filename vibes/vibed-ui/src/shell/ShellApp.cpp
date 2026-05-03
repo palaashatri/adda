@@ -3,6 +3,9 @@
 
 #include "ShellApp.h"
 
+#include <chrono>
+#include <thread>
+
 #include "../core/Event.h"
 #include "../platform/Platform.h"
 #include "../render/legacy/SoftwareRenderer.h"
@@ -43,7 +46,7 @@ void ShellApp::run() {
     render::SoftwareRenderer renderer(800, 600);
 
     bool shouldExit = false;
-    for (int frame = 0; frame < 240 && !shouldExit; ++frame) {
+    while (!shouldExit) {
         if (platform::activePlatform() != nullptr) {
             platform::activePlatform()->pumpEvents();
         }
@@ -78,6 +81,7 @@ void ShellApp::run() {
         panel.draw(renderer);
         launcher.draw(renderer);
         renderer.present();
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 }
 

@@ -52,8 +52,12 @@ void Application::run() {
         }
 
         // TODO: Rendering.
-        running = false;
     }
+}
+
+void Application::setWindowSize(int w, int h) {
+    windowWidth = w;
+    windowHeight = h;
 }
 
 void Application::shutdown() {

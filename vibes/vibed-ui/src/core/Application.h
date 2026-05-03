@@ -19,6 +19,7 @@ public:
     bool initialize();
     void run();
     void shutdown();
+    void setWindowSize(int w, int h);
 
 private:
     bool running = false;

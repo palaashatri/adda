@@ -19,8 +19,8 @@ const std::string& Label::text() const {
 }
 
 void Label::draw(render::Renderer& renderer) {
-    renderer.drawText(x, y, labelText);
     View::draw(renderer);
+    renderer.drawText(x, y, labelText);
 }
 
 } // namespace ui

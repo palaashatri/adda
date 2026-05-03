@@ -115,6 +115,18 @@ if "%INSTALL_DEPS%"=="1" (
     )
 
     winget install --id Microsoft.VisualStudio.2022.BuildTools -e --accept-package-agreements --accept-source-agreements --override "--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools"
+
+    rem Attempt to locate vcvarsall.bat via vswhere and activate the toolchain in this session.
+    set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+    if not exist "!VSWHERE!" set "VSWHERE=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe"
+    if exist "!VSWHERE!" (
+        for /f "usebackq tokens=*" %%i in (`"!VSWHERE!" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2^>nul`) do (
+            if exist "%%i\VC\Auxiliary\Build\vcvarsall.bat" (
+                call "%%i\VC\Auxiliary\Build\vcvarsall.bat" x64 >nul 2>nul
+            )
+        )
+    )
+
     where cl >nul 2>nul
     if not errorlevel 1 exit /b 0
 )

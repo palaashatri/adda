@@ -17,6 +17,7 @@
 
 int main() {
     core::Application app;
+    app.setWindowSize(900, 620);
     if (!app.initialize()) {
         return 1;
     }
@@ -88,8 +89,6 @@ int main() {
                 break;
             }
 
-            tree.onEvent(static_cast<int>(event.type), event.x, event.y);
-
             if (event.type == core::EventType::MouseDown) {
                 ++mouseDownCount;
                 lastEventLabel->setText("Last Event: MouseDown @ (" + std::to_string(event.x) + ", " + std::to_string(event.y) + ")");
@@ -102,6 +101,8 @@ int main() {
                 lastEventLabel->setText("Last Event: KeyDown code=" + std::to_string(event.keyCode));
                 refresh();
             }
+
+            tree.onEvent(static_cast<int>(event.type), event.x, event.y);
         }
 
         renderer.clear(0xFF0F0F0FU);

@@ -14,7 +14,6 @@ void Compositor::run() {
     while (running) {
         wm.renderAll();
         // TODO: Add frame pacing or vsync synchronization.
-        running = false;
     }
 }
 

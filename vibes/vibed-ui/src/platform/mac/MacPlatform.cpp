@@ -18,6 +18,24 @@
     return YES;
 }
 
+- (BOOL)isFlipped {
+    return YES;
+}
+
+@end
+
+@interface VibedWindowDelegate : NSObject <NSWindowDelegate>
+@end
+
+@implementation VibedWindowDelegate
+
+- (void)windowWillClose:(NSNotification*)notification {
+    (void)notification;
+    core::Event quitEvent;
+    quitEvent.type = core::EventType::Quit;
+    core::EventQueue::push(quitEvent);
+}
+
 @end
 
 namespace {
@@ -59,11 +77,11 @@ void setupMainMenuIfNeeded() {
 }
 
 NSString* keyEventCharacters(NSEvent* event) {
-    NSString* chars = [event charactersIgnoringModifiers];
+    NSString* chars = [event characters];
     if (chars != nil && [chars length] > 0) {
         return chars;
     }
-    return [event characters];
+    return [event charactersIgnoringModifiers];
 }
 
 } // namespace
@@ -77,9 +95,14 @@ MacPlatform::~MacPlatform() {
 #if defined(__APPLE__)
     if (window != nullptr) {
         NSWindow* nsWindow = (NSWindow*)window;
+        [nsWindow setDelegate:nil];
         [nsWindow close];
         [nsWindow release];
         window = nullptr;
+    }
+    if (windowDelegate != nullptr) {
+        [(id)windowDelegate release];
+        windowDelegate = nullptr;
     }
 #endif
 }
@@ -111,6 +134,11 @@ bool MacPlatform::createWindow(int w, int h, const char* title) {
         NSString* windowTitle = [NSString stringWithUTF8String:(title != nullptr ? title : "vibed-ui")];
         [nsWindow setTitle:windowTitle];
         [nsWindow setAcceptsMouseMovedEvents:YES];
+
+        VibedWindowDelegate* delegate = [[VibedWindowDelegate alloc] init];
+        [nsWindow setDelegate:delegate];
+        windowDelegate = (void*)delegate;
+
         [nsWindow makeKeyAndOrderFront:nil];
         [NSApp activateIgnoringOtherApps:YES];
 
@@ -194,9 +222,14 @@ void MacPlatform::pumpEvents() {
                 }
 
                 if (shouldQueue) {
-                    const NSPoint point = [event locationInWindow];
-                    queuedEvent.x = static_cast<int>(point.x);
-                    queuedEvent.y = static_cast<int>(point.y);
+                    NSWindow* nsWindow = (NSWindow*)window;
+                    NSView* contentView = [nsWindow contentView];
+                    const NSPoint windowPoint = [event locationInWindow];
+                    const NSPoint viewPoint = contentView != nil
+                        ? [contentView convertPoint:windowPoint fromView:nil]
+                        : windowPoint;
+                    queuedEvent.x = static_cast<int>(viewPoint.x);
+                    queuedEvent.y = static_cast<int>(viewPoint.y);
                     core::EventQueue::push(queuedEvent);
                 }
 
@@ -248,7 +281,7 @@ void MacPlatform::blit(const uint8_t* buffer, int w, int h) {
             8U,
             static_cast<size_t>(w) * 4U,
             colorSpace,
-            static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big));
+            static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host));
 
         if (bitmapContext != nullptr) {
             CGImageRef image = CGBitmapContextCreateImage(bitmapContext);

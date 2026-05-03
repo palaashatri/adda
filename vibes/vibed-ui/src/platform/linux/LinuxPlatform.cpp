@@ -52,7 +52,7 @@ bool LinuxPlatform::createWindow(int w, int h, const char* title) {
     }
 
     XStoreName(display, window, title != nullptr ? title : "vibed-ui");
-    XSelectInput(display, window, ExposureMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask);
+    XSelectInput(display, window, ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask);
 
     wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(display, window, &wmDeleteMessage, 1);

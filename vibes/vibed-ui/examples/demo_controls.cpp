@@ -1,7 +1,9 @@
 // MIT License
 // Copyright (c) 2026 Palaash
 
+#include <chrono>
 #include <memory>
+#include <thread>
 
 #include "core/Application.h"
 #include "core/Event.h"
@@ -38,7 +40,7 @@ int main() {
             root->setBackgroundColor(0xFF101010U);
             label->setText("Controls Demo (Dark)");
         } else {
-            root->setBackgroundColor(0xFFF0F0F0U);
+            root->setBackgroundColor(0xFF505050U);
             label->setText("Controls Demo (Light)");
         }
     });
@@ -60,7 +62,7 @@ int main() {
     (void)theme;
 
     bool shouldExit = false;
-    for (int frame = 0; frame < 120 && !shouldExit; ++frame) {
+    while (!shouldExit) {
         if (platform::activePlatform() != nullptr) {
             platform::activePlatform()->pumpEvents();
         }
@@ -78,6 +80,7 @@ int main() {
         renderer.clear(0xFF000000U);
         tree.draw(renderer);
         renderer.present();
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 
     app.shutdown();

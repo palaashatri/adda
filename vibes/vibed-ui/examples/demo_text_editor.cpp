@@ -35,6 +35,7 @@ std::string clampEditorText(const std::string& text, std::size_t maxChars) {
 
 int main() {
     core::Application app;
+    app.setWindowSize(900, 640);
     if (!app.initialize()) {
         return 1;
     }
