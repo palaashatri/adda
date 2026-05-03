@@ -1,0 +1,13 @@
+customtkinter>=5.2.0
+torch
+torchvision
+torchaudio
+diffusers
+transformers
+accelerate
+huggingface_hub
+Pillow
+soundfile
+numpy
+Requests
+pyinstaller
