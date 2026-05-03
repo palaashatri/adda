@@ -1,0 +1,15 @@
+add_executable(aurora_db_smoke db/DbSmokeTest.cpp)
+target_link_libraries(aurora_db_smoke PRIVATE aurora_core)
+target_compile_features(aurora_db_smoke PRIVATE cxx_std_20)
+
+add_executable(aurora_geom_ops_test geom/GeomOpsTest.cpp)
+target_link_libraries(aurora_geom_ops_test PRIVATE aurora_core)
+target_compile_features(aurora_geom_ops_test PRIVATE cxx_std_20)
+
+add_executable(aurora_tech_database_test tech/TechDatabaseTest.cpp)
+target_link_libraries(aurora_tech_database_test PRIVATE aurora_core)
+target_compile_features(aurora_tech_database_test PRIVATE cxx_std_20)
+
+add_test(NAME aurora_db_smoke COMMAND aurora_db_smoke)
+add_test(NAME aurora_geom_ops_test COMMAND aurora_geom_ops_test)
+add_test(NAME aurora_tech_database_test COMMAND aurora_tech_database_test)

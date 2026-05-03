@@ -1,0 +1,13 @@
+if(AURORA_BUILD_PYTHON)
+  find_package(pybind11 CONFIG QUIET)
+endif()
+
+if(AURORA_BUILD_PYTHON AND pybind11_FOUND)
+  pybind11_add_module(aurora_python Bindings.cpp)
+  target_link_libraries(aurora_python PRIVATE aurora_core aurora_layout aurora_schematic)
+  set_target_properties(aurora_python PROPERTIES OUTPUT_NAME aurora)
+else()
+  add_library(aurora_python PythonAvailability.cpp)
+  target_link_libraries(aurora_python PUBLIC aurora_core aurora_layout aurora_schematic)
+  target_compile_definitions(aurora_python PUBLIC AURORA_PYTHON_STUB=1)
+endif()
