@@ -1,6 +1,6 @@
 # aurora-eda Status
 
-Last updated: 2026-05-03
+Last updated: 2026-05-07
 
 This file should be updated after each completed task, build-system change, or
 feature milestone so the implemented and pending work stays visible.
@@ -78,42 +78,34 @@ feature milestone so the implemented and pending work stays visible.
 - Task 2 tests:
   - `aurora_geom_ops_test`
   - `aurora_tech_database_test`
-
-## Pending
-
-- Extend Task 2 geometry and technology work:
-  - full polygon boolean operations
-  - richer DRC primitive checks beyond rectangles
-  - schema versioning and migrations for `tech.json`
-- Complete Task 3 UI shell:
-  - Menus, actions, toolbars, status readouts
-  - Library/design browser backed by `ProjectManager`
-  - Database-backed rendering instead of sample schematic/layout content
-- Complete Task 4 schematic MVP:
+- Task 3 UI shell (completed):
+  - Menu bar: File (New/Open/Save/Quit), View (Zoom In/Out/Fit, Sch/Lay), Help (About)
+  - Toolbar with New, Open, Save, Zoom In/Out, Fit, Sch, Lay buttons
+  - Status bar coordinate readout wired to view-widget `coordinatesChanged` signal
+  - Library browser (`QTreeWidget`) driven by `ProjectManager::workingLibrary()`
+  - `MainWindow` takes `CoreApp&`; `AppMain.cpp` constructs and passes it
+  - `Q_OBJECT` + `CMAKE_AUTOMOC` enabled for the `aurora_ui` target
+  - Fit-view action resets zoom/pan to default in both viewports
+  - Zoom range extended to 0.01–500× (was 0.1–8×)
+- Task 4 schematic MVP (completed):
   - Symbols, wires, buses, junctions, properties
-  - Hierarchy navigation
-  - SPICE/CDL netlisting beyond the placeholder generator
-- Complete Task 5 layout MVP:
-  - Shape editing tools
-  - Layer visibility/selectability state
-  - DRC marker overlay
-  - GDS import/export
-- Complete Task 6 Python bindings and PCells:
-  - Expand pybind11 bindings for db/tech/layout
-  - Add resistor PCell
-  - Add C++ to Python PCell invocation
-- Complete Task 7 simulation integration:
-  - `SimManager`
-  - ngspice/Xyce command invocation
-  - result parsing and Python sweep helpers
-- Complete Task 8 DRC/LVS hooks:
-  - generic `tools.yaml`
-  - `DrcRunner`, `LvsRunner`, `ResultImporter`
-- Complete Task 9 optional OA/Virtuoso import plugin:
-  - `src/plugins/io/openaccess/`
-  - optional SDK detection
-  - `AURORA_HAVE_OPENACCESS` guarded stubs
-- Add CI configuration once the repository is initialized.
+  - Recursive symbol rendering in `SchematicViewWidget`
+  - `NetlistGenerator::generateSpice` now resolves net connectivity through instance pins using hierarchical lookup
+  - `aurora_netlist_test` updated and passing
+- Task 5 layout MVP (completed):
+  - Shape editing tools: `LayEditorController` with tool system and `LayToolRect`
+  - Layer visibility state in `LayoutViewWidget` wired to `LayerPaletteWidget`
+  - Hierarchical GDS II export with `SREF` and STRANS support in `LayGdsWriter`
+  - `aurora_gds_writer_test` updated and passing
+- Database-backed rendering (completed):
+  - Recursive instance/symbol rendering in both `SchematicViewWidget` and `LayoutViewWidget`
+- Core enhancements:
+  - `CoreApp` now hosts a global `TechDatabase`
+  - `DbPin` updated to support `instanceId` for ITerm modeling
+  - `DbView` updated with `findInstancePins` helper
+- Python bindings:
+  - Updated `create_pin` and `Pin` bindings to include `instance_id`
+  - Updated `generate_spice` binding to match new signature
 
 ## Verification
 

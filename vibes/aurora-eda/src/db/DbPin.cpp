@@ -5,8 +5,8 @@
 
 namespace aurora::db {
 
-DbPin::DbPin(DbId id, std::string name, DbPinDirection direction, DbId netId)
-    : id_(id), name_(std::move(name)), direction_(direction), netId_(netId) {}
+DbPin::DbPin(DbId id, std::string name, DbPinDirection direction, DbId netId, DbId instanceId)
+    : id_(id), name_(std::move(name)), direction_(direction), netId_(netId), instanceId_(instanceId) {}
 
 DbId DbPin::id() const {
   return id_;
@@ -24,6 +24,10 @@ DbId DbPin::netId() const {
   return netId_;
 }
 
+DbId DbPin::instanceId() const {
+  return instanceId_;
+}
+
 const std::vector<DbId>& DbPin::shapeIds() const {
   return shapeIds_;
 }
@@ -38,6 +42,10 @@ void DbPin::setDirection(DbPinDirection direction) {
 
 void DbPin::setNetId(DbId netId) {
   netId_ = netId;
+}
+
+void DbPin::setInstanceId(DbId instanceId) {
+  instanceId_ = instanceId;
 }
 
 void DbPin::addShape(DbId shapeId) {

@@ -4,7 +4,6 @@ target_sources(
     GeomBox.cpp
     GeomOps.cpp
     GeomPath.cpp
-    GeomPoint.cpp
     GeomPolygon.cpp
   PUBLIC
     FILE_SET HEADERS

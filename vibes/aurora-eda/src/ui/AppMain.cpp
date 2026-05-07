@@ -1,3 +1,4 @@
+#include "core/CoreApp.h"
 #include "ui/MainWindow.h"
 
 #include <QApplication>
@@ -8,8 +9,13 @@ int main(int argc, char* argv[]) {
   QCoreApplication::setApplicationName("aurora-eda");
   QCoreApplication::setOrganizationName("aurora-eda");
 
-  aurora::ui::MainWindow window;
+  aurora::core::CoreApp coreApp;
+  (void)coreApp.initialize();
+
+  aurora::ui::MainWindow window(coreApp);
   window.show();
 
-  return QApplication::exec();
+  const int result = QApplication::exec();
+  coreApp.shutdown();
+  return result;
 }

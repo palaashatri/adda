@@ -1,3 +1,8 @@
+add_executable(aurora_netlist_test netlist/NetlistGeneratorTest.cpp)
+target_link_libraries(aurora_netlist_test PRIVATE aurora_core)
+target_compile_features(aurora_netlist_test PRIVATE cxx_std_20)
+add_test(NAME aurora_netlist_test COMMAND aurora_netlist_test)
+
 add_executable(aurora_db_smoke db/DbSmokeTest.cpp)
 target_link_libraries(aurora_db_smoke PRIVATE aurora_core)
 target_compile_features(aurora_db_smoke PRIVATE cxx_std_20)
@@ -13,3 +18,8 @@ target_compile_features(aurora_tech_database_test PRIVATE cxx_std_20)
 add_test(NAME aurora_db_smoke COMMAND aurora_db_smoke)
 add_test(NAME aurora_geom_ops_test COMMAND aurora_geom_ops_test)
 add_test(NAME aurora_tech_database_test COMMAND aurora_tech_database_test)
+
+add_executable(aurora_gds_writer_test layout/LayGdsWriterTest.cpp)
+target_link_libraries(aurora_gds_writer_test PRIVATE aurora_layout)
+target_compile_features(aurora_gds_writer_test PRIVATE cxx_std_20)
+add_test(NAME aurora_gds_writer_test COMMAND aurora_gds_writer_test)
