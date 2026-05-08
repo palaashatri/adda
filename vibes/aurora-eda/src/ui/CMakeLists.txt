@@ -16,28 +16,20 @@ if(AURORA_BUILD_UI)
   target_sources(
     aurora_ui
     PRIVATE
-      CellBrowserDialog.cpp
-      DrcResultsDialog.cpp
       LayerPaletteWidget.cpp
       LayoutViewWidget.cpp
       MainWindow.cpp
       PropertyEditorWidget.cpp
       SchematicViewWidget.cpp
-      SimSetupDialog.cpp
-      WaveformViewWidget.cpp
     PUBLIC
       FILE_SET HEADERS
       BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/..
       FILES
-        CellBrowserDialog.h
-        DrcResultsDialog.h
         LayerPaletteWidget.h
         LayoutViewWidget.h
         MainWindow.h
         PropertyEditorWidget.h
         SchematicViewWidget.h
-        SimSetupDialog.h
-        WaveformViewWidget.h
   )
 
   target_link_libraries(

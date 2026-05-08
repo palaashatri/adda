@@ -1,17 +1,13 @@
 #pragma once
 
 #include "db/DbTypes.h"
-
 #include <QColor>
 #include <QPointF>
 #include <QRectF>
 #include <QWidget>
-
 #include <set>
 
-class QKeyEvent;
 class QMouseEvent;
-class QPainter;
 
 namespace aurora {
 namespace db {
@@ -22,7 +18,7 @@ namespace layout {
 class LayDocument;
 class LayEditorController;
 }
-}  // namespace aurora
+}
 
 namespace aurora::ui {
 
@@ -38,7 +34,6 @@ class LayoutViewWidget : public QWidget {
   void fitView();
 
   void setLayerVisible(db::DbId layerId, bool visible);
-  void zoomToBox(double sceneX, double sceneY, double sceneW, double sceneH);
 
  signals:
   void coordinatesChanged(QPointF scenePt);
@@ -49,7 +44,6 @@ class LayoutViewWidget : public QWidget {
   void mouseReleaseEvent(QMouseEvent* event) override;
   void paintEvent(QPaintEvent* event) override;
   void wheelEvent(QWheelEvent* event) override;
-  void keyPressEvent(QKeyEvent* event) override;
 
  private:
   [[nodiscard]] QPointF sceneToScreen(QPointF p) const;
@@ -60,11 +54,10 @@ class LayoutViewWidget : public QWidget {
   void paintGrid(QPainter& painter) const;
   void paintDocument(QPainter& painter) const;
   void paintView(QPainter& painter, const db::DbView& view, long long dx, long long dy) const;
-  void paintToolOverlay(QPainter& painter) const;
 
-  const layout::LayDocument*    doc_{nullptr};
-  const db::DbCellLib*          lib_{nullptr};
-  layout::LayEditorController*  ctrl_{nullptr};
+  const layout::LayDocument* doc_{nullptr};
+  const db::DbCellLib*       lib_{nullptr};
+  layout::LayEditorController* ctrl_{nullptr};
   double dbuPerMicron_{1000.0};
 
   std::set<db::DbId> hiddenLayers_;

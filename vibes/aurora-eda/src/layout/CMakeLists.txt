@@ -8,9 +8,7 @@ target_sources(
     LayEditorController.cpp
     LayGdsWriter.cpp
     LayTool.cpp
-    LayToolPolygon.cpp
     LayToolRect.cpp
-    LayToolSelect.cpp
   PUBLIC
     FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/..
@@ -19,9 +17,7 @@ target_sources(
       LayEditorController.h
       LayGdsWriter.h
       LayTool.h
-      LayToolPolygon.h
       LayToolRect.h
-      LayToolSelect.h
 )
 
 target_link_libraries(aurora_layout PUBLIC aurora_core)

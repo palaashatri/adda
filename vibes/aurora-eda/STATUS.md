@@ -123,37 +123,6 @@ feature milestone so the implemented and pending work stays visible.
   - `aurora.sim` — `run_spice()`, `SimResult`, `SimWaveform`, SPICE header helpers
   - `aurora.examples.NmosPcell` — single-finger NMOS reference PCell with diff/poly/metal1 geometry
 - CLAUDE.md — Claude-optimized project guide (target hierarchy, class reference, common pitfalls)
-- Interactive schematic editor tools (completed):
-  - `SchTool` abstract base with `SchKeyEvent` enum (decouples tools from Qt)
-  - `SchToolWire` — multi-segment wire drawing with Escape/Enter commit
-  - `SchToolSelect` — rubber-band area selection, point-click select, Delete removes instances
-  - `SchToolInstance` — place cell instances at snapped cursor positions
-  - `SchEditorController` rewritten with full tool dispatch, snap-to-grid, nextNetName/nextInstanceName
-  - `SchDocument` updated with `removeWireAt`, `clearWires`, mutable wire access
-  - `DbView` updated with `removeShape`, `removeInstance`, `removeNet`, `removePin`, `findInstanceByName`, `findNetByName`
-- Interactive layout editor tools (completed):
-  - `LayToolSelect` — rubber-band/point selection of shapes, Delete/Backspace removes selected shapes
-  - `LayToolPolygon` — multi-click polygon drawing with Enter to commit, Escape to cancel
-  - `LayToolRect` updated with ghost preview (`isDrawing`, `firstPoint`, `cursor`) and Escape cancel
-  - `LayEditorController` updated with `keyPress` forwarding
-- New UI dialogs and widgets (completed):
-  - `WaveformViewWidget` — dark-background custom painter, auto-scaling axes, multiple traces, zoom/pan
-  - `SimSetupDialog` — ADE-style dialog (OP/DC/AC/Transient), simulator path, emits `simulationFinished`
-  - `DrcResultsDialog` — two-tab dialog for DRC violations table and LVS result; double-click zooms layout
-  - `CellBrowserDialog` — cell library tree, view list, double-click to open, New Cell input
-- SPICE import (completed):
-  - `SpiceImporter` — parses `.subckt`/`.ends`, X-element instances, R/C/L/V/I/M passives into `DbCellLib`
-- JSON project persistence (completed):
-  - `ProjectManager::saveProject()` writes `config/design.json` with layers, cells, views, shapes, instances, nets
-  - `ProjectManager::openProject()` reconstructs `DbCellLib` from JSON via nlohmann_json
-- MainWindow overhaul (completed):
-  - Edit, Tools, Simulation, Verification, Import/Export menus
-  - Tool toolbar with Select/Wire/Instance/Rect/Polygon actions
-  - Third tab for waveform viewer
-  - `schCtrl_` wired for interactive schematic editing
-  - Library tree double-click triggers instance placement tool
-  - `onSimFinished` populates waveform viewer after simulation
-- Build verified: all 7 CTest tests pass on Windows (MSVC 2022 + Qt 6)
 
 ## Verification
 

@@ -11,21 +11,21 @@ SchDocument::SchDocument(db::DbView& view) : view_(&view) {
   }
 }
 
-db::DbView& SchDocument::view() { return *view_; }
-const db::DbView& SchDocument::view() const { return *view_; }
+db::DbView& SchDocument::view() {
+  return *view_;
+}
+
+const db::DbView& SchDocument::view() const {
+  return *view_;
+}
 
 SchWire& SchDocument::addWire(db::DbId netId, std::vector<geom::GeomPoint> points) {
   wires_.emplace_back(netId, std::move(points));
   return wires_.back();
 }
 
-void SchDocument::removeWireAt(std::size_t index) {
-  if (index < wires_.size()) wires_.erase(wires_.begin() + static_cast<std::ptrdiff_t>(index));
+const std::vector<SchWire>& SchDocument::wires() const {
+  return wires_;
 }
-
-void SchDocument::clearWires() { wires_.clear(); }
-
-const std::vector<SchWire>& SchDocument::wires() const { return wires_; }
-std::vector<SchWire>& SchDocument::wires() { return wires_; }
 
 }  // namespace aurora::schematic

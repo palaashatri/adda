@@ -67,8 +67,4 @@ void LayEditorController::mouseRelease(geom::GeomPoint p) {
   if (activeTool_) activeTool_->mouseRelease(*this, p);
 }
 
-void LayEditorController::keyPress(int qtKey) {
-  if (activeTool_) activeTool_->keyPress(*this, qtKey);
-}
-
 }  // namespace aurora::layout

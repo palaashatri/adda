@@ -55,14 +55,6 @@ class DbView {
   [[nodiscard]] std::vector<DbId> pinIds() const;
   [[nodiscard]] std::vector<DbId> constraintIds() const;
 
-  void removeShape(DbId id);
-  void removeInstance(DbId id);
-  void removeNet(DbId id);
-  void removePin(DbId id);
-
-  [[nodiscard]] DbInstance* findInstanceByName(std::string_view name);
-  [[nodiscard]] DbNet* findNetByName(std::string_view name);
-
  private:
   [[nodiscard]] DbId allocateObjectId();
 

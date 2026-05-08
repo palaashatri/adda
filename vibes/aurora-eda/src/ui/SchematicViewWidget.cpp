@@ -5,12 +5,7 @@
 #include "db/DbShape.h"
 #include "db/DbView.h"
 #include "schematic/SchDocument.h"
-#include "schematic/SchEditorController.h"
-#include "schematic/SchToolWire.h"
-#include "schematic/SchToolSelect.h"
-#include "schematic/SchToolInstance.h"
 
-#include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -24,19 +19,14 @@ namespace aurora::ui {
 SchematicViewWidget::SchematicViewWidget(QWidget* parent) : QWidget(parent) {
   setMinimumSize(400, 300);
   setMouseTracking(true);
-  setFocusPolicy(Qt::StrongFocus);
 }
 
 void SchematicViewWidget::setDocument(const schematic::SchDocument* doc, const db::DbCellLib* lib,
-                                      double dbuPerMicron) {
+                                     double dbuPerMicron) {
   doc_ = doc;
   lib_ = lib;
   dbuPerMicron_ = (dbuPerMicron > 0.0) ? dbuPerMicron : 1000.0;
   update();
-}
-
-void SchematicViewWidget::setController(schematic::SchEditorController* ctrl) {
-  ctrl_ = ctrl;
 }
 
 void SchematicViewWidget::fitView() {
@@ -57,31 +47,10 @@ QPointF SchematicViewWidget::screenToScene(QPointF p) const {
   return (p - pan_) / zoom_;
 }
 
-geom::GeomPoint SchematicViewWidget::toDbPoint(QPointF screenPt) const {
-  const auto scene = screenToScene(screenPt);
-  return {static_cast<geom::DbUnit>(scene.x() * dbuPerMicron_),
-          static_cast<geom::DbUnit>(scene.y() * dbuPerMicron_)};
-}
-
-schematic::SchKeyEvent SchematicViewWidget::mapKey(int qtKey) {
-  switch (qtKey) {
-    case Qt::Key_Escape: return schematic::SchKeyEvent::Escape;
-    case Qt::Key_Return:
-    case Qt::Key_Enter:  return schematic::SchKeyEvent::Enter;
-    case Qt::Key_Delete:
-    case Qt::Key_Backspace: return schematic::SchKeyEvent::Delete;
-    default: return schematic::SchKeyEvent::Other;
-  }
-}
-
 void SchematicViewWidget::mouseMoveEvent(QMouseEvent* event) {
   if (panning_) {
     pan_ += event->position() - lastMousePos_;
     lastMousePos_ = event->position();
-    update();
-  }
-  if (ctrl_) {
-    ctrl_->mouseMove(toDbPoint(event->position()));
     update();
   }
   emit coordinatesChanged(screenToScene(event->position()));
@@ -97,15 +66,6 @@ void SchematicViewWidget::mousePressEvent(QMouseEvent* event) {
   if (event->button() == Qt::LeftButton) {
     selectedScene_ = screenToScene(event->position());
     hasSelection_ = true;
-    if (ctrl_) {
-      ctrl_->mousePress(toDbPoint(event->position()));
-      update();
-    } else {
-      update();
-    }
-  }
-  if (event->button() == Qt::RightButton && ctrl_) {
-    ctrl_->keyPress(schematic::SchKeyEvent::Escape);
     update();
   }
 }
@@ -115,18 +75,6 @@ void SchematicViewWidget::mouseReleaseEvent(QMouseEvent* event) {
     panning_ = false;
     unsetCursor();
   }
-  if (event->button() == Qt::LeftButton && ctrl_) {
-    ctrl_->mouseRelease(toDbPoint(event->position()));
-    update();
-  }
-}
-
-void SchematicViewWidget::keyPressEvent(QKeyEvent* event) {
-  if (ctrl_) {
-    ctrl_->keyPress(mapKey(event->key()));
-    update();
-  }
-  QWidget::keyPressEvent(event);
 }
 
 void SchematicViewWidget::wheelEvent(QWheelEvent* event) {
@@ -151,7 +99,7 @@ void SchematicViewWidget::paintGrid(QPainter& painter) const {
 }
 
 void SchematicViewWidget::paintSymbol(QPainter& painter, const db::DbView& view, long long dx,
-                                      long long dy) const {
+                                    long long dy) const {
   painter.setPen(QPen(QColor("#a02020"), std::max(1.0, 1.0 * zoom_)));
   painter.setBrush(Qt::NoBrush);
 
@@ -216,6 +164,7 @@ void SchematicViewWidget::paintSymbol(QPainter& painter, const db::DbView& view,
 
 void SchematicViewWidget::paintDocument(QPainter& painter) const {
   if (doc_ == nullptr) {
+    // Placeholder schematic
     painter.setPen(QPen(QColor("#325f8f"), 2));
     painter.drawLine(sceneToScreen({0.0, 0.0}), sceneToScreen({160.0, 0.0}));
     painter.drawLine(sceneToScreen({160.0, 0.0}), sceneToScreen({160.0, 80.0}));
@@ -225,27 +174,10 @@ void SchematicViewWidget::paintDocument(QPainter& painter) const {
 
   const auto& view = doc_->view();
 
-  // Selected instances highlight
-  std::set<db::DbId> selectedIds;
-  if (ctrl_) {
-    if (const auto* sel = dynamic_cast<const schematic::SchToolSelect*>(ctrl_->activeTool())) {
-      selectedIds = sel->selectedInstances();
-    }
-  }
-
   // Draw instances
   for (const auto instId : view.instanceIds()) {
     const auto* inst = view.findInstance(instId);
     if (!inst) continue;
-
-    // Highlight if selected
-    if (selectedIds.count(instId)) {
-      painter.setPen(QPen(QColor("#ffcc00"), 2));
-      const auto sp =
-          sceneToScreen({dbuToScene(inst->transform().dx), dbuToScene(inst->transform().dy)});
-      painter.drawRect(QRectF{sp.x() - 8, sp.y() - 8, 16, 16});
-    }
-
     if (lib_) {
       if (const auto* masterCell = lib_->findCellById(inst->masterCellId())) {
         if (const auto* symbolView = masterCell->findView(db::DbViewType::Symbol)) {
@@ -253,7 +185,6 @@ void SchematicViewWidget::paintDocument(QPainter& painter) const {
         }
       }
     }
-
     // Draw instance name
     const auto sp =
         sceneToScreen({dbuToScene(inst->transform().dx), dbuToScene(inst->transform().dy + 5000)});
@@ -271,6 +202,7 @@ void SchematicViewWidget::paintDocument(QPainter& painter) const {
           sceneToScreen({dbuToScene(pts[i - 1].x), dbuToScene(pts[i - 1].y)}),
           sceneToScreen({dbuToScene(pts[i].x),     dbuToScene(pts[i].y)}));
     }
+    // Junction dot at each vertex except endpoints
     painter.setBrush(QColor("#325f8f"));
     painter.setPen(Qt::NoPen);
     for (std::size_t i = 1; i + 1 < pts.size(); ++i) {
@@ -290,53 +222,6 @@ void SchematicViewWidget::paintDocument(QPainter& painter) const {
   painter.drawLine(QPointF{orig.x(), orig.y() - m}, QPointF{orig.x(), orig.y() + m});
 }
 
-void SchematicViewWidget::paintToolOverlay(QPainter& painter) const {
-  if (!ctrl_) return;
-  const auto* tool = ctrl_->activeTool();
-  if (!tool) return;
-
-  // Wire tool: draw ghost line from start to cursor
-  if (const auto* wireTool = dynamic_cast<const schematic::SchToolWire*>(tool)) {
-    if (wireTool->isDrawing()) {
-      const auto start = wireTool->startPoint();
-      const auto end   = wireTool->cursor();
-      painter.setPen(QPen(QColor("#5080d0"), std::max(1.0, 1.5 * zoom_), Qt::DashLine));
-      painter.drawLine(
-          sceneToScreen({dbuToScene(start.x), dbuToScene(start.y)}),
-          sceneToScreen({dbuToScene(end.x),   dbuToScene(end.y)}));
-      // Dot at start
-      const auto sp = sceneToScreen({dbuToScene(start.x), dbuToScene(start.y)});
-      painter.setBrush(QColor("#5080d0"));
-      painter.setPen(Qt::NoPen);
-      painter.drawEllipse(sp, 4.0, 4.0);
-    }
-  }
-
-  // Select tool: rubber-band selection box
-  if (const auto* selTool = dynamic_cast<const schematic::SchToolSelect*>(tool)) {
-    if (selTool->isRubberBanding()) {
-      const auto s = selTool->rubberBandStart();
-      const auto e = selTool->rubberBandEnd();
-      const auto sp = sceneToScreen({dbuToScene(s.x), dbuToScene(s.y)});
-      const auto ep = sceneToScreen({dbuToScene(e.x), dbuToScene(e.y)});
-      painter.setPen(QPen(QColor("#00aaff"), 1, Qt::DashLine));
-      painter.setBrush(QColor(0, 170, 255, 30));
-      painter.drawRect(QRectF{sp, ep}.normalized());
-    }
-  }
-
-  // Instance tool: ghost instance at cursor
-  if (const auto* instTool = dynamic_cast<const schematic::SchToolInstance*>(tool)) {
-    const auto cp = sceneToScreen({dbuToScene(instTool->cursor().x),
-                                   dbuToScene(instTool->cursor().y)});
-    painter.setPen(QPen(QColor("#00cc88"), 1, Qt::DashLine));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRect(QRectF{cp.x() - 10, cp.y() - 10, 20, 20});
-    painter.setPen(QColor("#00cc88"));
-    painter.drawText(cp + QPointF{4, -4}, "inst");
-  }
-}
-
 void SchematicViewWidget::paintEvent(QPaintEvent*) {
   QPainter painter(this);
   painter.fillRect(rect(), QColor("#fbfbf8"));
@@ -344,9 +229,8 @@ void SchematicViewWidget::paintEvent(QPaintEvent*) {
 
   paintGrid(painter);
   paintDocument(painter);
-  paintToolOverlay(painter);
 
-  if (hasSelection_ && !ctrl_) {
+  if (hasSelection_) {
     const auto pt = sceneToScreen(selectedScene_);
     painter.setPen(QPen(QColor("#c8553d"), 2));
     painter.setBrush(Qt::NoBrush);

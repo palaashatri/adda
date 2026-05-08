@@ -1,6 +1,5 @@
 #include "db/DbView.h"
 
-#include <string_view>
 #include <utility>
 
 namespace aurora::db {
@@ -199,23 +198,6 @@ std::vector<DbId> DbView::constraintIds() const {
 
 DbId DbView::allocateObjectId() {
   return nextObjectId_++;
-}
-
-void DbView::removeShape(DbId id) { shapes_.erase(id); }
-void DbView::removeInstance(DbId id) { instances_.erase(id); }
-void DbView::removeNet(DbId id) { nets_.erase(id); }
-void DbView::removePin(DbId id) { pins_.erase(id); }
-
-DbInstance* DbView::findInstanceByName(std::string_view name) {
-  for (auto& [id, inst] : instances_)
-    if (inst.name() == name) return &inst;
-  return nullptr;
-}
-
-DbNet* DbView::findNetByName(std::string_view name) {
-  for (auto& [id, net] : nets_)
-    if (net.name() == name) return &net;
-  return nullptr;
 }
 
 }  // namespace aurora::db
