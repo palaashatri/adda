@@ -7,6 +7,8 @@ namespace aurora::layout {
 
 LayEditorController::LayEditorController(LayDocument& document) : document_(&document) {}
 
+LayEditorController::~LayEditorController() = default;
+
 LayDocument& LayEditorController::document() {
   return *document_;
 }

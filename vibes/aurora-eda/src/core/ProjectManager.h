@@ -11,6 +11,10 @@ namespace aurora::core {
 
 class ProjectManager {
  public:
+  ProjectManager() = default;
+  ProjectManager(const ProjectManager&) = delete;
+  ProjectManager& operator=(const ProjectManager&) = delete;
+
   [[nodiscard]] bool createProject(const std::filesystem::path& projectPath);
   [[nodiscard]] bool openProject(const std::filesystem::path& projectPath);
   [[nodiscard]] bool saveProject() const;

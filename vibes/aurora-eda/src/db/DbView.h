@@ -18,6 +18,10 @@ class DbView {
  public:
   DbView() = default;
   DbView(DbId id, DbId cellId, DbViewType type);
+  DbView(DbView&&) noexcept = default;
+  DbView& operator=(DbView&&) noexcept = default;
+  DbView(const DbView&) = delete;
+  DbView& operator=(const DbView&) = delete;
 
   [[nodiscard]] DbId id() const;
   [[nodiscard]] DbId cellId() const;

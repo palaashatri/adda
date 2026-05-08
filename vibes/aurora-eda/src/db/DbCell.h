@@ -15,6 +15,10 @@ class DbCell {
  public:
   DbCell() = default;
   DbCell(DbId id, std::string name);
+  DbCell(DbCell&&) noexcept = default;
+  DbCell& operator=(DbCell&&) noexcept = default;
+  DbCell(const DbCell&) = delete;
+  DbCell& operator=(const DbCell&) = delete;
 
   [[nodiscard]] DbId id() const;
   [[nodiscard]] const std::string& name() const;

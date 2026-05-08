@@ -76,16 +76,48 @@ if errorlevel 1 (
   exit /b 1
 )
 
+rem --- Locate vcpkg toolchain (prefer C:\vcpkg -- no spaces, avoids Meson quoting bugs) ---
 set "TOOLCHAIN_FILE="
 if defined VCPKG_ROOT (
   if exist "%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" (
     set "TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake"
   )
 ) else (
-  if exist "%USERPROFILE%\vcpkg\scripts\buildsystems\vcpkg.cmake" (
+  if exist "C:\vcpkg\scripts\buildsystems\vcpkg.cmake" (
+    set "VCPKG_ROOT=C:\vcpkg"
+    set "TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake"
+  ) else if exist "%USERPROFILE%\vcpkg\scripts\buildsystems\vcpkg.cmake" (
     set "VCPKG_ROOT=%USERPROFILE%\vcpkg"
     set "TOOLCHAIN_FILE=%USERPROFILE%\vcpkg\scripts\buildsystems\vcpkg.cmake"
   )
+)
+
+rem --- Locate Qt (aqtinstall layout: C:\Qt\<ver>\msvc2022_64, or Qt installer layout) ---
+set "QT_PREFIX="
+for /d %%V in ("C:\Qt\6.*") do (
+  if "!QT_PREFIX!"=="" if exist "%%V\msvc2022_64\lib\cmake\Qt6\Qt6Config.cmake" (
+    set "QT_PREFIX=%%V\msvc2022_64"
+  )
+)
+if "!QT_PREFIX!"=="" (
+  for /d %%V in ("C:\Qt\6.*") do (
+    if "!QT_PREFIX!"=="" if exist "%%V\msvc2022_64_static\lib\cmake\Qt6\Qt6Config.cmake" (
+      set "QT_PREFIX=%%V\msvc2022_64_static"
+    )
+  )
+)
+
+rem --- Build CMake argument list ---
+set "CMAKE_ARGS=-DCMAKE_BUILD_TYPE=%CONFIG%"
+set "CMAKE_ARGS=!CMAKE_ARGS! -DAURORA_BUILD_UI=%BUILD_UI%"
+set "CMAKE_ARGS=!CMAKE_ARGS! -DAURORA_BUILD_PYTHON=%BUILD_PYTHON%"
+set "CMAKE_ARGS=!CMAKE_ARGS! -DAURORA_BUILD_TESTS=ON"
+if defined TOOLCHAIN_FILE (
+  set "CMAKE_ARGS=!CMAKE_ARGS! -DCMAKE_TOOLCHAIN_FILE=!TOOLCHAIN_FILE!"
+  set "CMAKE_ARGS=!CMAKE_ARGS! -DVCPKG_TARGET_TRIPLET=x64-windows-release"
+)
+if defined QT_PREFIX (
+  set "CMAKE_ARGS=!CMAKE_ARGS! -DCMAKE_PREFIX_PATH=!QT_PREFIX!"
 )
 
 if "%CLEAN%"=="1" (
@@ -93,35 +125,9 @@ if "%CLEAN%"=="1" (
 )
 
 if "%GENERATOR%"=="" (
-  if "%TOOLCHAIN_FILE%"=="" (
-    cmake -S "%ROOT_DIR%" -B "%BUILD_DIR%" ^
-      -DCMAKE_BUILD_TYPE="%CONFIG%" ^
-      -DAURORA_BUILD_UI="%BUILD_UI%" ^
-      -DAURORA_BUILD_PYTHON="%BUILD_PYTHON%" ^
-      -DAURORA_BUILD_TESTS=ON
-  ) else (
-    cmake -S "%ROOT_DIR%" -B "%BUILD_DIR%" ^
-      -DCMAKE_BUILD_TYPE="%CONFIG%" ^
-      -DAURORA_BUILD_UI="%BUILD_UI%" ^
-      -DAURORA_BUILD_PYTHON="%BUILD_PYTHON%" ^
-      -DAURORA_BUILD_TESTS=ON ^
-      "-DCMAKE_TOOLCHAIN_FILE=%TOOLCHAIN_FILE%"
-  )
+  cmake -S "%ROOT_DIR%" -B "%BUILD_DIR%" !CMAKE_ARGS!
 ) else (
-  if "%TOOLCHAIN_FILE%"=="" (
-    cmake -S "%ROOT_DIR%" -B "%BUILD_DIR%" -G "%GENERATOR%" ^
-      -DCMAKE_BUILD_TYPE="%CONFIG%" ^
-      -DAURORA_BUILD_UI="%BUILD_UI%" ^
-      -DAURORA_BUILD_PYTHON="%BUILD_PYTHON%" ^
-      -DAURORA_BUILD_TESTS=ON
-  ) else (
-    cmake -S "%ROOT_DIR%" -B "%BUILD_DIR%" -G "%GENERATOR%" ^
-      -DCMAKE_BUILD_TYPE="%CONFIG%" ^
-      -DAURORA_BUILD_UI="%BUILD_UI%" ^
-      -DAURORA_BUILD_PYTHON="%BUILD_PYTHON%" ^
-      -DAURORA_BUILD_TESTS=ON ^
-      "-DCMAKE_TOOLCHAIN_FILE=%TOOLCHAIN_FILE%"
-  )
+  cmake -S "%ROOT_DIR%" -B "%BUILD_DIR%" -G "%GENERATOR%" !CMAKE_ARGS!
 )
 if errorlevel 1 exit /b 1
 
@@ -137,7 +143,9 @@ if "%RUN_APP%"=="1" call :run_app || exit /b 1
 
 exit /b 0
 
+rem ============================================================
 :install_deps
+rem ============================================================
 where winget >nul 2>nul
 if not errorlevel 1 (
   winget install --id Kitware.CMake -e --accept-package-agreements --accept-source-agreements
@@ -155,11 +163,48 @@ if errorlevel 1 (
   call :ensure_msvc || exit /b 1
 )
 
-if not defined VCPKG_ROOT set "VCPKG_ROOT=%USERPROFILE%\vcpkg"
+rem --- Install Qt 6 via aqtinstall (pre-built binaries, much faster than vcpkg) ---
+where python >nul 2>nul
+if errorlevel 1 (
+  echo error: Python not found. Install Python 3.x or pass --no-ui to build without the GUI.
+  exit /b 1
+)
+
+set "QT_INSTALL_DIR=C:\Qt"
+set "QT_VERSION=6.8.3"
+set "QT_ARCH=win64_msvc2022_64"
+
+rem Check if this Qt version is already installed
+if exist "%QT_INSTALL_DIR%\%QT_VERSION%\%QT_ARCH%\lib\cmake\Qt6\Qt6Config.cmake" (
+  echo info: Qt %QT_VERSION% already installed at %QT_INSTALL_DIR%\%QT_VERSION%\%QT_ARCH%
+) else (
+  echo info: Installing Qt %QT_VERSION% via aqtinstall...
+  python -m pip install aqtinstall --quiet --disable-pip-version-check
+  if errorlevel 1 (
+    echo error: Failed to install aqtinstall via pip.
+    exit /b 1
+  )
+  python -m aqt install-qt windows desktop %QT_VERSION% %QT_ARCH% -O "%QT_INSTALL_DIR%"
+  if errorlevel 1 (
+    echo error: Qt installation failed. Check your internet connection and try again.
+    exit /b 1
+  )
+  echo info: Qt %QT_VERSION% installed at %QT_INSTALL_DIR%\%QT_VERSION%\%QT_ARCH%
+)
+
+rem --- Install non-Qt dependencies via vcpkg (these build reliably) ---
+rem Prefer C:\vcpkg (no spaces) to avoid Meson/autoconf quoting bugs
+if not defined VCPKG_ROOT (
+  if exist "C:\vcpkg\vcpkg.exe" (
+    set "VCPKG_ROOT=C:\vcpkg"
+  ) else (
+    set "VCPKG_ROOT=%USERPROFILE%\vcpkg"
+  )
+)
 if not exist "%VCPKG_ROOT%\vcpkg.exe" (
   where git >nul 2>nul
   if errorlevel 1 (
-    echo error: git is required to bootstrap vcpkg. Install Git or set VCPKG_ROOT to an existing vcpkg checkout.
+    echo error: git is required to bootstrap vcpkg. Install Git or set VCPKG_ROOT manually.
     exit /b 1
   )
   git clone https://github.com/microsoft/vcpkg "%VCPKG_ROOT%"
@@ -168,11 +213,13 @@ if not exist "%VCPKG_ROOT%\vcpkg.exe" (
   if errorlevel 1 exit /b 1
 )
 
-"%VCPKG_ROOT%\vcpkg.exe" install qtbase pybind11 fmt spdlog nlohmann-json --triplet x64-windows
+"%VCPKG_ROOT%\vcpkg.exe" install pybind11 fmt spdlog nlohmann-json --triplet x64-windows-release
 if errorlevel 1 exit /b 1
 exit /b 0
 
+rem ============================================================
 :ensure_msvc
+rem ============================================================
 set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if not exist "%VSWHERE%" (
   echo error: Unable to find vswhere.exe. Please install Visual Studio 2022 Build Tools.
@@ -198,7 +245,9 @@ if not exist "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" (
 
 exit /b 0
 
+rem ============================================================
 :repair_msvc
+rem ============================================================
 set "VSSETUP=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\setup.exe"
 set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 set "VSINSTALLDIR="
@@ -228,7 +277,7 @@ if exist "%VSSETUP%" (
 
 where winget >nul 2>nul
 if errorlevel 1 (
-  echo error: Could not auto-repair Visual Studio Build Tools because both setup.exe and winget are unavailable.
+  echo error: Could not auto-repair Visual Studio Build Tools.
   exit /b 1
 )
 
@@ -240,7 +289,9 @@ if errorlevel 1 (
 
 exit /b 0
 
+rem ============================================================
 :run_app
+rem ============================================================
 set "APP_EXE="
 if exist "%BUILD_DIR%\src\ui\%CONFIG%\aurora-eda.exe" set "APP_EXE=%BUILD_DIR%\src\ui\%CONFIG%\aurora-eda.exe"
 if "!APP_EXE!"=="" if exist "%BUILD_DIR%\src\ui\aurora-eda.exe" set "APP_EXE=%BUILD_DIR%\src\ui\aurora-eda.exe"
@@ -249,20 +300,27 @@ if "!APP_EXE!"=="" (
   exit /b 1
 )
 
-rem --- deploy Qt DLLs alongside the executable so it can launch ---
+rem --- Deploy Qt DLLs alongside the exe (idempotent) ---
 set "WDQT="
 where windeployqt6.exe >nul 2>nul && set "WDQT=windeployqt6.exe"
 if "!WDQT!"=="" where windeployqt.exe >nul 2>nul && set "WDQT=windeployqt.exe"
-if "!WDQT!"=="" if defined VCPKG_ROOT (
-  if exist "%VCPKG_ROOT%\installed\x64-windows\tools\Qt6\bin\windeployqt6.exe" (
-    set "WDQT=%VCPKG_ROOT%\installed\x64-windows\tools\Qt6\bin\windeployqt6.exe"
+
+rem Check aqtinstall layout: C:\Qt\<ver>\msvc2022_64\bin\windeployqt6.exe
+if "!WDQT!"=="" (
+  for /d %%V in ("C:\Qt\6.*") do (
+    if "!WDQT!"=="" if exist "%%V\msvc2022_64\bin\windeployqt6.exe" (
+      set "WDQT=%%V\msvc2022_64\bin\windeployqt6.exe"
+    )
   )
 )
+
+rem Check vcpkg layout
 if "!WDQT!"=="" if defined VCPKG_ROOT (
-  if exist "%VCPKG_ROOT%\installed\x64-windows\tools\Qt6\windeployqt6.exe" (
-    set "WDQT=%VCPKG_ROOT%\installed\x64-windows\tools\Qt6\windeployqt6.exe"
+  if exist "%VCPKG_ROOT%\installed\x64-windows-release\tools\Qt6\bin\windeployqt6.exe" (
+    set "WDQT=%VCPKG_ROOT%\installed\x64-windows-release\tools\Qt6\bin\windeployqt6.exe"
   )
 )
+
 if defined WDQT (
   "!WDQT!" --no-translations "!APP_EXE!" >nul 2>&1
 ) else (
