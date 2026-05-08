@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/palaashatri/Code/adda/vibes/vibed-ui/build/cmake_install.cmake",
+		"/Users/palaashatri/Code/adda/vibes/vibed-ui/build/src/cmake_install.cmake",
+		"/Users/palaashatri/Code/adda/vibes/vibed-ui/build/examples/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

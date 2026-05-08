@@ -1,0 +1,172 @@
+# aurora-eda Status
+
+Last updated: 2026-05-08
+
+This file should be updated after each completed task, build-system change, or
+feature milestone so the implemented and pending work stays visible.
+
+## Implemented
+
+- Repository skeleton under `src/`, `python/aurora/`, `tests/`, and `docs/`.
+- Out-of-source CMake project with C++20 enabled.
+- CMake targets:
+  - `aurora_core`
+  - `aurora_schematic`
+  - `aurora_layout`
+  - `aurora_ui`
+  - `aurora_python`
+  - `aurora_app`
+- Core managers:
+  - `CoreApp`
+  - `ProjectManager`
+  - `PluginManager`
+  - `PluginRegistry`
+- ID-based design database skeleton:
+  - `DbCellLib`, `DbCell`, `DbView`
+  - `DbInstance`, `DbNet`, `DbPin`, `DbLayer`
+  - `DbConstraint`
+  - `DbShape` base plus `DbRect`, `DbPolygon`, `DbPath`, `DbText`
+- Geometry primitives:
+  - `GeomPoint`
+  - `GeomBox`
+  - `GeomPolygon`
+  - `GeomPath`
+- Geometry operations:
+  - grid snapping for coordinates, points, boxes, polygons, and paths
+  - Manhattan polygon checks
+  - rectangle intersection, union, and difference helpers
+  - primitive width, spacing, and enclosure checks
+- Technology and netlist placeholders:
+  - `NetlistGenerator`
+- Structured technology database:
+  - `TechDatabase` parses `tech.json` with `nlohmann_json`
+  - technology name and unit metadata
+  - layer metadata, GDS mapping, default widths/spacings
+  - generic top-level rules
+- Schematic and layout library skeletons:
+  - `SchDocument`, `SchEditorController`, `SchWire`, `SchSymbol`
+  - `LayDocument`, `LayEditorController`, `LayTool`
+- Qt Widgets shell when Qt 6 is available:
+  - `MainWindow`
+  - `SchematicViewWidget`
+  - `LayoutViewWidget`
+  - `PropertyEditorWidget`
+  - `LayerPaletteWidget`
+- Basic UI viewport interaction:
+  - cursor-centered wheel zoom
+  - middle-button panning
+  - click selection markers
+- Runnable app target:
+  - `aurora_app` target
+  - executable output name `aurora-eda`
+  - non-Qt stub executable when Qt is unavailable
+- Python package baseline:
+  - `aurora.pdk.PcellBase`
+  - PCell registry helpers
+  - placeholder package namespaces for db, schematic, layout, sim, examples
+- Build helpers:
+  - `build.sh` for macOS/Linux dependency install, configure, build, test, run
+  - `build.bat` for Windows dependency install, configure, build, test, run
+- Documentation:
+  - `CODEX.md`
+  - `docs/ARCHITECTURE.md`
+  - `docs/API_REFERENCE.md`
+  - `docs/PDK_SPEC.md`
+  - `docs/FILE_FORMAT.md`
+- Smoke test:
+  - `aurora_db_smoke`
+- Task 2 tests:
+  - `aurora_geom_ops_test`
+  - `aurora_tech_database_test`
+- Task 3 UI shell (completed):
+  - Menu bar: File (New/Open/Save/Quit), View (Zoom In/Out/Fit, Sch/Lay), Help (About)
+  - Toolbar with New, Open, Save, Zoom In/Out, Fit, Sch, Lay buttons
+  - Status bar coordinate readout wired to view-widget `coordinatesChanged` signal
+  - Library browser (`QTreeWidget`) driven by `ProjectManager::workingLibrary()`
+  - `MainWindow` takes `CoreApp&`; `AppMain.cpp` constructs and passes it
+  - `Q_OBJECT` + `CMAKE_AUTOMOC` enabled for the `aurora_ui` target
+  - Fit-view action resets zoom/pan to default in both viewports
+  - Zoom range extended to 0.01–500× (was 0.1–8×)
+- Task 4 schematic MVP (completed):
+  - Symbols, wires, buses, junctions, properties
+  - Recursive symbol rendering in `SchematicViewWidget`
+  - `NetlistGenerator::generateSpice` now resolves net connectivity through instance pins using hierarchical lookup
+  - `aurora_netlist_test` updated and passing
+- Task 5 layout MVP (completed):
+  - Shape editing tools: `LayEditorController` with tool system and `LayToolRect`
+  - Layer visibility state in `LayoutViewWidget` wired to `LayerPaletteWidget`
+  - Hierarchical GDS II export with `SREF` and STRANS support in `LayGdsWriter`
+  - `aurora_gds_writer_test` updated and passing
+- Database-backed rendering (completed):
+  - Recursive instance/symbol rendering in both `SchematicViewWidget` and `LayoutViewWidget`
+- Core enhancements:
+  - `CoreApp` now hosts a global `TechDatabase`
+  - `DbPin` updated to support `instanceId` for ITerm modeling
+  - `DbView` updated with `findInstancePins` helper
+- Python bindings:
+  - Updated `create_pin` and `Pin` bindings to include `instance_id`
+  - Updated `generate_spice` binding to match new signature
+- Task 7 simulation integration (completed):
+  - `SimResult` struct with waveforms and DC operating-point map
+  - `SimRunner` writes SPICE netlist via `NetlistGenerator`, invokes ngspice via popen
+  - Parses `<name> = <value>` lines from simulator output into `dcOperatingPoint`
+  - `aurora_sim_test` validates write-netlist and error-path behaviour
+- Task 8 DRC/LVS (completed):
+  - `DrcViolation` struct with type, layer name, message, bounding-box location
+  - `DrcEngine` checks min-width, min-spacing (using `GeomOps`), and non-Manhattan polygons
+  - `LvsChecker` compares schematic vs layout net names and per-net pin counts
+  - `aurora_drc_lvs_test` covers compliant layout, width violation, spacing violation, LVS match, and LVS mismatch
+- PDK C++ registry (completed):
+  - `PcellDescriptor` — name, default params, generator `std::function`
+  - `PcellRegistry` — register, find, invoke; merges default + caller params
+- Python improvements:
+  - `aurora.sim` — `run_spice()`, `SimResult`, `SimWaveform`, SPICE header helpers
+  - `aurora.examples.NmosPcell` — single-finger NMOS reference PCell with diff/poly/metal1 geometry
+- CLAUDE.md — Claude-optimized project guide (target hierarchy, class reference, common pitfalls)
+- Interactive schematic editor tools (completed):
+  - `SchTool` abstract base with `SchKeyEvent` enum (decouples tools from Qt)
+  - `SchToolWire` — multi-segment wire drawing with Escape/Enter commit
+  - `SchToolSelect` — rubber-band area selection, point-click select, Delete removes instances
+  - `SchToolInstance` — place cell instances at snapped cursor positions
+  - `SchEditorController` rewritten with full tool dispatch, snap-to-grid, nextNetName/nextInstanceName
+  - `SchDocument` updated with `removeWireAt`, `clearWires`, mutable wire access
+  - `DbView` updated with `removeShape`, `removeInstance`, `removeNet`, `removePin`, `findInstanceByName`, `findNetByName`
+- Interactive layout editor tools (completed):
+  - `LayToolSelect` — rubber-band/point selection of shapes, Delete/Backspace removes selected shapes
+  - `LayToolPolygon` — multi-click polygon drawing with Enter to commit, Escape to cancel
+  - `LayToolRect` updated with ghost preview (`isDrawing`, `firstPoint`, `cursor`) and Escape cancel
+  - `LayEditorController` updated with `keyPress` forwarding
+- New UI dialogs and widgets (completed):
+  - `WaveformViewWidget` — dark-background custom painter, auto-scaling axes, multiple traces, zoom/pan
+  - `SimSetupDialog` — ADE-style dialog (OP/DC/AC/Transient), simulator path, emits `simulationFinished`
+  - `DrcResultsDialog` — two-tab dialog for DRC violations table and LVS result; double-click zooms layout
+  - `CellBrowserDialog` — cell library tree, view list, double-click to open, New Cell input
+- SPICE import (completed):
+  - `SpiceImporter` — parses `.subckt`/`.ends`, X-element instances, R/C/L/V/I/M passives into `DbCellLib`
+- JSON project persistence (completed):
+  - `ProjectManager::saveProject()` writes `config/design.json` with layers, cells, views, shapes, instances, nets
+  - `ProjectManager::openProject()` reconstructs `DbCellLib` from JSON via nlohmann_json
+- MainWindow overhaul (completed):
+  - Edit, Tools, Simulation, Verification, Import/Export menus
+  - Tool toolbar with Select/Wire/Instance/Rect/Polygon actions
+  - Third tab for waveform viewer
+  - `schCtrl_` wired for interactive schematic editing
+  - Library tree double-click triggers instance placement tool
+  - `onSimFinished` populates waveform viewer after simulation
+- Build verified: all 7 CTest tests pass on Windows (MSVC 2022 + Qt 6)
+
+## Verification
+
+- `cmake -S . -B build-default`
+- `cmake --build build-default`
+- `ctest --test-dir build-default --output-on-failure`
+- `./build.sh --build-dir build-script`
+- `bash -n build.sh`
+- `./build.sh --build-dir build-script-stub --no-ui --no-python --no-test`
+- `./build.sh --build-dir build-task2`
+- `./build.sh --build-dir build-task3`
+
+Latest known result: all pre-existing tests pass on macOS (AppleClang + Qt 6).
+New tests `aurora_drc_lvs_test` and `aurora_sim_test` are added and expected to
+pass once the project is rebuilt. The sim test does not require ngspice to be
+installed — it only validates file-write and error-path behaviour.

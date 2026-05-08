@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Palaash Atri // Cybernetic Interface</title>
+        <style>
+            /* --- CYBERPUNK THEME CSS --- */
+            :root {
+                --bg-color: #0a0a1a;
+                --text-color: #00ff99; /* Neon Green/Cyan */
+                --accent-color: #ff007f; /* Neon Pink/Magenta */
+                --border-color: #00cc66;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family:
+                    "Consolas", "Monospace", sans-serif; /* Monospaced font for terminal feel */
+            }
+
+            body {
+                background-color: var(--bg-color);
+                color: var(--text-color);
+                line-height: 1.6;
+                overflow-x: hidden; /* Prevent horizontal scroll */
+                perspective: 1000px; /* For 3D effects */
+            }
+
+            /* CRT/Scanline Effect Background */
+            body::before {
+                content: "";
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: repeating-linear-gradient(
+                    to bottom,
+                    rgba(0, 0, 0, 0.15) 0px,
+                    rgba(0, 0, 0, 0.15) 1px,
+                    transparent 1px,
+                    transparent 2px
+                );
+                pointer-events: none; /* Allows clicks to pass through */
+                z-index: 9999;
+            }
+
+            /* --- Layout & Typography --- */
+            header {
+                background-color: rgba(0, 0, 30, 0.8);
+                border-bottom: 2px solid var(--accent-color);
+                padding: 15px 40px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+            }
+
+            header h1 {
+                font-size: 1.5em;
+                text-shadow: 0 0 8px var(--accent-color);
+            }
+
+            nav a {
+                color: var(--text-color);
+                text-decoration: none;
+                margin-left: 25px;
+                transition:
+                    color 0.3s,
+                    text-shadow 0.3s;
+            }
+
+            nav a:hover {
+                color: var(--accent-color);
+                text-shadow:
+                    0 0 10px var(--accent-color),
+                    0 0 20px rgba(255, 0, 127, 0.5);
+            }
+
+            section {
+                padding: 80px 5%;
+                min-height: 70vh;
+                border-bottom: 1px dashed var(--border-color);
+            }
+
+            h2 {
+                font-size: 2.5em;
+                margin-bottom: 30px;
+                color: var(--accent-color);
+                text-shadow: 0 0 10px rgba(255, 0, 127, 0.6);
+                border-bottom: 2px solid var(--accent-color);
+                display: inline-block;
+                padding-bottom: 5px;
+            }
+
+            /* --- HERO SECTION STYLING --- */
+            #hero {
+                height: 80vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                background: linear-gradient(
+                    135deg,
+                    var(--bg-color) 0%,
+                    #1a1a33 100%
+                );
+            }
+
+            #hero h1 {
+                font-size: 4.5em;
+                color: white;
+                text-shadow:
+                    0 0 15px var(--accent-color),
+                    0 0 30px rgba(255, 0, 127, 0.8),
+                    0 0 5px #00ff99;
+                animation: glitch 3s infinite alternate; /* Apply glitch animation */
+            }
+
+            /* --- GALLERY STYLING --- */
+            #projects .gallery {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 30px;
+            }
+
+            .project-card {
+                background-color: rgba(255, 255, 255, 0.05);
+                border: 1px solid var(--border-color);
+                padding: 20px;
+                transition:
+                    transform 0.3s,
+                    box-shadow 0.3s;
+            }
+
+            .project-card:hover {
+                transform: translateY(-10px) rotateY(5deg); /* Slight 3D lift on hover */
+                box-shadow: 0 15px 30px rgba(255, 0, 127, 0.4);
+            }
+
+            .project-card h3 {
+                color: var(--accent-color);
+                margin-bottom: 10px;
+            }
+
+            /* --- ABOUT SECTION --- */
+            #about p {
+                max-width: 800px;
+                margin: 20px auto;
+                text-align: justify;
+                border-left: 3px solid var(--text-color);
+                padding-left: 15px;
+            }
+
+            /* --- ANIMATION & GLITCH EFFECTS (JavaScript Controlled) --- */
+
+            /* Keyframe for the Glitch Effect */
+            @keyframes glitch {
+                0% {
+                    text-shadow:
+                        0 0 8px var(--accent-color),
+                        0 0 12px #00ff99;
+                    transform: translate(1px, -1px);
+                }
+                25% {
+                    text-shadow:
+                        0 0 6px var(--accent-color),
+                        0 0 10px #00ff99;
+                    transform: translate(-1px, 0px);
+                }
+                50% {
+                    text-shadow:
+                        0 0 12px #00ff99,
+                        0 0 8px var(--accent-color);
+                    transform: translate(0, -2px);
+                }
+                75% {
+                    text-shadow:
+                        0 0 6px var(--accent-color),
+                        0 0 10px #00ff99;
+                    transform: translate(-2px, 1px);
+                }
+                100% {
+                    text-shadow:
+                        0 0 8px var(--accent-color),
+                        0 0 12px #00ff99;
+                    transform: translate(1px, -1px);
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- HEADER & NAVIGATION -->
+        <header>
+            <div>SYSTEM ONLINE // PALASH ATRI</div>
+            <nav>
+                <a href="#hero">// HOME</a>
+                <a href="#projects">// PROJECTS</a>
+                <a href="#about">// DATA LOG</a>
+            </nav>
+        </header>
+
+        <!-- HERO SECTION -->
+        <section id="hero">
+            <h1>Hello from Palaash Atri</h1>
+        </section>
+
+        <!-- PROJECTS GALLERY -->
+        <section id="projects">
+            <h2>// PROJECT LOGS</h2>
+            <div class="gallery">
+                <!-- Project 1 -->
+                <div class="project-card">
+                    <h3>Project: Neo-City Protocol</h3>
+                    <p>
+                        A simulation of urban sprawl utilizing complex vector
+                        mathematics. Data streams and simulated infrastructure.
+                    </p>
+                    <a href="#">ACCESS DATA ></a>
+                </div>
+                <!-- Project 2 -->
+                <div class="project-card">
+                    <h3>Project: Glitch Stream UI</h3>
+                    <p>
+                        Interactive frontend design focusing on high-contrast,
+                        glitchy typography and neon aesthetics.
+                    </p>
+                    <a href="#">VIEW SOURCE ></a>
+                </div>
+                <!-- Project 3 -->
+                <div class="project-card">
+                    <h3>Project: Cybernetic Art</h3>
+                    <p>
+                        Digital art exploring dystopian themes using generative
+                        algorithms and dark palette rendering.
+                    </p>
+                    <a href="#">DOWNLOAD FILE ></a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABOUT SECTION -->
+        <section id="about">
+            <h2>// SYSTEM LOG: ABOUT</h2>
+            <p>
+                I am Palaash Atri, a digital architect operating in the deep
+                network of the information age. My focus lies at the
+                intersection of code, design, and dystopian aesthetics. I
+                specialize in building immersive, high-contrast interfaces that
+                reflect the complexity and shadows of the future. This portfolio
+                is a snapshot of my current operational matrix—a place where raw
+                code meets neon dreams. Expect more data streams and complex
+                algorithms in the future.
+            </p>
+        </section>
+
+        <!-- JAVASCRIPT FOR DYNAMIC ANIMATION (The '3D/Fancy' Element) -->
+        <script>
+            // Simple JS function to introduce a subtle, continuous visual "glitch" effect on elements for dynamic feel.
+            document.addEventListener("DOMContentLoaded", () => {
+                const heroTitle = document.querySelector("#hero h1");
+
+                // Function to randomly change text content slightly (simulating data corruption)
+                function glitchEffect() {
+                    const chars = heroTitle.textContent.split("");
+                    if (Math.random() < 0.1) {
+                        // 10% chance of a flicker
+                        const randomCharIndex = Math.floor(
+                            Math.random() * chars.length,
+                        );
+                        // Introduce a slight visual shift or color change on a character
+                        heroTitle.style.color = ["#ffcc00", "#00ffff", "white"][
+                            Math.floor(Math.random() * 3)
+                        ];
+                    }
+                }
+
+                // Run the glitch effect every 200ms
+                setInterval(glitchEffect, 200);
+
+                console.log("System initialized. Welcome to the matrix.");
+            });
+        </script>
+    </body>
+</html>

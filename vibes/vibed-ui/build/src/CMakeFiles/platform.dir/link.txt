@@ -1,0 +1,2 @@
+/usr/bin/ar qc libplatform.a CMakeFiles/platform.dir/platform/Platform.cpp.o CMakeFiles/platform.dir/platform/mac/MacPlatform.cpp.o
+/usr/bin/ranlib libplatform.a

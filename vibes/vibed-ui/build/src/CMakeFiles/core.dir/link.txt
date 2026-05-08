@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcore.a CMakeFiles/core.dir/core/Application.cpp.o CMakeFiles/core.dir/core/Event.cpp.o CMakeFiles/core.dir/core/Timer.cpp.o CMakeFiles/core.dir/core/Logger.cpp.o
+/usr/bin/ranlib libcore.a

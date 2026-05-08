@@ -1,0 +1,2 @@
+/usr/bin/ar qc librender.a CMakeFiles/render.dir/render/Renderer.cpp.o CMakeFiles/render.dir/render/legacy/SoftwareRenderer.cpp.o CMakeFiles/render.dir/render/modern/ModernRenderer.cpp.o
+/usr/bin/ranlib librender.a

@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/demo_text_editor.dir/demo_text_editor.cpp.o -o demo_text_editor  ../src/libcore.a ../src/libui.a ../src/librender.a ../src/libcore.a ../src/libplatform.a -framework AppKit -framework Cocoa -framework CoreGraphics -framework Foundation
