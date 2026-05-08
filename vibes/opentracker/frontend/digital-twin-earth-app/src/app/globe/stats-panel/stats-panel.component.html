@@ -83,6 +83,35 @@
 
   </div>
 
+  <!-- Export row -->
+  <div class="export-row" role="group" aria-label="Export current snapshot as GeoJSON">
+    <span class="export-label">Export</span>
+    <button class="export-btn export-btn--flights"
+            type="button"
+            [disabled]="exporting !== null"
+            (click)="exportLayer('flights')"
+            title="Download current flight snapshot as GeoJSON">
+      <span class="export-dot" aria-hidden="true"></span>
+      {{ exporting === 'flights' ? '…' : 'Flights' }}
+    </button>
+    <button class="export-btn export-btn--ships"
+            type="button"
+            [disabled]="exporting !== null"
+            (click)="exportLayer('ships')"
+            title="Download current vessel snapshot as GeoJSON">
+      <span class="export-dot" aria-hidden="true"></span>
+      {{ exporting === 'ships' ? '…' : 'Ships' }}
+    </button>
+    <button class="export-btn export-btn--sats"
+            type="button"
+            [disabled]="exporting !== null"
+            (click)="exportLayer('satellites')"
+            title="Download current satellite snapshot as GeoJSON">
+      <span class="export-dot" aria-hidden="true"></span>
+      {{ exporting === 'satellites' ? '…' : 'Sats' }}
+    </button>
+  </div>
+
   <!-- Last updated timestamp -->
   @if (lastUpdated) {
     <p class="last-updated">

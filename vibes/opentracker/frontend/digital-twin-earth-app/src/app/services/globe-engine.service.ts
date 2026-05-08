@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { AircraftPositionDto, TrackPoint } from '../models/aircraft.model';
 import { VesselPositionDto } from '../models/vessel.model';
 import { SatellitePositionDto } from '../models/satellite.model';
+import { MAJOR_AIRPORTS } from './airports.data';
 
 // CesiumJS is loaded as a global <script> via angular.json.
 // Declaring it as `any` avoids requiring the @types/cesium package
@@ -18,6 +19,8 @@ export class GlobeEngineService {
   private readonly satelliteEntities = new Map<string, any>(); // keyed by noradId
   private readonly weatherEntities   = new Map<string, any>(); // keyed by weather id
   private readonly streetEntities    = new Map<string, any>(); // keyed by osm id
+  private readonly airportEntities   = new Map<string, any>(); // keyed by icao
+  private airportsEnabled = false;
   private baseImageryLayer: any | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
   private nightImageryLayer: any | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -1075,6 +1078,71 @@ export class GlobeEngineService {
     return this.buildingsState === 'ready';
   }
 
+  // ── Airports ───────────────────────────────────────────────
+
+  setAirportsVisible(visible: boolean): void {
+    if (!this.viewer) return;
+    this.airportsEnabled = visible;
+
+    if (visible) {
+      if (this.airportEntities.size === 0) {
+        this.seedAirports();
+      } else {
+        this.airportEntities.forEach(entity => entity.show = true);
+      }
+    } else {
+      this.airportEntities.forEach(entity => entity.show = false);
+    }
+  }
+
+  private seedAirports(): void {
+    const fillColor    = Cesium.Color.fromCssColorString('#FF9F0A').withAlpha(0.95);
+    const outlineColor = Cesium.Color.fromCssColorString('#FFFFFF').withAlpha(0.4);
+
+    MAJOR_AIRPORTS.forEach(ap => {
+      const entity = this.viewer.entities.add({
+        id:        `airport-${ap.icao}`,
+        name:      ap.name,
+        position:  Cesium.Cartesian3.fromDegrees(ap.lon, ap.lat, 0),
+        point: {
+          pixelSize:    7,
+          color:        fillColor,
+          outlineColor,
+          outlineWidth: 1.5,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          scaleByDistance: new Cesium.NearFarScalar(1e5, 1.5, 2e7, 0.55),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+        label: {
+          text: ap.iata,
+          font: '600 11px -apple-system, "SF Pro Text", sans-serif',
+          fillColor:        Cesium.Color.fromCssColorString('#FFCC80'),
+          outlineColor:     Cesium.Color.BLACK.withAlpha(0.65),
+          outlineWidth:     2,
+          style:            Cesium.LabelStyle.FILL_AND_OUTLINE,
+          pixelOffset:      new Cesium.Cartesian2(0, -16),
+          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 5e6),
+          showBackground:   true,
+          backgroundColor:  Cesium.Color.fromCssColorString('#1a1206').withAlpha(0.78),
+          backgroundPadding: new Cesium.Cartesian2(6, 3),
+          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+          verticalOrigin:   Cesium.VerticalOrigin.BOTTOM,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+        description: `<div style="font-family:-apple-system,sans-serif;color:#fff">
+            <strong>${ap.name}</strong><br/>
+            ${ap.city}, ${ap.country}<br/>
+            IATA: ${ap.iata} · ICAO: ${ap.icao}
+          </div>`,
+      });
+      this.airportEntities.set(ap.icao, entity);
+    });
+  }
+
+  get hasAirports(): boolean {
+    return this.airportsEnabled;
+  }
+
   // ── Lifecycle ──────────────────────────────────────────────
 
   destroy(): void {
@@ -1087,6 +1155,7 @@ export class GlobeEngineService {
     this.trackEntities.clear();
     this.satelliteEntities.clear();
     this.weatherEntities.clear();
+    this.airportEntities.clear();
     this.baseImageryLayer = null;
     this.nightImageryLayer = null;
   }

@@ -199,5 +199,35 @@
       </label>
     </div>
 
+    <div class="layer-separator" aria-hidden="true"></div>
+
+    <!-- Airports layer -->
+    <div class="layer-row" [class.layer-row--active]="showAirports">
+      <div class="layer-meta">
+        <span class="layer-indicator layer-indicator--airports" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1L8.4 5.5L13 7L8.4 8.5L7 13L5.6 8.5L1 7L5.6 5.5L7 1Z"
+                  fill="currentColor" opacity="0.92"/>
+          </svg>
+        </span>
+        <div class="layer-text">
+          <span class="layer-name">Airports</span>
+          <span class="layer-desc">Major international hubs</span>
+        </div>
+      </div>
+
+      <label class="ios-toggle ios-toggle--orange" [attr.aria-label]="'Toggle airports layer'">
+        <input
+          type="checkbox"
+          [checked]="showAirports"
+          (change)="toggle('airports', $event)"
+          role="switch"
+          [attr.aria-checked]="showAirports">
+        <span class="ios-toggle__track">
+          <span class="ios-toggle__thumb"></span>
+        </span>
+      </label>
+    </div>
+
   </div>
 </div>

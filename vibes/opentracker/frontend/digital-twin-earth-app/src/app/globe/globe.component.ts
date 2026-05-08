@@ -64,6 +64,7 @@ export class GlobeComponent implements OnInit, OnDestroy {
   showTerrain       = true;
   showBuildings     = false;
   showWeather       = false;
+  showAirports      = false;
   connectionStatus: ConnectionStatus = 'connecting';
   isStreetView = false;
   usingMockData = false;
@@ -300,6 +301,9 @@ export class GlobeComponent implements OnInit, OnDestroy {
         }
         this.cdr.markForCheck();
       });
+    } else if (event.layer === 'airports') {
+      this.showAirports = event.visible;
+      this.globe.setAirportsVisible(event.visible);
     } else if (event.layer === 'weather') {
       this.showWeather = event.visible;
       void this.globe.setWeatherVisible(event.visible).then(() => {
@@ -396,6 +400,9 @@ export class GlobeComponent implements OnInit, OnDestroy {
         break;
       case 'h':
         this.globe.zoomToHome();
+        break;
+      case 'a':
+        this.onLayerToggle({ layer: 'airports', visible: !this.showAirports });
         break;
       case 'r':
         this.globe.recoverEarthViewIfNeeded();
