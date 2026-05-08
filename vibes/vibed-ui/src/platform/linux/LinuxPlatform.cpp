@@ -6,6 +6,13 @@
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 
+// X11 headers (included via LinuxPlatform.h -> Xlib.h) define None as a
+// macro (0) which conflicts with the EventType::None enumerator. Undefine
+// it before including Event.h.
+#ifdef None
+#undef None
+#endif
+
 #include "core/Event.h"
 
 namespace platform {
