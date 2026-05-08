@@ -1,6 +1,6 @@
 # aurora-eda Status
 
-Last updated: 2026-05-08
+Last updated: 2026-05-07
 
 This file should be updated after each completed task, build-system change, or
 feature milestone so the implemented and pending work stays visible.
@@ -106,23 +106,6 @@ feature milestone so the implemented and pending work stays visible.
 - Python bindings:
   - Updated `create_pin` and `Pin` bindings to include `instance_id`
   - Updated `generate_spice` binding to match new signature
-- Task 7 simulation integration (completed):
-  - `SimResult` struct with waveforms and DC operating-point map
-  - `SimRunner` writes SPICE netlist via `NetlistGenerator`, invokes ngspice via popen
-  - Parses `<name> = <value>` lines from simulator output into `dcOperatingPoint`
-  - `aurora_sim_test` validates write-netlist and error-path behaviour
-- Task 8 DRC/LVS (completed):
-  - `DrcViolation` struct with type, layer name, message, bounding-box location
-  - `DrcEngine` checks min-width, min-spacing (using `GeomOps`), and non-Manhattan polygons
-  - `LvsChecker` compares schematic vs layout net names and per-net pin counts
-  - `aurora_drc_lvs_test` covers compliant layout, width violation, spacing violation, LVS match, and LVS mismatch
-- PDK C++ registry (completed):
-  - `PcellDescriptor` — name, default params, generator `std::function`
-  - `PcellRegistry` — register, find, invoke; merges default + caller params
-- Python improvements:
-  - `aurora.sim` — `run_spice()`, `SimResult`, `SimWaveform`, SPICE header helpers
-  - `aurora.examples.NmosPcell` — single-finger NMOS reference PCell with diff/poly/metal1 geometry
-- CLAUDE.md — Claude-optimized project guide (target hierarchy, class reference, common pitfalls)
 
 ## Verification
 
@@ -135,7 +118,8 @@ feature milestone so the implemented and pending work stays visible.
 - `./build.sh --build-dir build-task2`
 - `./build.sh --build-dir build-task3`
 
-Latest known result: all pre-existing tests pass on macOS (AppleClang + Qt 6).
-New tests `aurora_drc_lvs_test` and `aurora_sim_test` are added and expected to
-pass once the project is rebuilt. The sim test does not require ngspice to be
-installed — it only validates file-write and error-path behaviour.
+Latest known result: all current tests passed on macOS with AppleClang and Qt 6
+available. The normal script path builds the Qt `aurora-eda` executable and runs
+`aurora_db_smoke`, `aurora_geom_ops_test`, and `aurora_tech_database_test`. The
+no-UI script path builds the fallback executable. `aurora_python` currently falls
+back to its stub target when pybind11 is not discoverable by CMake.

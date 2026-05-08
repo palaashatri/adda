@@ -143,16 +143,9 @@ if not errorlevel 1 (
   winget install --id Kitware.CMake -e --accept-package-agreements --accept-source-agreements
   winget install --id Ninja-build.Ninja -e --accept-package-agreements --accept-source-agreements
   winget install --id Python.Python.3.12 -e --accept-package-agreements --accept-source-agreements
-  winget install --id Microsoft.VisualStudio.2022.BuildTools -e --accept-package-agreements --accept-source-agreements --override "--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+  winget install --id Microsoft.VisualStudio.2022.BuildTools -e --accept-package-agreements --accept-source-agreements --override "--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools"
 ) else (
   echo warning: winget not found; skipping compiler/CMake installation.
-)
-
-call :ensure_msvc
-if errorlevel 1 (
-  echo info: Attempting to repair Visual Studio Build Tools C++ components...
-  call :repair_msvc || exit /b 1
-  call :ensure_msvc || exit /b 1
 )
 
 if not defined VCPKG_ROOT set "VCPKG_ROOT=%USERPROFILE%\vcpkg"
@@ -170,74 +163,6 @@ if not exist "%VCPKG_ROOT%\vcpkg.exe" (
 
 "%VCPKG_ROOT%\vcpkg.exe" install qtbase pybind11 fmt spdlog nlohmann-json --triplet x64-windows
 if errorlevel 1 exit /b 1
-exit /b 0
-
-:ensure_msvc
-set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-if not exist "%VSWHERE%" (
-  echo error: Unable to find vswhere.exe. Please install Visual Studio 2022 Build Tools.
-  exit /b 1
-)
-
-set "VSINSTALLDIR="
-for /f "usebackq tokens=* delims=" %%I in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
-  set "VSINSTALLDIR=%%I"
-)
-
-if not defined VSINSTALLDIR (
-  echo error: Could not find a valid Visual Studio C++ toolchain.
-  echo        Re-run with --install-deps, or install Visual Studio 2022 Build Tools with C++ workload.
-  exit /b 1
-)
-
-if not exist "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" (
-  echo error: Found Visual Studio at "%VSINSTALLDIR%", but vcvarsall.bat is missing.
-  echo        Repair the Build Tools installation and try again.
-  exit /b 1
-)
-
-exit /b 0
-
-:repair_msvc
-set "VSSETUP=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\setup.exe"
-set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-set "VSINSTALLDIR="
-
-if exist "%VSWHERE%" (
-  for /f "usebackq tokens=* delims=" %%I in (`"%VSWHERE%" -latest -products * -property installationPath`) do (
-    set "VSINSTALLDIR=%%I"
-  )
-)
-
-if not defined VSINSTALLDIR set "VSINSTALLDIR=%ProgramFiles(x86)%\Microsoft Visual Studio\2022\BuildTools"
-
-if exist "%VSSETUP%" (
-  echo info: Ensuring no stale Visual Studio Installer process is blocking repair...
-  for %%P in (setup.exe vs_BuildTools.exe vs_setup_bootstrapper.exe WinSdkInstaller.exe winsdksetup.exe) do (
-    taskkill /IM %%P /F >nul 2>nul
-  )
-  timeout /t 2 /nobreak >nul
-
-  "%VSSETUP%" modify --installPath "%VSINSTALLDIR%" --quiet --norestart --force --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended
-  if errorlevel 1 (
-    echo warning: Visual Studio Installer modify command failed. Falling back to winget.
-  ) else (
-    exit /b 0
-  )
-)
-
-where winget >nul 2>nul
-if errorlevel 1 (
-  echo error: Could not auto-repair Visual Studio Build Tools because both setup.exe and winget are unavailable.
-  exit /b 1
-)
-
-winget install --id Microsoft.VisualStudio.2022.BuildTools -e --force --accept-package-agreements --accept-source-agreements --override "--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
-if errorlevel 1 (
-  echo error: Failed to install Visual Studio Build Tools C++ components.
-  exit /b 1
-)
-
 exit /b 0
 
 :run_app
