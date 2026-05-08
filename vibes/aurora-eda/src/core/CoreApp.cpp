@@ -40,14 +40,6 @@ const PluginManager& CoreApp::plugins() const {
   return pluginManager_;
 }
 
-tech::TechDatabase& CoreApp::tech() {
-  return techDatabase_;
-}
-
-const tech::TechDatabase& CoreApp::tech() const {
-  return techDatabase_;
-}
-
 std::string_view CoreApp::applicationName() {
   return "aurora-eda";
 }

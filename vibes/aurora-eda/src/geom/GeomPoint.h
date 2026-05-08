@@ -26,6 +26,4 @@ struct GeomPoint {
   return !(lhs == rhs);
 }
 
-static_assert(sizeof(GeomPoint) == sizeof(DbUnit) * 2);
-
 }  // namespace aurora::geom

@@ -3,7 +3,6 @@ if(AURORA_BUILD_UI)
 endif()
 
 if(AURORA_BUILD_UI AND Qt6_FOUND)
-  set(CMAKE_AUTOMOC ON)
   add_library(aurora_ui)
   add_library(aurora::ui ALIAS aurora_ui)
 

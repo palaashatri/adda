@@ -65,9 +65,9 @@ DbNet& DbView::createNet(std::string name) {
   return it->second;
 }
 
-DbPin& DbView::createPin(std::string name, DbPinDirection direction, DbId netId, DbId instanceId) {
+DbPin& DbView::createPin(std::string name, DbPinDirection direction, DbId netId) {
   const auto id = allocateObjectId();
-  auto [it, inserted] = pins_.emplace(id, DbPin{id, std::move(name), direction, netId, instanceId});
+  auto [it, inserted] = pins_.emplace(id, DbPin{id, std::move(name), direction, netId});
   (void)inserted;
 
   if (netId != kInvalidId) {
@@ -124,26 +124,6 @@ DbPin* DbView::findPin(DbId id) {
 const DbPin* DbView::findPin(DbId id) const {
   auto it = pins_.find(id);
   return it == pins_.end() ? nullptr : &it->second;
-}
-
-std::vector<DbPin*> DbView::findInstancePins(DbId instanceId) {
-  std::vector<DbPin*> res;
-  for (auto& [id, pin] : pins_) {
-    if (pin.instanceId() == instanceId) {
-      res.push_back(&pin);
-    }
-  }
-  return res;
-}
-
-std::vector<const DbPin*> DbView::findInstancePins(DbId instanceId) const {
-  std::vector<const DbPin*> res;
-  for (const auto& [id, pin] : pins_) {
-    if (pin.instanceId() == instanceId) {
-      res.push_back(&pin);
-    }
-  }
-  return res;
 }
 
 std::vector<DbId> DbView::shapeIds() const {

@@ -31,7 +31,7 @@ class DbView {
                                            DbTransform transform = {});
   [[nodiscard]] DbNet& createNet(std::string name);
   [[nodiscard]] DbPin& createPin(std::string name, DbPinDirection direction,
-                                 DbId netId = kInvalidId, DbId instanceId = kInvalidId);
+                                 DbId netId = kInvalidId);
   [[nodiscard]] DbConstraint& createConstraint(std::string type);
 
   [[nodiscard]] DbShape* findShape(DbId id);
@@ -42,8 +42,6 @@ class DbView {
   [[nodiscard]] const DbNet* findNet(DbId id) const;
   [[nodiscard]] DbPin* findPin(DbId id);
   [[nodiscard]] const DbPin* findPin(DbId id) const;
-  [[nodiscard]] std::vector<DbPin*> findInstancePins(DbId instanceId);
-  [[nodiscard]] std::vector<const DbPin*> findInstancePins(DbId instanceId) const;
 
   [[nodiscard]] std::vector<DbId> shapeIds() const;
   [[nodiscard]] std::vector<DbId> instanceIds() const;
