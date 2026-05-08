@@ -145,6 +145,16 @@
       box-shadow: 0 0 10px rgba(191, 90, 242, 0.25);
     }
   }
+
+  &--airports {
+    background: rgba(255, 159, 10, 0.16);
+    color: #FFB340;
+
+    .layer-row--active & {
+      background: rgba(255, 159, 10, 0.26);
+      box-shadow: 0 0 10px rgba(255, 159, 10, 0.30);
+    }
+  }
 }
 
 .layer-text {
