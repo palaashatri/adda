@@ -9,12 +9,28 @@ public class MetadataController {
 
     @QueryMapping
     public EntityMetadata entityMetadata(@Argument String id) {
-        // Mocking metadata lookup
-        // In production, this would hit a DB (PostgreSQL/PostGIS)
         EntityMetadata meta = new EntityMetadata();
         meta.id = id;
-        meta.name = "Mock Entity " + id;
-        meta.country = "USA";
+        
+        if (id.startsWith("A")) { // Mocking some aviation data
+            meta.name = "Boeing 737-800";
+            meta.country = "Ireland";
+            meta.flight = new FlightMetadata();
+            meta.flight.airline = "Ryanair";
+            meta.flight.origin = "DUB";
+            meta.flight.destination = "STN";
+            meta.flight.aircraftType = "B738";
+        } else if (id.startsWith("M")) { // Mocking maritime
+            meta.name = "Maersk Mc-Kinney Moller";
+            meta.country = "Denmark";
+            meta.ship = new ShipMetadata();
+            meta.ship.vesselName = "MAERSK MC-KINNEY MOLLER";
+            meta.ship.vesselType = "Container Ship";
+            meta.ship.callsign = "OUJW2";
+        } else {
+            meta.name = "Unknown Object";
+            meta.country = "International";
+        }
         return meta;
     }
 
