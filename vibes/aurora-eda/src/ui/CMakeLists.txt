@@ -1,14 +1,8 @@
 if(AURORA_BUILD_UI)
   find_package(Qt6 COMPONENTS Core Gui Widgets OpenGL QUIET)
-  if(NOT Qt6_FOUND)
-    message(FATAL_ERROR
-      "AURORA_BUILD_UI is ON but Qt6 was not found.\n"
-      "Install Qt6 (via vcpkg: 'vcpkg install qtbase') or pass "
-      "-DAURORA_BUILD_UI=OFF to build without the GUI.")
-  endif()
 endif()
 
-if(AURORA_BUILD_UI)
+if(AURORA_BUILD_UI AND Qt6_FOUND)
   set(CMAKE_AUTOMOC ON)
   add_library(aurora_ui)
   add_library(aurora::ui ALIAS aurora_ui)

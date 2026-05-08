@@ -241,33 +241,17 @@ if errorlevel 1 (
 exit /b 0
 
 :run_app
-set "APP_EXE="
-if exist "%BUILD_DIR%\src\ui\%CONFIG%\aurora-eda.exe" set "APP_EXE=%BUILD_DIR%\src\ui\%CONFIG%\aurora-eda.exe"
-if "!APP_EXE!"=="" if exist "%BUILD_DIR%\src\ui\aurora-eda.exe" set "APP_EXE=%BUILD_DIR%\src\ui\aurora-eda.exe"
-if "!APP_EXE!"=="" (
-  echo error: aurora-eda.exe was not found under %BUILD_DIR%
-  exit /b 1
+set "APP_EXE=%BUILD_DIR%\src\ui\%CONFIG%\aurora-eda.exe"
+if exist "%APP_EXE%" (
+  "%APP_EXE%"
+  exit /b %errorlevel%
 )
 
-rem --- deploy Qt DLLs alongside the executable so it can launch ---
-set "WDQT="
-where windeployqt6.exe >nul 2>nul && set "WDQT=windeployqt6.exe"
-if "!WDQT!"=="" where windeployqt.exe >nul 2>nul && set "WDQT=windeployqt.exe"
-if "!WDQT!"=="" if defined VCPKG_ROOT (
-  if exist "%VCPKG_ROOT%\installed\x64-windows\tools\Qt6\bin\windeployqt6.exe" (
-    set "WDQT=%VCPKG_ROOT%\installed\x64-windows\tools\Qt6\bin\windeployqt6.exe"
-  )
-)
-if "!WDQT!"=="" if defined VCPKG_ROOT (
-  if exist "%VCPKG_ROOT%\installed\x64-windows\tools\Qt6\windeployqt6.exe" (
-    set "WDQT=%VCPKG_ROOT%\installed\x64-windows\tools\Qt6\windeployqt6.exe"
-  )
-)
-if defined WDQT (
-  "!WDQT!" --no-translations "!APP_EXE!" >nul 2>&1
-) else (
-  echo warning: windeployqt not found -- Qt DLLs may be missing. Add Qt bin dir to PATH if the app fails to launch.
+set "APP_EXE=%BUILD_DIR%\src\ui\aurora-eda.exe"
+if exist "%APP_EXE%" (
+  "%APP_EXE%"
+  exit /b %errorlevel%
 )
 
-"!APP_EXE!"
-exit /b %errorlevel%
+echo error: aurora-eda.exe was not found under %BUILD_DIR%
+exit /b 1
