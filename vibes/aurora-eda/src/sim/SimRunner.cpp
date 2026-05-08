@@ -93,19 +93,7 @@ SimResult SimRunner::run(std::string_view extraCommands) {
 #endif
   cmd << " -b -o \"" << logPath.string() << "\" \"" << netlistPath_.string() << "\" 2>&1";
 
-  // Launch simulator — detect failure immediately so we can set errorMessage
-  {
-    FILE* pipe = AURORA_POPEN(cmd.str().c_str(), "r");
-    if (!pipe) {
-      result.errorMessage = "Failed to launch simulator. Check the simulator path: " +
-                            simulatorPath_.string();
-      return result;
-    }
-    char buf[512];
-    while (std::fgets(buf, sizeof(buf), pipe) != nullptr)
-      result.rawOutput += buf;
-    AURORA_PCLOSE(pipe);
-  }
+  result.rawOutput = captureCommand(cmd.str());
 
   // Merge log file into rawOutput
   if (std::ifstream lf(logPath); lf) {

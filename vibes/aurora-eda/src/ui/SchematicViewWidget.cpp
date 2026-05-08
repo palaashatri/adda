@@ -110,9 +110,10 @@ void SchematicViewWidget::paintSymbol(QPainter& painter, const db::DbView& view,
     switch (shape->kind()) {
       case db::DbShapeKind::Rect: {
         const auto& box = static_cast<const db::DbRect*>(shape)->box();
-        const auto tl = sceneToScreen({dbuToScene(box.left() + dx), dbuToScene(box.bottom() + dy)});
-        painter.drawRect(QRectF{tl, QSizeF{dbuToScene(box.width()) * zoom_,
-                                           dbuToScene(box.height()) * zoom_}});
+        const QRectF r{dbuToScene(box.left() + dx), dbuToScene(box.bottom() + dy),
+                       dbuToScene(box.width()), dbuToScene(box.height())};
+        painter.drawRect(r.left() * zoom_ + pan_.x(), r.top() * zoom_ + pan_.y(),
+                         r.width() * zoom_, r.height() * zoom_);
         break;
       }
       case db::DbShapeKind::Polygon: {
@@ -153,7 +154,7 @@ void SchematicViewWidget::paintSymbol(QPainter& painter, const db::DbView& view,
       if (const auto* s = view.findShape(shapeId)) {
         if (s->kind() == db::DbShapeKind::Rect) {
           const auto& b = static_cast<const db::DbRect*>(s)->box();
-          const geom::GeomPoint center{(b.left() + b.right()) / 2, (b.bottom() + b.top()) / 2};
+          const auto center = b.center();
           const auto sp = sceneToScreen({dbuToScene(center.x + dx), dbuToScene(center.y + dy)});
           painter.fillRect(QRectF{sp.x() - 2, sp.y() - 2, 4, 4}, QColor("#a02020"));
         }

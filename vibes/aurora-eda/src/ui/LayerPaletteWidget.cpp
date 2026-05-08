@@ -42,13 +42,12 @@ void LayerPaletteWidget::setLibrary(const db::DbCellLib* lib, const tech::TechDa
     item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
     item->setCheckState(Qt::Checked);
 
-    // Color icon — prefer layer's own color, fall back to tech database then gray
-    QColor color(QString::fromStdString(layer->color()));
-    if (!color.isValid()) color = QColor("#808080");
+    // Color icon
+    QColor color("#808080");
     if (tech_) {
-      if (const auto* info = tech_->findLayerByName(layer->name())) {
-        if (!info->color.empty()) color = QColor(QString::fromStdString(info->color));
-      }
+        if (const auto* info = tech_->findLayerByName(layer->name())) {
+            color = QColor(QString::fromStdString(info->color()));
+        }
     }
     QPixmap pixmap(16, 16);
     pixmap.fill(color);

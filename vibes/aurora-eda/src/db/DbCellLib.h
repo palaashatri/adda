@@ -15,10 +15,6 @@ class DbCellLib {
  public:
   DbCellLib() = default;
   explicit DbCellLib(std::string name);
-  DbCellLib(DbCellLib&&) noexcept = default;
-  DbCellLib& operator=(DbCellLib&&) noexcept = default;
-  DbCellLib(const DbCellLib&) = delete;
-  DbCellLib& operator=(const DbCellLib&) = delete;
 
   [[nodiscard]] const std::string& name() const;
   void setName(std::string name);

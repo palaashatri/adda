@@ -11,7 +11,6 @@ class LayTool;
 class LayEditorController {
  public:
   explicit LayEditorController(LayDocument& document);
-  ~LayEditorController();
 
   [[nodiscard]] LayDocument& document();
   [[nodiscard]] const LayDocument& document() const;
