@@ -17,6 +17,7 @@ class LayTool {
   virtual void mousePress(LayEditorController& ctrl, geom::GeomPoint p) {}
   virtual void mouseMove(LayEditorController& ctrl, geom::GeomPoint p) {}
   virtual void mouseRelease(LayEditorController& ctrl, geom::GeomPoint p) {}
+  virtual void keyPress(LayEditorController& ctrl, int qtKey) {}
 
  private:
   std::string name_;

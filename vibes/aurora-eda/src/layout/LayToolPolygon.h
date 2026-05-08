@@ -3,25 +3,27 @@
 #include "layout/LayTool.h"
 #include "geom/GeomPoint.h"
 
-#include <optional>
+#include <vector>
 
 namespace aurora::layout {
 
-class LayToolRect : public LayTool {
+class LayToolPolygon : public LayTool {
  public:
-  LayToolRect();
+  LayToolPolygon();
 
   void mousePress(LayEditorController& ctrl, geom::GeomPoint p) override;
   void mouseMove(LayEditorController& ctrl, geom::GeomPoint p) override;
-  void mouseRelease(LayEditorController& ctrl, geom::GeomPoint p) override;
   void keyPress(LayEditorController& ctrl, int qtKey) override;
 
-  [[nodiscard]] bool isDrawing() const { return firstPoint_.has_value(); }
-  [[nodiscard]] geom::GeomPoint firstPoint() const { return firstPoint_.value_or(geom::GeomPoint{}); }
+  [[nodiscard]] bool isDrawing() const { return !points_.empty(); }
+  [[nodiscard]] const std::vector<geom::GeomPoint>& points() const { return points_; }
   [[nodiscard]] geom::GeomPoint cursor() const { return cursor_; }
 
  private:
-  std::optional<geom::GeomPoint> firstPoint_;
+  void commitPolygon(LayEditorController& ctrl);
+  void cancel();
+
+  std::vector<geom::GeomPoint> points_;
   geom::GeomPoint cursor_{};
 };
 

@@ -7,6 +7,10 @@ target_sources(
     SchDocument.cpp
     SchEditorController.cpp
     SchSymbol.cpp
+    SchTool.cpp
+    SchToolInstance.cpp
+    SchToolSelect.cpp
+    SchToolWire.cpp
     SchWire.cpp
   PUBLIC
     FILE_SET HEADERS
@@ -15,6 +19,10 @@ target_sources(
       SchDocument.h
       SchEditorController.h
       SchSymbol.h
+      SchTool.h
+      SchToolInstance.h
+      SchToolSelect.h
+      SchToolWire.h
       SchWire.h
 )
 

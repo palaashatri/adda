@@ -29,6 +29,7 @@ class LayEditorController {
   void mousePress(geom::GeomPoint p);
   void mouseMove(geom::GeomPoint p);
   void mouseRelease(geom::GeomPoint p);
+  void keyPress(int qtKey);
 
  private:
   LayDocument* document_{nullptr};
