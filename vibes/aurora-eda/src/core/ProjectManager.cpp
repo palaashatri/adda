@@ -186,7 +186,7 @@ bool ProjectManager::openProject(const std::filesystem::path& projectPath) {
               auto& view = cell.createView(type);
               // Nets
               for (const auto& jnet : jview.value("nets", json::array()))
-                view.createNet(jnet.value("name", ""));
+                static_cast<void>(view.createNet(jnet.value("name", "")));
               // Shapes
               for (const auto& js : jview.value("shapes", json::array())) {
                 const auto lid = static_cast<db::DbId>(js.value("layerId", 0ULL));
@@ -195,12 +195,12 @@ bool ProjectManager::openProject(const std::filesystem::path& projectPath) {
                   case db::DbShapeKind::Rect: {
                     geom::GeomBox box{js["l"].get<long long>(), js["b"].get<long long>(),
                                       js["r"].get<long long>(), js["t"].get<long long>()};
-                    view.createRect(lid, box);
+                    static_cast<void>(view.createRect(lid, box));
                     break;
                   }
                   case db::DbShapeKind::Text: {
                     geom::GeomPoint origin{js.value("ox", 0LL), js.value("oy", 0LL)};
-                    view.createText(lid, origin, js.value("text", ""));
+                    static_cast<void>(view.createText(lid, origin, js.value("text", "")));
                     break;
                   }
                   default: break;

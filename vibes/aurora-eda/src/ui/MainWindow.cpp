@@ -159,7 +159,7 @@ void MainWindow::setupMenuBar() {
   addMenuAction(fileMenu, "&Open Project…",  QKeySequence::Open, this, SLOT(onOpenProject()));
   addMenuAction(fileMenu, "&Save Project",   QKeySequence::Save, this, SLOT(onSaveProject()));
   fileMenu->addSeparator();
-  fileMenu->addAction("&Quit", qApp, SLOT(quit()), QKeySequence::Quit);
+  addMenuAction(fileMenu, "&Quit", QKeySequence::Quit, qApp, SLOT(quit()));
 
   // Edit (stub)
   auto* editMenu = menuBar()->addMenu("&Edit");

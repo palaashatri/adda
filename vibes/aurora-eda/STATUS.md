@@ -1,6 +1,6 @@
 # aurora-eda Status
 
-Last updated: 2026-05-08
+Last updated: 2026-05-12
 
 This file should be updated after each completed task, build-system change, or
 feature milestone so the implemented and pending work stays visible.
@@ -154,6 +154,10 @@ feature milestone so the implemented and pending work stays visible.
   - Library tree double-click triggers instance placement tool
   - `onSimFinished` populates waveform viewer after simulation
 - Build verified: all 7 CTest tests pass on Windows (MSVC 2022 + Qt 6)
+- Build verified: all 7 CTest tests pass on macOS (AppleClang 16 + Qt 6) with zero warnings
+- Compiler warnings fixed:
+  - `[[nodiscard]]` return values of `createNet`, `createRect`, `createText` in `ProjectManager::openProject()` now explicitly cast to void
+  - Deprecated Qt 6.4 `QMenu::addAction(text, receiver, member, shortcut)` replaced with `addMenuAction` helper
 
 ## Verification
 
@@ -165,8 +169,17 @@ feature milestone so the implemented and pending work stays visible.
 - `./build.sh --build-dir build-script-stub --no-ui --no-python --no-test`
 - `./build.sh --build-dir build-task2`
 - `./build.sh --build-dir build-task3`
+- `cmake -S . -B build`
+- `cmake --build build`                 # zero warnings
+- `ctest --test-dir build --output-on-failure`  # 7/7 passed
 
-Latest known result: all pre-existing tests pass on macOS (AppleClang + Qt 6).
-New tests `aurora_drc_lvs_test` and `aurora_sim_test` are added and expected to
-pass once the project is rebuilt. The sim test does not require ngspice to be
-installed — it only validates file-write and error-path behaviour.
+Latest known result: all 7 CTest tests pass on macOS (AppleClang 16 + Qt 6.8)
+with zero compiler warnings. The `aurora_sim_test` does not require ngspice to
+be installed — it only validates file-write and error-path behaviour.
+
+## Remaining
+
+- **Task 9**: OpenAccess import plugin — optional, requires a legal OA
+  installation. Not vendored in this repository (see `src/plugins/io/CMakeLists.txt`).
+  The `src/plugins/` directory contains empty CMakeLists.txt stubs for
+  io/, pdk/, and tools/ ready for future plugin development.
