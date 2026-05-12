@@ -44,11 +44,17 @@ class SimSetupDialog : public QDialog {
   void onAnalysisTypeChanged(int index);
   void onRun();
   void onBrowseSimulator();
+  void onTestbenchNew();
+  void onTestbenchLoad();
+  void onTestbenchSave();
+  void onTestbenchDelete();
+  void onOptimize();
 
  private:
   QComboBox*       analysisCombo_{nullptr};
   QStackedWidget*  paramStack_{nullptr};
   QLineEdit*       simPathEdit_{nullptr};
+  QComboBox*       simTypeCombo_{nullptr};
   QPlainTextEdit*  outputPane_{nullptr};
   QPushButton*     runBtn_{nullptr};
 
@@ -62,33 +68,44 @@ class SimSetupDialog : public QDialog {
   QLineEdit* tranStop_{nullptr};
   QLineEdit* tranStep_{nullptr};
 
-  // Noise page
-  QLineEdit* noiseOut_{nullptr};
-  QLineEdit* noiseIn_{nullptr};
-
-  // Distortion page
-  QLineEdit* distoF1_{nullptr};
-  QLineEdit* distoF2_{nullptr};
-
-  // Pole-Zero page
-  QLineEdit* pzIn_{nullptr};
-  QLineEdit* pzOut_{nullptr};
-
   QCheckBox* sweepEnable_{nullptr};
   QLineEdit* sweepParam_{nullptr};
   QLineEdit* sweepStart_{nullptr};
   QLineEdit* sweepStop_{nullptr};
   QLineEdit* sweepSteps_{nullptr};
 
-  QCheckBox* cornerEnable_{nullptr};
-  QLineEdit* cornerTemps_{nullptr};
-  QLineEdit* cornerVdd_{nullptr};
-
   QCheckBox* mcEnable_{nullptr};
   QComboBox* mcDistCombo_{nullptr};
   QLineEdit* mcParam1_{nullptr};
   QLineEdit* mcParam2_{nullptr};
   QLineEdit* mcRuns_{nullptr};
+  QCheckBox* cornerEnable_{nullptr};
+  QLineEdit* cornerTemps_{nullptr};
+  QLineEdit* cornerVdd_{nullptr};
+
+  // Noise / Disto / PZ widgets
+  QLineEdit* noiseOut_{nullptr};
+  QLineEdit* noiseIn_{nullptr};
+  QLineEdit* distoF1_{nullptr};
+  QLineEdit* distoF2_{nullptr};
+  QLineEdit* pzIn_{nullptr};
+  QLineEdit* pzOut_{nullptr};
+
+  // Optimization (D7)
+  QGroupBox*      optBox_{nullptr};
+  QLineEdit*      optParam_{nullptr};
+  QLineEdit*      optStart_{nullptr};
+  QLineEdit*      optStop_{nullptr};
+  QLineEdit*      optSteps_{nullptr};
+  QLineEdit*      optTarget_{nullptr};
+  QPushButton*    optBtn_{nullptr};
+
+  // Testbench management (D11)
+  QComboBox*      tbCombo_{nullptr};
+  QPushButton*    tbSaveBtn_{nullptr};
+  QPushButton*    tbDeleteBtn_{nullptr};
+  std::vector<QString> testbenches_;
+  QString         tbDir_;
 
   sim::SimRunner*      runner_{nullptr};
   const db::DbCellLib* lib_{nullptr};
@@ -96,6 +113,8 @@ class SimSetupDialog : public QDialog {
   sim::SimResult       lastResult_;
 
   [[nodiscard]] QString buildExtraCommands() const;
+  void refreshTestbenchList();
+  void setFromResult(const sim::SimResult& res) { lastResult_ = res; }
 };
 
 }  // namespace aurora::ui

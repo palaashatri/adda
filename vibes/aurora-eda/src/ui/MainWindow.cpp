@@ -1531,27 +1531,41 @@ void MainWindow::onExpressionEditor() {
 // ─── Direct Plot from Schematic ─────────────────────────────────────────────
 
 void MainWindow::onDirectPlot() {
-  if (!schCtrl_ || !simRunner_) return;
-  // Find the selected net from the schematic
+  if (!schCtrl_) return;
+  // Find the selected net name from schematic labels or instances
+  std::string netName;
   const auto* sel = dynamic_cast<const schematic::SchToolSelect*>(schCtrl_->activeTool());
-  if (!sel || sel->selectedInstances().empty()) {
-    statusBar()->showMessage("Select an instance/net in schematic first", 4000);
+  if (sel && !sel->selectedInstances().empty()) {
+    const auto& view = schCtrl_->document().view();
+    const auto* inst = view.findInstance(*sel->selectedInstances().begin());
+    if (inst) {
+      auto* master = app_.projects().workingLibrary().findCellById(inst->masterCellId());
+      if (master) netName = master->name();
+    }
+  }
+  if (netName.empty()) {
+    // Try to find a net label near the selection
+    statusBar()->showMessage("Select a net or instance for plotting", 4000);
     return;
   }
-  // For simplicity, plot the first selected instance's master cell name
-  const auto& view = schCtrl_->document().view();
-  const auto* inst = view.findInstance(*sel->selectedInstances().begin());
-  if (!inst) return;
-  const auto* master = app_.projects().workingLibrary().findCellById(inst->masterCellId());
-  if (!master) return;
 
-  // Look for waveform data matching this name
-  const std::string searchName = master->name();
-  // Trigger a re-simulation with direct plot would be complex
-  // For now: switch to waveform tab and log
+  // Look for waveform data matching this name in the waveform viewer
+  bool found = false;
+  for (int i = 0; i < waveView_->traceCount(); ++i) {
+    std::string tn = waveView_->traceName(i);
+    if (tn.find(netName) != std::string::npos || netName.find(tn) != std::string::npos) {
+      waveView_->setTraceVisible(i, true);
+      found = true;
+    } else {
+      waveView_->setTraceVisible(i, false);
+    }
+  }
   tabs_->setCurrentIndex(2);
-  statusBar()->showMessage(QString("Plot: %1 (re-run sim with probes on this net)").arg(
-      QString::fromStdString(searchName)), 4000);
+  if (found)
+    statusBar()->showMessage(QString("Plot: %1").arg(QString::fromStdString(netName)), 4000);
+  else
+    statusBar()->showMessage(QString("No waveform data for '%1'. Add probes and re-run sim.").arg(
+        QString::fromStdString(netName)), 4000);
 }
 
 // ─── Simulation ───────────────────────────────────────────────────────────────

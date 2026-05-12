@@ -15,6 +15,7 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPlainTextEdit>
@@ -31,6 +32,24 @@ SimSetupDialog::SimSetupDialog(QWidget* parent) : QDialog(parent) {
   auto* mainLayout = new QVBoxLayout(this);
 
   // Simulator path
+  // Testbench management (D11)
+  auto* tbBox = new QGroupBox("Testbench", this);
+  auto* tbLayout = new QHBoxLayout(tbBox);
+  tbCombo_ = new QComboBox(tbBox);
+  tbCombo_->setEditable(true);
+  tbCombo_->setMinimumWidth(200);
+  tbLayout->addWidget(tbCombo_);
+  auto* tbNewBtn = new QPushButton("New", tbBox);
+  connect(tbNewBtn, &QPushButton::clicked, this, &SimSetupDialog::onTestbenchNew);
+  tbLayout->addWidget(tbNewBtn);
+  tbSaveBtn_ = new QPushButton("Save", tbBox);
+  connect(tbSaveBtn_, &QPushButton::clicked, this, &SimSetupDialog::onTestbenchSave);
+  tbLayout->addWidget(tbSaveBtn_);
+  tbDeleteBtn_ = new QPushButton("Delete", tbBox);
+  connect(tbDeleteBtn_, &QPushButton::clicked, this, &SimSetupDialog::onTestbenchDelete);
+  tbLayout->addWidget(tbDeleteBtn_);
+  mainLayout->addWidget(tbBox);
+
   auto* simPathBox = new QGroupBox("Simulator", this);
   auto* spLayout   = new QHBoxLayout(simPathBox);
   simPathEdit_     = new QLineEdit("ngspice", simPathBox);
@@ -39,6 +58,14 @@ SimSetupDialog::SimSetupDialog(QWidget* parent) : QDialog(parent) {
   spLayout->addWidget(new QLabel("Path:", simPathBox));
   spLayout->addWidget(simPathEdit_);
   spLayout->addWidget(browseBtn);
+  spLayout->addWidget(new QLabel("Type:", simPathBox));
+  simTypeCombo_ = new QComboBox(simPathBox);
+  simTypeCombo_->addItems({"ngspice", "Xyce"});
+  connect(simTypeCombo_, &QComboBox::currentTextChanged, this, [this](const QString& t) {
+    if (t == "Xyce") simPathEdit_->setText("xyce");
+    else simPathEdit_->setText("ngspice");
+  });
+  spLayout->addWidget(simTypeCombo_);
   mainLayout->addWidget(simPathBox);
 
   // Analysis type
@@ -168,6 +195,24 @@ SimSetupDialog::SimSetupDialog(QWidget* parent) : QDialog(parent) {
   mcForm->addRow("Runs:", mcRuns_);
   mainLayout->addWidget(mcBox);
 
+  // Design optimization (D7)
+  optBox_ = new QGroupBox("Design Optimization (optional)", this);
+  auto* optForm = new QFormLayout(optBox_);
+  optParam_ = new QLineEdit("W", optBox_);
+  optForm->addRow("Parameter:", optParam_);
+  optStart_ = new QLineEdit("1e-6", optBox_);
+  optForm->addRow("Start:", optStart_);
+  optStop_ = new QLineEdit("10e-6", optBox_);
+  optForm->addRow("Stop:", optStop_);
+  optSteps_ = new QLineEdit("10", optBox_);
+  optForm->addRow("Steps:", optSteps_);
+  optTarget_ = new QLineEdit("v(out) > 1.8", optBox_);
+  optForm->addRow("Target (e.g., v(out)>1.8):", optTarget_);
+  optBtn_ = new QPushButton("Optimize", optBox_);
+  connect(optBtn_, &QPushButton::clicked, this, &SimSetupDialog::onOptimize);
+  optForm->addRow(optBtn_);
+  mainLayout->addWidget(optBox_);
+
   // Output
   auto* outBox = new QGroupBox("Output", this);
   auto* outLay = new QVBoxLayout(outBox);
@@ -282,6 +327,107 @@ void SimSetupDialog::loadState(const QString& path) {
   if (j.contains("sweep_start")) sweepStart_->setText(QString::fromStdString(j["sweep_start"]));
   if (j.contains("sweep_stop")) sweepStop_->setText(QString::fromStdString(j["sweep_stop"]));
   if (j.contains("sweep_steps")) sweepSteps_->setText(QString::fromStdString(j["sweep_steps"]));
+}
+
+// ─── Testbench management ────────────────────────────────────────────────────
+
+void SimSetupDialog::refreshTestbenchList() {
+  tbCombo_->clear();
+  for (const auto& name : testbenches_)
+    tbCombo_->addItem(name);
+}
+
+void SimSetupDialog::onTestbenchNew() {
+  bool ok = false;
+  const QString name = QInputDialog::getText(this, "New Testbench",
+      "Name:", QLineEdit::Normal, "tb1", &ok);
+  if (!ok || name.isEmpty()) return;
+  testbenches_.push_back(name);
+  refreshTestbenchList();
+  tbCombo_->setCurrentText(name);
+  // Save empty state for this testbench
+  QString dir = tbDir_.isEmpty() ? QDir::homePath() : tbDir_;
+  saveState(dir + "/" + name + ".json");
+  outputPane_->appendPlainText("Testbench created: " + name);
+}
+
+void SimSetupDialog::onTestbenchSave() {
+  if (tbDir_.isEmpty()) tbDir_ = QDir::homePath();
+  const QString name = tbCombo_->currentText();
+  if (name.isEmpty()) return;
+  if (std::find(testbenches_.begin(), testbenches_.end(), name) == testbenches_.end()) {
+    testbenches_.push_back(name);
+    refreshTestbenchList();
+    tbCombo_->setCurrentText(name);
+  }
+  saveState(tbDir_ + "/" + name + ".json");
+  outputPane_->appendPlainText("Saved: " + name);
+}
+
+void SimSetupDialog::onTestbenchLoad() {
+  const QString name = tbCombo_->currentText();
+  if (name.isEmpty()) return;
+  if (tbDir_.isEmpty()) tbDir_ = QDir::homePath();
+  loadState(tbDir_ + "/" + name + ".json");
+  outputPane_->appendPlainText("Loaded: " + name);
+}
+
+void SimSetupDialog::onTestbenchDelete() {
+  const QString name = tbCombo_->currentText();
+  if (name.isEmpty() || std::find(testbenches_.begin(), testbenches_.end(), name) == testbenches_.end()) return;
+  testbenches_.erase(std::remove(testbenches_.begin(), testbenches_.end(), name),
+                     testbenches_.end());
+  refreshTestbenchList();
+  outputPane_->appendPlainText("Deleted: " + name);
+}
+
+// ─── Design Optimization ─────────────────────────────────────────────────────
+
+void SimSetupDialog::onOptimize() {
+  if (!runner_ || !lib_ || !cell_) {
+    outputPane_->appendPlainText("Error: no design loaded.");
+    return;
+  }
+  const auto* schView = cell_->findView(db::DbViewType::Schematic);
+  if (!schView) { outputPane_->appendPlainText("Error: no schematic."); return; }
+
+  const std::string paramName = optParam_->text().toStdString();
+  const double start = optStart_->text().toDouble();
+  const double stop = optStop_->text().toDouble();
+  const int steps = optSteps_->text().toInt();
+  const std::string targetExpr = optTarget_->text().toStdString();
+
+  outputPane_->appendPlainText(QString("Optimizing %1 from %2 to %3 (%4 steps)...")
+      .arg(optParam_->text()).arg(optStart_->text()).arg(optStop_->text()).arg(steps));
+
+  runBtn_->setEnabled(false);
+  sim::SweepParam sp{paramName, start, stop, steps, false};
+  const auto extraCmds = buildExtraCommands().toStdString();
+  std::string cmdWithParam = ".param " + paramName + " = $PARAM\n" + extraCmds;
+  auto results = runner_->runSweep(sp, cmdWithParam);
+  runBtn_->setEnabled(true);
+
+  // Find best result based on a simple rule: maximize/minimize a value
+  double bestVal = 0;
+  int bestIdx = 0;
+  for (std::size_t i = 0; i < results.size(); ++i) {
+    if (!results[i].success) continue;
+    // Try to extract meaningful metric from DC operating point
+    for (const auto& [k, v] : results[i].dcOperatingPoint) {
+      if (k.find(targetExpr) != std::string::npos || targetExpr.find(k) != std::string::npos) {
+        if (std::abs(v) > std::abs(bestVal)) { bestVal = v; bestIdx = static_cast<int>(i); }
+      }
+    }
+  }
+
+  double optValue = start + (stop - start) * bestIdx / steps;
+  outputPane_->appendPlainText(QString("Optimization complete. Best value at %1 = %2")
+      .arg(optParam_->text()).arg(optValue));
+
+  if (bestIdx < static_cast<int>(results.size()) && results[bestIdx].success) {
+    lastResult_ = results[bestIdx];
+    emit simulationFinished(lastResult_);
+  }
 }
 
 void SimSetupDialog::onRun() {

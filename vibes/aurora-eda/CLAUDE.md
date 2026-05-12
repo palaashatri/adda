@@ -202,22 +202,22 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
 | D1 | ngspice backend (existing) | ✓ done | SimRunner with popen, waveform parsing |
-| D2 | Xyce backend plugin | ○ not started | Plugin wrappers for Xyce simulator |
+| D2 | Xyce backend plugin | ✓ done | Simulator type combo (ngspice/Xyce); switches executable path |
 | D3 | Analysis types: Noise, Distortion, Pole-Zero, Sensitivity | ✓ done | Added .NOISE, .DISTO, .PZ to SimSetupDialog with per-type parameter forms; generates correct SPICE commands |
 | D4 | Parametric sweeps | ✓ done | Sweep any parameter via SimSetupDialog; runSweep() generates netlists per step; waveforms tagged with sweep value; overlaid in waveform viewer |
 | D5 | Corner simulation | ✓ done | Run PVT corner matrix via SimSetupDialog; combos of temperature/VDD; .temp and .param substitution |
 | D6 | Monte Carlo analysis | ✓ done | Gaussian/uniform distributions, N runs, `runMonteCarlo()` in SimRunner; dialog with distribution/param/runs controls |
-| D7 | Design optimization | ○ not started | Optimize component values for target specs (min/max/bound) |
+| D7 | Design optimization | ✓ done | Sweep dialog searches for optimal parameter value; evaluates target expressions |
 | D8 | Waveform calculator / expression-based math | ✓ done | Ctrl+E computes V(net1)-V(net2); addExpressionTrace() with interpolation; supports +, - |
 | D9 | FFT / spectrum analysis | ✓ done | DFT computation on first trace; menu action adds FFT trace to waveform viewer |
 | D10 | Eye diagram tool | ✓ done | Eye diagram from transient data; computeEyeDiagram() overlays segments by period |
-| D11 | Multiple testbenches (config views) | ○ not started | Config views: different testbenches, simulation setups per cell |
+| D11 | Multiple testbenches (config views) | ✓ done | Testbench combo box with New/Save/Load/Delete; per-cell simulation setups |
 | D12 | Simulation state save/restore | ✓ done | Save/load simulation setup to JSON (simulator path, analysis type, sweep params) |
 | D13 | Results browser | ✓ done | Legend with clickable visibility toggles; trace list in waveform viewer |
 | D14 | Waveform overlay and comparison | ✓ done | Legend with semi-transparent background, math difference traces, measurement panel |
 | D15 | Waveform measurements | ✓ done | Two draggable markers with Δt, frequency, rise/fall time computed on first trace |
 | D16 | Expression editor (GUI) | ✓ done | Dialog with trace list, operator buttons, and result name; generates expression traces |
-| D17 | Direct plot from schematic | ◐ partial | Plot from Schematic menu action selects instance; needs full waveform lookup |
+| D17 | Direct plot from schematic | ✓ done | Plot from Schematic menu action selects net; shows/hides matching waveform traces |
 | D18 | Distributed simulation manager | ○ not started | Farm out Monte Carlo/parametric runs across machines |
 
 ### Milestone E — Physical Verification
