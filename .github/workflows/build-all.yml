@@ -1,0 +1,351 @@
+name: Build all applications and code
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python source checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile Python sources
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import py_compile
+
+          skip_parts = {
+              '.git',
+              '.venv',
+              '__pycache__',
+              'build',
+              'dist',
+              'node_modules',
+              'target',
+              'venv',
+          }
+
+          files = [
+              path for path in Path('.').rglob('*.py')
+              if not skip_parts.intersection(path.parts)
+          ]
+
+          if not files:
+              raise SystemExit('No Python files found')
+
+          for path in sorted(files):
+              py_compile.compile(path, doraise=True)
+
+          print(f'Compiled {len(files)} Python files')
+          PY
+
+      - name: Build Flask container image
+        run: docker build docker/flask
+
+  standalone-js:
+    name: Standalone JavaScript checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check plain JavaScript sources
+        run: node --check docker/nodejs/app.js
+
+      - name: Build Node container image
+        run: docker build docker/nodejs
+
+  node-packages:
+    name: Node packages (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: js/node-auth-demo
+            path: js/node-auth-demo
+            entrypoint: app.js
+            docker_context: ''
+          - name: docker/menstack/app
+            path: docker/menstack/app
+            entrypoint: server.js
+            docker_context: docker/menstack
+          - name: vibes/opentracker frontend
+            path: vibes/opentracker/frontend/digital-twin-earth-app
+            entrypoint: ''
+            docker_context: ''
+          - name: vibes/opentracker-re frontend
+            path: vibes/opentracker-re/frontend
+            entrypoint: ''
+            docker_context: ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ${{ matrix.path }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.path }}
+        run: npm ci
+
+      - name: Build if supported
+        working-directory: ${{ matrix.path }}
+        run: npm run build --if-present
+
+      - name: Syntax-check entrypoint
+        if: ${{ matrix.entrypoint != '' }}
+        working-directory: ${{ matrix.path }}
+        run: node --check "${{ matrix.entrypoint }}"
+
+      - name: Build Docker image
+        if: ${{ matrix.docker_context != '' }}
+        run: docker build ${{ matrix.docker_context }}
+
+  maven:
+    name: Maven projects (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: docker/spring
+            path: docker/spring
+            docker_context: docker/spring
+          - name: practice/java/demo
+            path: practice/java/demo
+            docker_context: ''
+          - name: practice/java/MyApplication
+            path: practice/java/MyApplication
+            docker_context: ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build Maven project
+        working-directory: ${{ matrix.path }}
+        run: mvn -B -DskipTests package
+
+      - name: Build Docker image
+        if: ${{ matrix.docker_context != '' }}
+        run: docker build ${{ matrix.docker_context }}
+
+  gradle:
+    name: Gradle projects (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: vibes/opentracker
+            path: vibes/opentracker
+            java_version: '17'
+          - name: vibes/opentracker-re
+            path: vibes/opentracker-re
+            java_version: '21'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java_version }}
+          cache: gradle
+
+      - name: Grant gradlew execute permission
+        working-directory: ${{ matrix.path }}
+        run: chmod +x gradlew
+
+      - name: Assemble Gradle project
+        working-directory: ${{ matrix.path }}
+        run: ./gradlew assemble --no-daemon
+
+  native-linux:
+    name: Native Linux builds
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config qt6-base-dev libqt6core6 libqt6gui6 libqt6widgets6 nlohmann-json3-dev libfmt-dev pybind11-dev libspdlog-dev ngspice
+
+      - name: Build simple C examples
+        working-directory: practice/c
+        run: |
+          gcc -std=c11 -Wall -Wextra -Werror -o hello hello.c
+          gcc -std=c11 -Wall -Wextra -Werror -o swap swap.c
+
+      - name: Build toy compiler
+        working-directory: practice/compiler
+        run: gcc -std=c11 -Wall -Wextra -Werror -o toylang main.c lexer.c parser.c codegen.c
+
+      - name: Build Aurora EDA
+        working-directory: vibes/aurora-eda
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          cmake --build build --config RelWithDebInfo --parallel 2
+          ctest --test-dir build --build-config RelWithDebInfo --output-on-failure
+
+  java-internship:
+    name: Standalone Java internship samples
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Compile internship samples
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import tempfile
+
+          base = Path('practice/java/internship')
+          groups = {}
+
+          for path in base.rglob('*.java'):
+              if any(part in {'build', 'target', '.git'} for part in path.parts):
+                  continue
+
+              if 'src' in path.parts:
+                  root = Path(*path.parts[: path.parts.index('src') + 1])
+              else:
+                  root = path.parent
+
+              groups.setdefault(root, []).append(path)
+
+          if not groups:
+              raise SystemExit('No internship Java sources found')
+
+          for root, files in sorted(groups.items()):
+              outdir = Path(tempfile.mkdtemp(prefix='java-internship-'))
+              print(f'Compiling {root} -> {outdir}')
+              subprocess.run(['javac', '-d', str(outdir), *map(str, files)], check=True)
+          PY
+
+  go-practice:
+    name: Go sample build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build Go sample
+        working-directory: practice/go/hello-world
+        run: go build hello-world.go
+
+  rust-practice:
+    name: Rust sample builds
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust hello world
+        working-directory: practice/rust
+        run: rustc hello.rs -o hello
+
+      - name: Build Rust input sample
+        working-directory: practice/rust
+        run: rustc hello_with_input.rs -o hello_with_input
+
+  cpp-practice:
+    name: C++ sample build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build C++ sample
+        working-directory: practice/c++
+        run: g++ -std=c++20 -Wall -Wextra -Werror -o hello hello.cpp
+
+  typescript-practice:
+    name: TypeScript practice samples
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Compile TypeScript samples
+        working-directory: practice/ts
+        run: npm exec --yes --package typescript tsc --noEmit --pretty false *.ts
+
+  shell-syntax:
+    name: Shell script syntax checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate shell scripts
+        run: |
+          find . -type f -name '*.sh' -not -path '*/node_modules/*' -not -path '*/build/*' -not -path '*/dist/*' -print0 | xargs -0 bash -n
+
+  vibed-ui-macos:
+    name: vibed-ui macOS build
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build vibed-ui
+        working-directory: vibes/vibed-ui
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j 2
