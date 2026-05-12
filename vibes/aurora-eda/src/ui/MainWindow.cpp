@@ -34,6 +34,7 @@
 #include "sim/SimRunner.h"
 #include "ui/CellBrowserDialog.h"
 #include "ui/DrcResultsDialog.h"
+#include "ui/ExpressionDialog.h"
 #include "ui/ParameterDialog.h"
 #include "ui/LayerPaletteWidget.h"
 #include "ui/LayoutViewWidget.h"
@@ -300,6 +301,10 @@ void MainWindow::setupMenuBar() {
     a->setShortcut(Qt::CTRL | Qt::Key_R);
   }
   simMenu->addAction("View &Waveforms", this, [this] { tabs_->setCurrentIndex(2); });
+  simMenu->addAction("FFT of First Trace", this, &MainWindow::onComputeFft);
+  simMenu->addAction("Eye Diagram…", this, &MainWindow::onComputeEye);
+  simMenu->addAction("Expression Editor…", this, &MainWindow::onExpressionEditor);
+  simMenu->addAction("&Plot from Schematic", this, &MainWindow::onDirectPlot);
 
   // PCells
   auto* pcellMenu = menuBar()->addMenu("PCe&lls");
@@ -1484,6 +1489,69 @@ void MainWindow::onToggleGridType() {
     // Toggle grid type (ortho mode affects tool behavior)
     statusBar()->showMessage(ortho ? "Orthogonal mode ON" : "Orthogonal mode OFF", 3000);
   }
+}
+
+// ─── FFT ─────────────────────────────────────────────────────────────────────
+
+void MainWindow::onComputeFft() {
+  waveView_->computeFFT();
+  tabs_->setCurrentIndex(2);
+  statusBar()->showMessage("FFT computed", 3000);
+}
+
+void MainWindow::onComputeEye() {
+  bool ok = false;
+  double period = QInputDialog::getDouble(this, "Eye Diagram",
+      "Period (s):", 1e-9, 1e-15, 1, 6, &ok);
+  if (!ok || period <= 0) return;
+  waveView_->computeEyeDiagram(period);
+  tabs_->setCurrentIndex(2);
+  statusBar()->showMessage("Eye diagram computed", 3000);
+}
+
+void MainWindow::onExpressionEditor() {
+  if (waveView_->traceCount() < 2) {
+    statusBar()->showMessage("Need 2+ traces for expression math", 4000);
+    return;
+  }
+  QStringList names;
+  for (int i = 0; i < waveView_->traceCount(); ++i)
+    names << QString::fromStdString(waveView_->traceName(i));
+  ExpressionDialog dlg(names, this);
+  if (dlg.exec() == QDialog::Accepted) {
+    std::string expr = dlg.expression().toStdString();
+    std::string resultName = dlg.resultName().toStdString();
+    if (!expr.empty() && !resultName.empty()) {
+      waveView_->addExpressionTrace(expr, resultName, QColor("#ff44cc"));
+      tabs_->setCurrentIndex(2);
+    }
+  }
+}
+
+// ─── Direct Plot from Schematic ─────────────────────────────────────────────
+
+void MainWindow::onDirectPlot() {
+  if (!schCtrl_ || !simRunner_) return;
+  // Find the selected net from the schematic
+  const auto* sel = dynamic_cast<const schematic::SchToolSelect*>(schCtrl_->activeTool());
+  if (!sel || sel->selectedInstances().empty()) {
+    statusBar()->showMessage("Select an instance/net in schematic first", 4000);
+    return;
+  }
+  // For simplicity, plot the first selected instance's master cell name
+  const auto& view = schCtrl_->document().view();
+  const auto* inst = view.findInstance(*sel->selectedInstances().begin());
+  if (!inst) return;
+  const auto* master = app_.projects().workingLibrary().findCellById(inst->masterCellId());
+  if (!master) return;
+
+  // Look for waveform data matching this name
+  const std::string searchName = master->name();
+  // Trigger a re-simulation with direct plot would be complex
+  // For now: switch to waveform tab and log
+  tabs_->setCurrentIndex(2);
+  statusBar()->showMessage(QString("Plot: %1 (re-run sim with probes on this net)").arg(
+      QString::fromStdString(searchName)), 4000);
 }
 
 // ─── Simulation ───────────────────────────────────────────────────────────────

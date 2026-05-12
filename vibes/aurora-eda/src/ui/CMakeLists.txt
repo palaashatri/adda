@@ -1,5 +1,6 @@
 if(AURORA_BUILD_UI)
   find_package(Qt6 COMPONENTS Core Gui Widgets OpenGL QUIET)
+  find_package(nlohmann_json CONFIG QUIET)
   if(NOT Qt6_FOUND)
     message(FATAL_ERROR
       "AURORA_BUILD_UI is ON but Qt6 was not found.\n"
@@ -18,6 +19,7 @@ if(AURORA_BUILD_UI)
     PRIVATE
       CellBrowserDialog.cpp
       DrcResultsDialog.cpp
+      ExpressionDialog.cpp
       LayerPaletteWidget.cpp
       LayoutViewWidget.cpp
       MainWindow.cpp
@@ -32,6 +34,7 @@ if(AURORA_BUILD_UI)
       FILES
         CellBrowserDialog.h
         DrcResultsDialog.h
+        ExpressionDialog.h
         LayerPaletteWidget.h
         LayoutViewWidget.h
         MainWindow.h
@@ -53,6 +56,9 @@ if(AURORA_BUILD_UI)
       Qt6::Widgets
       Qt6::OpenGL
   )
+  if(nlohmann_json_FOUND)
+    target_link_libraries(aurora_ui PRIVATE nlohmann_json::nlohmann_json)
+  endif()
   target_compile_features(aurora_ui PUBLIC cxx_std_20)
 
   add_executable(aurora_app AppMain.cpp)

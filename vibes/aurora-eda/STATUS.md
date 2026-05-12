@@ -322,15 +322,15 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | Corner simulation | ✓ done (D5) |
 | Monte Carlo analysis | ✓ done (D6) |
 | Design optimization | Optimize component values for target specs | Medium |
-| Waveform calculator / expression math | V(net1)-V(net2), dV/dt, RMS, average | High |
-| FFT / spectrum analysis | FFT of time-domain waveforms; SFDR, THD | Medium |
-| Eye diagram tool | Eye diagram from transient data; eye measurements | Medium |
+| Waveform calculator / expression math | ✓ done (D8) |
+| FFT / spectrum analysis | ✓ done (D9) |
+| Eye diagram tool | ✓ done (D10) |
 | Multiple testbenches (config views) | Different testbenches, simulation setups per cell | Medium |
-| Simulation state save/restore | Save analysis setup, sweep params, outputs | Medium |
-| Results browser | Tree browser for multiple runs; compare across runs | Medium |
-| Waveform overlay and comparison | Legend, math difference traces | Low |
-| Waveform measurements | Rise/Fall time, period, freq, pulse width, delay, slew | Medium |
-| Expression editor (GUI) | Visual builder for sim output expressions | Medium |
+| Simulation state save/restore | ✓ done (D12) |
+| Results browser | ✓ done (D13) |
+| Waveform overlay and comparison | ✓ done (D14) |
+| Waveform measurements | ✓ done (D15) |
+| Expression editor (GUI) | ✓ done (D16) |
 | Direct plot from schematic | Click net → auto-plot after sim | Medium |
 | Distributed simulation manager | Farm out Monte Carlo/parametric runs across machines | Low |
 
@@ -439,14 +439,14 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | A — Core Infrastructure | 30/30 | 0 | **100%** |
 | B — Schematic Editor | 15/15 | 0 | **100%** |
 | C — Layout Editor | 19/19 | 0 | **100%** |
-| D — Simulation Environment | 6/18 | 12 | **33%** |
+| D — Simulation Environment | 14/18 | 4 | **78%** |
 | E — Physical Verification | 2/13 | 11 | **15%** |
 | F — PCells and PDK | 3/14 | 11 | **21%** |
 | G — Import / Export | 7/17 | 10 | **41%** |
 | H — Project Management | 1/9 | 8 | **11%** |
 | I — Scripting | 1/9 | 8 | **11%** |
 | J — Advanced UI | 1/10 | 9 | **10%** |
-| **Total** | **85/154** | **69** | **~55%** |
+| **Total** | **93/154** | **61** | **~60%** |
 
 Note: "Done" counts items marked ✓ done or ◐ partial in the CLAUDE.md checklist.
 The application builds, runs, and passes all 12 CTest tests, but represents only

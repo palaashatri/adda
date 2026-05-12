@@ -6,8 +6,11 @@
 #include "sim/SimRunner.h"
 
 #include <algorithm>
+#include <fstream>
+#include <nlohmann/json.hpp>
 #include <QComboBox>
 #include <QDialogButtonBox>
+#include <QDir>
 #include <QFileDialog>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -184,6 +187,20 @@ SimSetupDialog::SimSetupDialog(QWidget* parent) : QDialog(parent) {
   auto* closeBtn = new QPushButton("Close", this);
   connect(closeBtn, &QPushButton::clicked, this, &QDialog::accept);
   auto* btnRow = new QHBoxLayout;
+  auto* saveBtn = new QPushButton("Save Setup", this);
+  connect(saveBtn, &QPushButton::clicked, this, [this]() {
+    auto path = QFileDialog::getSaveFileName(this, "Save Simulation Setup",
+        QDir::homePath(), "JSON (*.json);;All Files (*)");
+    if (!path.isEmpty()) { saveState(path); outputPane_->appendPlainText("Setup saved: " + path); }
+  });
+  auto* loadBtn = new QPushButton("Load Setup", this);
+  connect(loadBtn, &QPushButton::clicked, this, [this]() {
+    auto path = QFileDialog::getOpenFileName(this, "Load Simulation Setup",
+        QDir::homePath(), "JSON (*.json);;All Files (*)");
+    if (!path.isEmpty()) { loadState(path); outputPane_->appendPlainText("Setup loaded: " + path); }
+  });
+  btnRow->addWidget(saveBtn);
+  btnRow->addWidget(loadBtn);
   btnRow->addStretch();
   btnRow->addWidget(runBtn_);
   btnRow->addWidget(closeBtn);
@@ -220,6 +237,51 @@ QString SimSetupDialog::buildExtraCommands() const {
           .arg(pzOut_->text()).arg(pzIn_->text());
     default: return {};
   }
+}
+
+void SimSetupDialog::saveState(const QString& path) const {
+  nlohmann::json j;
+  j["simulator_path"] = simPathEdit_->text().toStdString();
+  j["analysis_type"] = analysisCombo_->currentIndex();
+  j["dc_src"] = dcSrc_->text().toStdString();
+  j["dc_start"] = dcStart_->text().toStdString();
+  j["dc_stop"] = dcStop_->text().toStdString();
+  j["dc_step"] = dcStep_->text().toStdString();
+  j["ac_fstart"] = acFStart_->text().toStdString();
+  j["ac_fstop"] = acFStop_->text().toStdString();
+  j["ac_pts"] = acPts_->text().toStdString();
+  j["tran_stop"] = tranStop_->text().toStdString();
+  j["tran_step"] = tranStep_->text().toStdString();
+  j["sweep_enable"] = sweepEnable_->isChecked();
+  j["sweep_param"] = sweepParam_->text().toStdString();
+  j["sweep_start"] = sweepStart_->text().toStdString();
+  j["sweep_stop"] = sweepStop_->text().toStdString();
+  j["sweep_steps"] = sweepSteps_->text().toStdString();
+  std::ofstream ofs(path.toStdString());
+  if (ofs) ofs << j.dump(2);
+}
+
+void SimSetupDialog::loadState(const QString& path) {
+  std::ifstream ifs(path.toStdString());
+  if (!ifs) return;
+  nlohmann::json j;
+  try { ifs >> j; } catch (...) { return; }
+  simPathEdit_->setText(QString::fromStdString(j.value("simulator_path", "")));
+  analysisCombo_->setCurrentIndex(j.value("analysis_type", 0));
+  if (j.contains("dc_src")) dcSrc_->setText(QString::fromStdString(j["dc_src"]));
+  if (j.contains("dc_start")) dcStart_->setText(QString::fromStdString(j["dc_start"]));
+  if (j.contains("dc_stop")) dcStop_->setText(QString::fromStdString(j["dc_stop"]));
+  if (j.contains("dc_step")) dcStep_->setText(QString::fromStdString(j["dc_step"]));
+  if (j.contains("ac_fstart")) acFStart_->setText(QString::fromStdString(j["ac_fstart"]));
+  if (j.contains("ac_fstop")) acFStop_->setText(QString::fromStdString(j["ac_fstop"]));
+  if (j.contains("ac_pts")) acPts_->setText(QString::fromStdString(j["ac_pts"]));
+  if (j.contains("tran_stop")) tranStop_->setText(QString::fromStdString(j["tran_stop"]));
+  if (j.contains("tran_step")) tranStep_->setText(QString::fromStdString(j["tran_step"]));
+  if (j.contains("sweep_enable")) sweepEnable_->setChecked(j["sweep_enable"]);
+  if (j.contains("sweep_param")) sweepParam_->setText(QString::fromStdString(j["sweep_param"]));
+  if (j.contains("sweep_start")) sweepStart_->setText(QString::fromStdString(j["sweep_start"]));
+  if (j.contains("sweep_stop")) sweepStop_->setText(QString::fromStdString(j["sweep_stop"]));
+  if (j.contains("sweep_steps")) sweepSteps_->setText(QString::fromStdString(j["sweep_steps"]));
 }
 
 void SimSetupDialog::onRun() {

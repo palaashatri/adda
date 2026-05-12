@@ -34,6 +34,8 @@ class SimSetupDialog : public QDialog {
   void setCell(const db::DbCellLib* lib, const db::DbCell* cell) { lib_ = lib; cell_ = cell; }
 
   [[nodiscard]] const sim::SimResult& lastResult() const { return lastResult_; }
+  void saveState(const QString& path) const;
+  void loadState(const QString& path);
 
  signals:
   void simulationFinished(const sim::SimResult& result);

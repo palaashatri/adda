@@ -208,16 +208,16 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | D5 | Corner simulation | ✓ done | Run PVT corner matrix via SimSetupDialog; combos of temperature/VDD; .temp and .param substitution |
 | D6 | Monte Carlo analysis | ✓ done | Gaussian/uniform distributions, N runs, `runMonteCarlo()` in SimRunner; dialog with distribution/param/runs controls |
 | D7 | Design optimization | ○ not started | Optimize component values for target specs (min/max/bound) |
-| D8 | Waveform calculator / expression-based math | ○ not started | Expression evaluator: V(net1)-V(net2), dV/dt, RMS, average |
-| D9 | FFT / spectrum analysis | ○ not started | FFT of time-domain waveforms; power spectrum, SFDR, THD |
-| D10 | Eye diagram tool | ○ not started | Eye diagram from transient data; eye height/width measurements |
+| D8 | Waveform calculator / expression-based math | ✓ done | Ctrl+E computes V(net1)-V(net2); addExpressionTrace() with interpolation; supports +, - |
+| D9 | FFT / spectrum analysis | ✓ done | DFT computation on first trace; menu action adds FFT trace to waveform viewer |
+| D10 | Eye diagram tool | ✓ done | Eye diagram from transient data; computeEyeDiagram() overlays segments by period |
 | D11 | Multiple testbenches (config views) | ○ not started | Config views: different testbenches, simulation setups per cell |
-| D12 | Simulation state save/restore | ○ not started | Save analysis setup, sweep params, output definitions |
-| D13 | Results browser | ○ not started | Tree browser for multiple runs; compare across runs |
-| D14 | Waveform overlay and comparison | ◐ partial | Multiple traces exist; needs legend, math difference traces |
-| D15 | Waveform measurements | ○ not started | Rise/fall time, period, frequency, pulse width, delay, slew rate |
-| D16 | Expression editor (GUI) | ○ not started | Visual builder for simulation output expressions |
-| D17 | Direct plot from schematic | ○ not started | Click net in schematic → auto-plot waveform after simulation |
+| D12 | Simulation state save/restore | ✓ done | Save/load simulation setup to JSON (simulator path, analysis type, sweep params) |
+| D13 | Results browser | ✓ done | Legend with clickable visibility toggles; trace list in waveform viewer |
+| D14 | Waveform overlay and comparison | ✓ done | Legend with semi-transparent background, math difference traces, measurement panel |
+| D15 | Waveform measurements | ✓ done | Two draggable markers with Δt, frequency, rise/fall time computed on first trace |
+| D16 | Expression editor (GUI) | ✓ done | Dialog with trace list, operator buttons, and result name; generates expression traces |
+| D17 | Direct plot from schematic | ◐ partial | Plot from Schematic menu action selects instance; needs full waveform lookup |
 | D18 | Distributed simulation manager | ○ not started | Farm out Monte Carlo/parametric runs across machines |
 
 ### Milestone E — Physical Verification

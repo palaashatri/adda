@@ -98,6 +98,10 @@ class MainWindow : public QMainWindow {
   void onAddConstraint();
   void onGenerateFromSchematic();
   void onSnapModeChanged();
+  void onComputeFft();
+  void onComputeEye();
+  void onExpressionEditor();
+  void onDirectPlot();
 
   // Simulation
   void onSimSetup();
