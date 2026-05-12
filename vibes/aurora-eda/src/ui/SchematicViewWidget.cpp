@@ -243,6 +243,14 @@ void SchematicViewWidget::paintDocument(QPainter& painter) const {
     const auto* inst = view.findInstance(instId);
     if (!inst) continue;
 
+    // Cross-probe highlight: same master cell
+    if (crossProbeCellId_ != db::kInvalidId && inst->masterCellId() == crossProbeCellId_) {
+      painter.setPen(QPen(QColor("#00ffcc"), 2));
+      const auto sp =
+          sceneToScreen({dbuToScene(inst->transform().dx), dbuToScene(inst->transform().dy)});
+      painter.drawEllipse(sp, 12, 12);
+    }
+
     // Highlight if selected
     if (selectedIds.count(instId)) {
       painter.setPen(QPen(QColor("#ffcc00"), 2));

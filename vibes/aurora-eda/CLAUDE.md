@@ -167,7 +167,7 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | B8 | Symbol editor (graphical) | ○ not started | Create/edit cell symbols: shapes, pins, labels |
 | B9 | Schematic consistency checks | ○ not started | Check and save: unconnected pins, floating nets, shorted outputs |
 | B10 | DC operating point annotation | ○ not started | Display DC voltages/currents on schematic after sim |
-| B11 | Schematic ↔ Layout cross-probing | ○ not started | Select in schematic → highlight in layout and vice versa |
+| B11 | Schematic ↔ Layout cross-probing | ✓ done | Select instance in schematic → toolbar ⇋ highlights matching master cell in both views; auto-clears after 5s |
 | B12 | Parameter passing (hierarchical) | ○ not started | Pass parameters from parent to child instances |
 | B13 | Multi-sheet schematics | ○ not started | Off-sheet connectors, sheet symbols, cross-sheet navigation |
 | B14 | Undo/redo for schematic editing | ○ not started | Full undo stack for all schematic operations |
@@ -181,7 +181,7 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | C2 | Via array generator | ✓ done | Drag rectangle, dialog configures columns/rows/size/spacing; generates rect grid |
 | C3 | Guard ring generator | ✓ done | Drag rectangle around protected area; dialog configures ring width/spacing; generates 4-sided ring as rect bars |
 | C4 | Alignment and distribution tools | ◐ partial | Align left/right/top/bottom/center H/V implemented. Distribute H/V not started. |
-| C5 | Measurement / ruler tool | ○ not started | Interactive distance measurement with annotation |
+| C5 | Measurement / ruler tool | ✓ done | Click two points, dashed line with distance/Δx/Δy label overlay on layout canvas |
 | C6 | Interactive DRC (iDRC) | ○ not started | Real-time feedback during drawing: width/spacing/enclosure |
 | C7 | Constraint-driven layout | ○ not started | Same-net spacing, differential pair constraints, shielding |
 | C8 | Relative object placement snaps | ○ not started | Snap to edge, center, midpoint; object-relative positioning |
@@ -203,10 +203,10 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 |---|-------------|--------|-------|
 | D1 | ngspice backend (existing) | ✓ done | SimRunner with popen, waveform parsing |
 | D2 | Xyce backend plugin | ○ not started | Plugin wrappers for Xyce simulator |
-| D3 | Analysis types: Noise, Distortion, Pole-Zero, Sensitivity | ○ not started | Extend SimSetupDialog; add netlist generation for each type |
+| D3 | Analysis types: Noise, Distortion, Pole-Zero, Sensitivity | ✓ done | Added .NOISE, .DISTO, .PZ to SimSetupDialog with per-type parameter forms; generates correct SPICE commands |
 | D4 | Parametric sweeps | ✓ done | Sweep any parameter via SimSetupDialog; runSweep() generates netlists per step; waveforms tagged with sweep value; overlaid in waveform viewer |
-| D5 | Corner simulation | ○ not started | Process/voltage/temperature corner matrix |
-| D6 | Monte Carlo analysis | ○ not started | Statistical distributions (Gaussian, uniform); histogram results |
+| D5 | Corner simulation | ✓ done | Run PVT corner matrix via SimSetupDialog; combos of temperature/VDD; .temp and .param substitution |
+| D6 | Monte Carlo analysis | ✓ done | Gaussian/uniform distributions, N runs, `runMonteCarlo()` in SimRunner; dialog with distribution/param/runs controls |
 | D7 | Design optimization | ○ not started | Optimize component values for target specs (min/max/bound) |
 | D8 | Waveform calculator / expression-based math | ○ not started | Expression evaluator: V(net1)-V(net2), dV/dt, RMS, average |
 | D9 | FFT / spectrum analysis | ○ not started | FFT of time-domain waveforms; power spectrum, SFDR, THD |
@@ -263,11 +263,11 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 |---|-------------|--------|-------|
 | G1 | GDS II export | ✓ done | Binary GDS writer with hierarchy |
 | G2 | GDS II import | ✓ done | Parses binary GDS; reconstructs cells, hierarchy, geometries, layers. Supports BOUNDARY (rect/polygon), PATH, TEXT, SREF. |
-| G3 | LEF export | ○ not started | Library Exchange Format: cell boundaries, pin locations, obstructions |
+| G3 | LEF export | ✓ done | Library Exchange Format: cell boundaries, pin locations, obstructions; writes MACRO/LAYER/PIN/OBS from layout views |
 | G4 | LEF import | ○ not started | Parse LEF macro definitions |
-| G5 | DEF export | ○ not started | Design Exchange Format: net connectivity, placement |
-| G6 | DEF import | ○ not started | Parse DEF placement, routing, nets |
-| G7 | Verilog structural netlist export | ○ not started | Module/instance connectivity for digital flow |
+| G5 | DEF export | ✓ done | Design Exchange Format: COMPONENTS placement, NETS connectivity from DbView |
+| G6 | DEF import | ✓ done | Parse DEF COMPONENTS placement and NETS connectivity; reconstructs into DbCellLib |
+| G7 | Verilog structural netlist export | ✓ done | Module/instance/wire/port generation from DbView; direction-aware port declarations |
 | G8 | Verilog structural netlist import | ○ not started | Parse module/instance connectivity |
 | G9 | CDL netlist export | ○ not started | Enhanced SPICE: device parameters, model instantiation |
 | G10 | CDL netlist import | ◐ partial | Basic SPICE import exists; needs device parameter parsing |

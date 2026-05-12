@@ -44,7 +44,8 @@ SimSetupDialog::SimSetupDialog(QWidget* parent) : QDialog(parent) {
   auto* typeRow     = new QHBoxLayout;
   typeRow->addWidget(new QLabel("Type:", analysisBox));
   analysisCombo_ = new QComboBox(analysisBox);
-  analysisCombo_->addItems({"Operating Point (OP)", "DC Sweep", "AC Analysis", "Transient"});
+  analysisCombo_->addItems({"Operating Point (OP)", "DC Sweep", "AC Analysis",
+                             "Transient", "Noise Analysis", "Distortion", "Pole-Zero"});
   connect(analysisCombo_, qOverload<int>(&QComboBox::currentIndexChanged),
           this, &SimSetupDialog::onAnalysisTypeChanged);
   typeRow->addWidget(analysisCombo_);
@@ -92,6 +93,33 @@ SimSetupDialog::SimSetupDialog(QWidget* parent) : QDialog(parent) {
   tranForm->addRow("Time step:", tranStep_);
   paramStack_->addWidget(tranPage);
 
+  // Noise page
+  auto* noisePage = new QWidget(paramStack_);
+  auto* noiseForm = new QFormLayout(noisePage);
+  noiseOut_ = new QLineEdit("VOUT", noisePage);
+  noiseIn_  = new QLineEdit("VIN", noisePage);
+  noiseForm->addRow("Output node:", noiseOut_);
+  noiseForm->addRow("Input source:", noiseIn_);
+  paramStack_->addWidget(noisePage);
+
+  // Distortion page
+  auto* distoPage = new QWidget(paramStack_);
+  auto* distoForm = new QFormLayout(distoPage);
+  distoF1_ = new QLineEdit("1e6", distoPage);
+  distoF2_ = new QLineEdit("2e6", distoPage);
+  distoForm->addRow("F1 (Hz):", distoF1_);
+  distoForm->addRow("F2 (Hz):", distoF2_);
+  paramStack_->addWidget(distoPage);
+
+  // Pole-Zero page
+  auto* pzPage = new QWidget(paramStack_);
+  auto* pzForm = new QFormLayout(pzPage);
+  pzIn_ = new QLineEdit("VIN", pzPage);
+  pzOut_ = new QLineEdit("VOUT", pzPage);
+  pzForm->addRow("Input source:", pzIn_);
+  pzForm->addRow("Output node:", pzOut_);
+  paramStack_->addWidget(pzPage);
+
   aLayout->addWidget(paramStack_);
   mainLayout->addWidget(analysisBox);
 
@@ -109,6 +137,33 @@ SimSetupDialog::SimSetupDialog(QWidget* parent) : QDialog(parent) {
   sweepSteps_ = new QLineEdit("10", sweepBox);
   swForm->addRow("Steps:", sweepSteps_);
   mainLayout->addWidget(sweepBox);
+
+  // Corner simulation
+  auto* cornerBox = new QGroupBox("Corner Simulation (optional)", this);
+  auto* cornerForm = new QFormLayout(cornerBox);
+  cornerEnable_ = new QCheckBox("Enable corners", cornerBox);
+  cornerForm->addRow(cornerEnable_);
+  cornerTemps_ = new QLineEdit("-40, 27, 125", cornerBox);
+  cornerForm->addRow("Temperatures (°C):", cornerTemps_);
+  cornerVdd_ = new QLineEdit("1.62, 1.8, 1.98", cornerBox);
+  cornerForm->addRow("VDD values (V):", cornerVdd_);
+  mainLayout->addWidget(cornerBox);
+
+  // Monte Carlo
+  auto* mcBox = new QGroupBox("Monte Carlo (optional)", this);
+  auto* mcForm = new QFormLayout(mcBox);
+  mcEnable_ = new QCheckBox("Enable Monte Carlo", mcBox);
+  mcForm->addRow(mcEnable_);
+  mcDistCombo_ = new QComboBox(mcBox);
+  mcDistCombo_->addItems({"Gaussian", "Uniform"});
+  mcForm->addRow("Distribution:", mcDistCombo_);
+  mcParam1_ = new QLineEdit("1.8", mcBox);
+  mcForm->addRow("Mean (Gaussian) / Min (Uniform):", mcParam1_);
+  mcParam2_ = new QLineEdit("0.1", mcBox);
+  mcForm->addRow("Sigma (Gaussian) / Max (Uniform):", mcParam2_);
+  mcRuns_ = new QLineEdit("20", mcBox);
+  mcForm->addRow("Runs:", mcRuns_);
+  mainLayout->addWidget(mcBox);
 
   // Output
   auto* outBox = new QGroupBox("Output", this);
@@ -154,6 +209,15 @@ QString SimSetupDialog::buildExtraCommands() const {
                 .arg(acPts_->text()).arg(acFStart_->text()).arg(acFStop_->text());
     case 3: return QString(".tran %1 %2\n.print tran all\n")
                 .arg(tranStep_->text()).arg(tranStop_->text());
+    case 4:
+      return QString(".noise v(%1) %2 dec 10 1 1e9\n.print noise all\n")
+          .arg(noiseOut_->text()).arg(noiseIn_->text());
+    case 5:
+      return QString(".disto %1 %2\n.print disto all\n")
+          .arg(distoF1_->text()).arg(distoF2_->text());
+    case 6:
+      return QString(".pz v(%1) %2\n.print pz all\n")
+          .arg(pzOut_->text()).arg(pzIn_->text());
     default: return {};
   }
 }
@@ -178,8 +242,80 @@ void SimSetupDialog::onRun() {
     return;
   }
 
-  if (sweepEnable_->isChecked()) {
-    // Parametric sweep
+  if (cornerEnable_ && cornerEnable_->isChecked()) {
+    // Corner simulation
+    auto parseList = [](const QString& s) {
+      std::vector<double> vals;
+      for (const auto& part : s.split(',')) {
+        bool ok = false;
+        double v = part.trimmed().toDouble(&ok);
+        if (ok) vals.push_back(v);
+      }
+      return vals;
+    };
+    auto temps = parseList(cornerTemps_->text());
+    auto vdds  = parseList(cornerVdd_->text());
+    if (temps.empty() || vdds.empty()) {
+      outputPane_->appendPlainText("Error: invalid corner values");
+      return;
+    }
+    outputPane_->appendPlainText(QString("Running %1 x %2 = %3 corner simulations...")
+        .arg(temps.size()).arg(vdds.size()).arg(temps.size() * vdds.size()));
+    runBtn_->setEnabled(false);
+    auto results = runner_->runCorners(temps, vdds, buildExtraCommands().toStdString());
+    runBtn_->setEnabled(true);
+    outputPane_->appendPlainText(QString("Corners completed: %1 / %2 succeeded")
+        .arg(std::count_if(results.begin(), results.end(),
+                           [](const sim::SimResult& r) { return r.success; }))
+        .arg(results.size()));
+    if (!results.empty()) {
+      lastResult_ = results.back();
+      for (std::size_t ri = 0; ri < results.size(); ++ri) {
+        for (auto& wv : results[ri].waveforms) {
+          wv.name = "C" + std::to_string(ri) + " " + wv.name;
+        }
+        if (!results[ri].waveforms.empty())
+          lastResult_.waveforms.insert(lastResult_.waveforms.end(),
+              results[ri].waveforms.begin(), results[ri].waveforms.end());
+      }
+    }
+  } else if (mcEnable_->isChecked()) {
+    // Monte Carlo
+    sim::MonteCarloParam mc;
+    mc.name  = sweepParam_->text().toStdString();
+    mc.param1 = mcParam1_->text().toDouble();
+    mc.param2 = mcParam2_->text().toDouble();
+    mc.runs  = mcRuns_->text().toInt();
+    mc.dist  = (mcDistCombo_->currentIndex() == 0)
+                 ? sim::MonteCarloParam::Gaussian : sim::MonteCarloParam::Uniform;
+
+    const auto extraCmds = buildExtraCommands().toStdString();
+    std::string cmdWithParam = ".param " + mc.name + " = $PARAM\n" + extraCmds;
+
+    outputPane_->appendPlainText(QString("Monte Carlo: %1 runs, %2 distribution")
+        .arg(mc.runs).arg(mcDistCombo_->currentText()));
+    runBtn_->setEnabled(false);
+    auto results = runner_->runMonteCarlo(mc, cmdWithParam);
+    runBtn_->setEnabled(true);
+
+    outputPane_->appendPlainText(
+        QString("MC completed: %1 / %2 succeeded")
+            .arg(std::count_if(results.begin(), results.end(),
+                               [](const sim::SimResult& r) { return r.success; }))
+            .arg(results.size()));
+    if (!results.empty()) {
+      lastResult_ = results.back();
+      for (std::size_t ri = 0; ri < results.size(); ++ri) {
+        for (auto& wv : results[ri].waveforms) {
+          wv.name = "MC" + std::to_string(ri) + " " + wv.name;
+        }
+        if (!results[ri].waveforms.empty()) {
+          lastResult_.waveforms.insert(lastResult_.waveforms.end(),
+              results[ri].waveforms.begin(), results[ri].waveforms.end());
+        }
+      }
+    }
+  } else if (sweepEnable_->isChecked()) {
     sim::SweepParam param;
     param.name    = sweepParam_->text().toStdString();
     param.start   = sweepStart_->text().toDouble();
@@ -188,14 +324,12 @@ void SimSetupDialog::onRun() {
     param.logScale = false;
 
     const auto extraCmds = buildExtraCommands().toStdString();
-    // Add .param statement for the sweep variable
     std::string cmdWithParam = ".param " + param.name + " = $PARAM\n" + extraCmds;
 
     outputPane_->appendPlainText(QString("Sweeping %1 from %2 to %3 (%4 steps)…")
         .arg(sweepParam_->text()).arg(sweepStart_->text())
         .arg(sweepStop_->text()).arg(sweepSteps_->text()));
     runBtn_->setEnabled(false);
-
     auto results = runner_->runSweep(param, cmdWithParam);
     runBtn_->setEnabled(true);
 
@@ -204,11 +338,8 @@ void SimSetupDialog::onRun() {
             .arg(std::count_if(results.begin(), results.end(),
                                [](const sim::SimResult& r) { return r.success; }))
             .arg(results.size()));
-
-    // Emit the last result for compatibility, but also send sweep data
     if (!results.empty()) {
       lastResult_ = results.back();
-      // Merge waveforms from all sweep steps with tagged names
       for (std::size_t ri = 0; ri < results.size(); ++ri) {
         for (auto& wv : results[ri].waveforms) {
           wv.name = param.name + "=" + std::to_string(
@@ -221,7 +352,6 @@ void SimSetupDialog::onRun() {
       }
     }
   } else {
-    // Single simulation
     outputPane_->appendPlainText("Running simulation…");
     runBtn_->setEnabled(false);
     lastResult_ = runner_->run(buildExtraCommands().toStdString());

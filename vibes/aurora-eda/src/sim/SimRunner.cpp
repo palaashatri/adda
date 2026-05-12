@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <random>
 #include <fstream>
 #include <sstream>
 
@@ -227,6 +228,52 @@ std::vector<SimResult> SimRunner::runSweep(const SweepParam& param,
     auto r = run(paramsCmd);
     r.rawOutput = std::to_string(value) + "\n" + r.rawOutput; // tag with value
     results.push_back(std::move(r));
+  }
+  return results;
+}
+
+std::vector<SimResult> SimRunner::runMonteCarlo(const MonteCarloParam& param,
+                                                  const std::string& extraCommands) {
+  std::vector<SimResult> results;
+  std::mt19937 rng(42); // fixed seed for reproducibility
+  std::normal_distribution<double> normDist(param.param1, param.param2);
+  std::uniform_real_distribution<double> uniformDist(param.param1, param.param2);
+
+  for (int mcIdx = 0; mcIdx < param.runs; ++mcIdx) {
+    double value;
+    if (param.dist == MonteCarloParam::Gaussian)
+      value = normDist(rng);
+    else
+      value = uniformDist(rng);
+
+    std::string cmd = extraCommands;
+    auto pos = cmd.find("$PARAM");
+    while (pos != std::string::npos) {
+      cmd.replace(pos, 6, std::to_string(value));
+      pos = cmd.find("$PARAM", pos + 1);
+    }
+
+    auto r = this->run(cmd);
+    r.rawOutput = "MC_run=" + std::to_string(mcIdx) + " val=" + std::to_string(value) + "\n" + r.rawOutput;
+    results.push_back(std::move(r));
+  }
+  return results;
+}
+
+std::vector<SimResult> SimRunner::runCorners(const std::vector<double>& temps,
+                                              const std::vector<double>& vddValues,
+                                              const std::string& extraCommands) {
+  std::vector<SimResult> results;
+  for (double temp : temps) {
+    for (double vdd : vddValues) {
+      std::string cmd = ".temp " + std::to_string(temp) + "\n";
+      cmd += ".param VDD = " + std::to_string(vdd) + "\n";
+      cmd += extraCommands;
+
+      auto r = this->run(cmd);
+      r.rawOutput = "T=" + std::to_string(temp) + " VDD=" + std::to_string(vdd) + "\n" + r.rawOutput;
+      results.push_back(std::move(r));
+    }
   }
   return results;
 }

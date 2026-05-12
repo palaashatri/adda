@@ -35,6 +35,7 @@ class SchematicViewWidget : public QWidget {
                    double dbuPerMicron = 1000.0);
   void setController(schematic::SchEditorController* ctrl);
   void fitView();
+  void setCrossProbeCellId(db::DbId cellId) { crossProbeCellId_ = cellId; update(); }
 
  signals:
   void coordinatesChanged(QPointF scenePt);
@@ -70,6 +71,7 @@ class SchematicViewWidget : public QWidget {
   QPointF selectedScene_;
   bool    panning_{false};
   bool    hasSelection_{false};
+  db::DbId crossProbeCellId_{db::kInvalidId};
 };
 
 }  // namespace aurora::ui

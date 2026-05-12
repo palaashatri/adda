@@ -50,6 +50,7 @@ class MainWindow : public QMainWindow {
   void onZoomFit();
   void onAbout();
   void onCoordinatesChanged(QPointF scenePt);
+  void onCrossProbe();
 
   // Tools
   void onToolSelect();
@@ -61,6 +62,7 @@ class MainWindow : public QMainWindow {
   void onToolPath();
   void onToolViaArray();
   void onToolGuardRing();
+  void onToolRuler();
   void onToolStimulus();
 
   // Hierarchical navigation
@@ -87,6 +89,10 @@ class MainWindow : public QMainWindow {
   // Import / Export
   void onImportSpice();
   void onExportGds();
+  void onExportDef();
+  void onImportDef();
+  void onExportVerilog();
+  void onExportLef();
   void onImportGds();
 
   // Library
@@ -118,6 +124,9 @@ class MainWindow : public QMainWindow {
   std::unique_ptr<schematic::SchDocument>         schDoc_;
   std::unique_ptr<schematic::SchEditorController> schCtrl_;
   std::unique_ptr<sim::SimRunner>                 simRunner_;
+
+  // Cross-probing
+  db::DbId crossProbeCellId_{db::kInvalidId};
 
   SimSetupDialog*    simDialog_{nullptr};
   DrcResultsDialog*  drcDialog_{nullptr};

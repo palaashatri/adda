@@ -36,6 +36,7 @@ class LayoutViewWidget : public QWidget {
                    double dbuPerMicron = 1000.0);
   void setController(layout::LayEditorController* ctrl);
   void fitView();
+  void setCrossProbeCellId(db::DbId cellId) { crossProbeCellId_ = cellId; update(); }
 
   void setLayerVisible(db::DbId layerId, bool visible);
   void zoomToBox(double sceneX, double sceneY, double sceneW, double sceneH);
@@ -75,6 +76,7 @@ class LayoutViewWidget : public QWidget {
   QPointF selectedScene_;
   bool    panning_{false};
   bool    hasSelection_{false};
+  db::DbId crossProbeCellId_{db::kInvalidId};
 };
 
 }  // namespace aurora::ui

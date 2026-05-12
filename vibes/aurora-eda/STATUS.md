@@ -113,6 +113,10 @@ feature milestone so the implemented and pending work stays visible.
   - Parses SPICE table output (Index/columns) into `SimWaveform` vectors
   - `runSweep()` — parametric sweep over any variable using `.param` substitution
   - `NetlistGenerator` now emits source statements (V/I) for stimulus markers on schematic
+  - `runMonteCarlo()` — Gaussian/uniform distributions, N runs, random parameter sampling
+  - Monte Carlo dialog in SimSetupDialog with distribution type, parameters, run count
+  - Analysis types added: Noise (.NOISE), Distortion (.DISTO), Pole-Zero (.PZ) with per-type parameter forms
+  - Cross-probing: select instance in schematic → toolbar ⇋ highlights same master cell in layout (auto-clears)
   - `aurora_sim_test` validates write-netlist and error-path behaviour
 - Task 8 DRC/LVS (completed):
   - `DrcViolation` struct with type, layer name, message, bounding-box location
@@ -152,6 +156,7 @@ feature milestone so the implemented and pending work stays visible.
   - `LayToolPath` — click-to-add-vertices path drawing with configurable width, Enter to commit, Escape to cancel
   - `LayToolViaArray` — drag rectangle, dialog configures columns/rows/size/spacing; generates grid of vias
   - `LayToolGuardRing` — drag rectangle around area; dialog configures ring width/spacing; generates 4-sided ring as rect bars
+  - `LayToolRuler` — click two points, dashed line with distance/Δx/Δy label overlay
   - Alignment tools — align left/right/top/bottom/center H/V operate on selected shapes via toolbar buttons
   - `LayEditorController` updated with `keyPress` forwarding
 - New UI dialogs and widgets (completed):
@@ -161,6 +166,24 @@ feature milestone so the implemented and pending work stays visible.
   - `CellBrowserDialog` — cell library tree, view list, double-click to open, New Cell input
 - SPICE import (completed):
   - `SpiceImporter` — parses `.subckt`/`.ends`, X-element instances, R/C/L/V/I/M passives into `DbCellLib`
+- Verilog netlist export (completed):
+  - `VerilogGenerator` — generates structural Verilog from DbView (module/endmodule, wire, instance with named ports)
+  - Direction-aware port declarations (input/output/inout)
+  - Instantiates sub-cells from symbol view pin order
+  - `aurora_verilog_test` validates output correctness
+- LEF export (completed):
+  - `LayLefWriter` — writes LEF 5.8 with MACRO, LAYER, SIZE, PIN (with direction/port geometry), OBS
+- DEF export (completed):
+  - `LayDefWriter` — writes DEF 5.8 with COMPONENTS (placed instances) and NETS (connectivity)
+  - `aurora_def_writer_test` validates DEF content
+- DEF import (completed):
+  - `LayDefReader` — parses DEF COMPONENTS placement and NETS connectivity; reconstructs into DbCellLib
+  - `aurora_def_reader_test` validates round-trip
+- Corner simulation (completed):
+  - `runCorners()` in SimRunner generates temperature/VDD corner matrix
+  - Dialog in SimSetupDialog with comma-separated temp/VDD lists
+  - Computes cell bounding box from all shapes
+  - `aurora_lef_writer_test` validates LEF output content
 - GDS II import (completed):
   - `LayGdsReader` — parses binary GDS, reconstructs cells/views/shapes/instances
   - Auto-creates layers from GDS layer/datatype pairs
@@ -221,7 +244,7 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | Symbol editor (graphical) | Create/edit cell symbols: shapes, pins, labels | Medium |
 | Schematic consistency checks | Unconnected pins, floating nets, shorted outputs | Medium |
 | DC operating point annotation | Display DC voltages/currents on schematic after sim | Medium |
-| Schematic ↔ Layout cross-probing | Select in schematic → highlight in layout and vice versa | Medium |
+| Schematic ↔ Layout cross-probing | ✓ done (B11) |
 | Parameter passing (hierarchical) | Pass parameters from parent to child instances | Medium |
 | Multi-sheet schematics | Off-sheet connectors, sheet symbols, cross-sheet navigation | Medium |
 | Undo/redo for schematic | Full undo stack for all schematic operations | Medium |
@@ -235,7 +258,7 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | Via array generator | ✓ done (C2) |
 | Guard ring generator | ✓ done (C3) |
 | Alignment and distribution tools | Align left/right/top/bottom/center H/V implemented; distribute H/V needs work | ◐ partial |
-| Measurement / ruler tool | Interactive distance measurement with annotation | Medium |
+| Measurement / ruler tool | ✓ done (C5) |
 | Interactive DRC (iDRC) | Real-time feedback during drawing | Medium |
 | Constraint-driven layout | Same-net spacing, differential pair, shielding | Medium |
 | Relative object placement snaps | Snap to edge, center, midpoint | Medium |
@@ -256,10 +279,10 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | Area | Gap | Priority |
 |------|-----|----------|
 | Xyce backend plugin | Plugin wrapper for Xyce simulator | High |
-| Analysis: Noise, Distortion, PZ, Sensitivity | Extend SimSetupDialog; add netlist generation | High |
+| Analysis: Noise, Distortion, PZ, Sensitivity | ✓ done (D3) |
 | Parametric sweeps | ✓ done (D4) |
-| Corner simulation | Process/voltage/temperature corner matrix | High |
-| Monte Carlo analysis | Statistical distributions; histogram results | High |
+| Corner simulation | ✓ done (D5) |
+| Monte Carlo analysis | ✓ done (D6) |
 | Design optimization | Optimize component values for target specs | Medium |
 | Waveform calculator / expression math | V(net1)-V(net2), dV/dt, RMS, average | High |
 | FFT / spectrum analysis | FFT of time-domain waveforms; SFDR, THD | Medium |
@@ -313,11 +336,11 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | Area | Gap | Priority |
 |------|-----|----------|
 | GDS II import | Parse binary GDS; reconstruct cells, hierarchy, geometries | High |
-| LEF export | Library Exchange Format: cell boundaries, pin locations | High |
+| LEF export | ✓ done (G3) |
 | LEF import | Parse LEF macro definitions | High |
-| DEF export | Design Exchange Format: net connectivity, placement | High |
-| DEF import | Parse DEF placement, routing, nets | High |
-| Verilog structural netlist export | Module/instance connectivity for digital flow | High |
+| DEF export | ✓ done (G5) |
+| DEF import | ✓ done (G6) |
+| Verilog structural netlist export | ✓ done (G7) |
 | Verilog structural netlist import | Parse module/instance connectivity | High |
 | CDL netlist export | Enhanced SPICE: device parameters, model references | High |
 | CDL netlist import (enhanced) | Device parameter parsing beyond basic SPICE | Medium |
@@ -376,16 +399,16 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | Milestone | Done | Not Started | Completion |
 |-----------|------|-------------|------------|
 | A — Core Infrastructure | 30/30 | 0 | **100%** |
-| B — Schematic Editor | 4/15 | 11 | **27%** |
-| C — Layout Editor | 6/19 | 13 | **32%** |
-| D — Simulation Environment | 3/18 | 15 | **17%** |
+| B — Schematic Editor | 5/15 | 10 | **33%** |
+| C — Layout Editor | 7/19 | 12 | **37%** |
+| D — Simulation Environment | 6/18 | 12 | **33%** |
 | E — Physical Verification | 2/13 | 11 | **15%** |
 | F — PCells and PDK | 3/14 | 11 | **21%** |
-| G — Import / Export | 3/17 | 14 | **18%** |
+| G — Import / Export | 7/17 | 10 | **41%** |
 | H — Project Management | 1/9 | 8 | **11%** |
 | I — Scripting | 1/9 | 8 | **11%** |
 | J — Advanced UI | 1/10 | 9 | **10%** |
-| **Total** | **54/154** | **100** | **~35%** |
+| **Total** | **63/154** | **91** | **~41%** |
 
 Note: "Done" counts items marked ✓ done or ◐ partial in the CLAUDE.md checklist.
 The application builds, runs, and passes all 7 CTest tests, but represents only

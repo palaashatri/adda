@@ -8,6 +8,7 @@
 #include "layout/LayToolGuardRing.h"
 #include "layout/LayToolPath.h"
 #include "layout/LayToolRect.h"
+#include "layout/LayToolRuler.h"
 #include "layout/LayToolSelect.h"
 #include "layout/LayToolPolygon.h"
 #include "layout/LayToolViaArray.h"
@@ -228,6 +229,16 @@ void LayoutViewWidget::paintView(QPainter& painter, const db::DbView& view, long
   for (const auto instId : view.instanceIds()) {
     const auto* inst = view.findInstance(instId);
     if (!inst) continue;
+
+    // Cross-probe highlight
+    if (crossProbeCellId_ != db::kInvalidId && inst->masterCellId() == crossProbeCellId_) {
+      const auto origin = sceneToScreen({dbuToScene(inst->transform().dx + dx),
+                                         dbuToScene(inst->transform().dy + dy)});
+      painter.setPen(QPen(QColor("#00ffcc"), 2));
+      painter.setBrush(Qt::NoBrush);
+      painter.drawEllipse(origin, 15, 15);
+    }
+
     if (lib_) {
       if (const auto* masterCell = lib_->findCellById(inst->masterCellId())) {
         if (const auto* masterView = masterCell->findView(db::DbViewType::Layout)) {
@@ -334,6 +345,32 @@ void LayoutViewWidget::paintToolOverlay(QPainter& painter) const {
       const double w  = dbuToScene(std::abs(cp.x - fp.x));
       const double h  = dbuToScene(std::abs(cp.y - fp.y));
       painter.drawRect(sceneRectToScreen({x0, y0, w, h}));
+    }
+  }
+
+  // Ruler tool overlay
+  if (const auto* rulerTool = dynamic_cast<const layout::LayToolRuler*>(tool)) {
+    if (rulerTool->hasStart()) {
+      const auto start = rulerTool->startPoint();
+      const auto end = rulerTool->cursor();
+      const auto sp = sceneToScreen({dbuToScene(start.x), dbuToScene(start.y)});
+      const auto ep = sceneToScreen({dbuToScene(end.x), dbuToScene(end.y)});
+      painter.setPen(QPen(QColor("#00ff88"), 1, Qt::DashLine));
+      painter.drawLine(sp, ep);
+      // Distance label
+      const auto dx = std::abs(end.x - start.x);
+      const auto dy = std::abs(end.y - start.y);
+      const double dist = std::sqrt(static_cast<double>(dx * dx + dy * dy));
+      const QString label = QString("%1 nm  (Δx=%2  Δy=%3)")
+          .arg(static_cast<int>(dist)).arg(dx).arg(dy);
+      painter.setPen(QColor("#00ff88"));
+      painter.setFont(QFont("monospace", 9));
+      const QPointF mid = (sp + ep) / 2.0;
+      painter.drawText(mid + QPointF{8, -8}, label);
+      // Start point dot
+      painter.setBrush(QColor("#00ff88"));
+      painter.setPen(Qt::NoPen);
+      painter.drawEllipse(sp, 4, 4);
     }
   }
 

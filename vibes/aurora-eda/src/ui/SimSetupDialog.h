@@ -3,12 +3,12 @@
 #include "sim/SimResult.h"
 
 #include <QCheckBox>
+#include <QComboBox>
 #include <QDialog>
 #include <QString>
 
 #include <vector>
 
-class QComboBox;
 class QDialogButtonBox;
 class QFormLayout;
 class QGroupBox;
@@ -50,25 +50,43 @@ class SimSetupDialog : public QDialog {
   QPlainTextEdit*  outputPane_{nullptr};
   QPushButton*     runBtn_{nullptr};
 
-  // Per-analysis param widgets
   QLineEdit* dcSrc_{nullptr};
   QLineEdit* dcStart_{nullptr};
   QLineEdit* dcStop_{nullptr};
   QLineEdit* dcStep_{nullptr};
-
   QLineEdit* acFStart_{nullptr};
   QLineEdit* acFStop_{nullptr};
   QLineEdit* acPts_{nullptr};
-
   QLineEdit* tranStop_{nullptr};
   QLineEdit* tranStep_{nullptr};
 
-  // Sweep param widgets
+  // Noise page
+  QLineEdit* noiseOut_{nullptr};
+  QLineEdit* noiseIn_{nullptr};
+
+  // Distortion page
+  QLineEdit* distoF1_{nullptr};
+  QLineEdit* distoF2_{nullptr};
+
+  // Pole-Zero page
+  QLineEdit* pzIn_{nullptr};
+  QLineEdit* pzOut_{nullptr};
+
   QCheckBox* sweepEnable_{nullptr};
   QLineEdit* sweepParam_{nullptr};
   QLineEdit* sweepStart_{nullptr};
   QLineEdit* sweepStop_{nullptr};
   QLineEdit* sweepSteps_{nullptr};
+
+  QCheckBox* cornerEnable_{nullptr};
+  QLineEdit* cornerTemps_{nullptr};
+  QLineEdit* cornerVdd_{nullptr};
+
+  QCheckBox* mcEnable_{nullptr};
+  QComboBox* mcDistCombo_{nullptr};
+  QLineEdit* mcParam1_{nullptr};
+  QLineEdit* mcParam2_{nullptr};
+  QLineEdit* mcRuns_{nullptr};
 
   sim::SimRunner*      runner_{nullptr};
   const db::DbCellLib* lib_{nullptr};

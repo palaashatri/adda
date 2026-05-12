@@ -38,3 +38,23 @@ add_executable(aurora_sim_test sim/SimRunnerTest.cpp)
 target_link_libraries(aurora_sim_test PRIVATE aurora_core)
 target_compile_features(aurora_sim_test PRIVATE cxx_std_20)
 add_test(NAME aurora_sim_test COMMAND aurora_sim_test)
+
+add_executable(aurora_verilog_test netlist/VerilogGeneratorTest.cpp)
+target_link_libraries(aurora_verilog_test PRIVATE aurora_core)
+target_compile_features(aurora_verilog_test PRIVATE cxx_std_20)
+add_test(NAME aurora_verilog_test COMMAND aurora_verilog_test)
+
+add_executable(aurora_lef_writer_test layout/LayLefWriterTest.cpp)
+target_link_libraries(aurora_lef_writer_test PRIVATE aurora_layout)
+target_compile_features(aurora_lef_writer_test PRIVATE cxx_std_20)
+add_test(NAME aurora_lef_writer_test COMMAND aurora_lef_writer_test)
+
+add_executable(aurora_def_reader_test layout/LayDefReaderTest.cpp)
+target_link_libraries(aurora_def_reader_test PRIVATE aurora_layout)
+target_compile_features(aurora_def_reader_test PRIVATE cxx_std_20)
+add_test(NAME aurora_def_reader_test COMMAND aurora_def_reader_test)
+
+add_executable(aurora_def_writer_test layout/LayDefWriterTest.cpp)
+target_link_libraries(aurora_def_writer_test PRIVATE aurora_layout)
+target_compile_features(aurora_def_writer_test PRIVATE cxx_std_20)
+add_test(NAME aurora_def_writer_test COMMAND aurora_def_writer_test)

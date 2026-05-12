@@ -23,8 +23,15 @@ struct SweepParam {
   bool logScale{false};
 };
 
-// Runs a SPICE-compatible simulator (ngspice by default) on a cell view.
-// Call writeSpiceNetlist() first, then run().
+struct MonteCarloParam {
+  std::string name;
+  enum Distribution { Gaussian, Uniform };
+  Distribution dist{Gaussian};
+  double param1{1.8};  // mean (Gaussian) or min (Uniform)
+  double param2{0.1};  // sigma (Gaussian) or max (Uniform)
+  int runs{20};
+};
+
 class SimRunner {
  public:
   explicit SimRunner(std::filesystem::path workdir);
@@ -35,10 +42,13 @@ class SimRunner {
                                        const db::DbView& view);
   [[nodiscard]] SimResult run(std::string_view extraCommands = "");
 
-  // Run a parametric sweep: replaces $PARAM in extraCommands with each sweep value.
-  // The .param statement should be included in extraCommands.
   [[nodiscard]] std::vector<SimResult> runSweep(const SweepParam& param,
-                                                const std::string& extraCommands);
+                                                 const std::string& extraCommands);
+  [[nodiscard]] std::vector<SimResult> runMonteCarlo(const MonteCarloParam& param,
+                                                       const std::string& extraCommands);
+  [[nodiscard]] std::vector<SimResult> runCorners(const std::vector<double>& temps,
+                                                    const std::vector<double>& vddValues,
+                                                    const std::string& extraCommands);
 
   [[nodiscard]] const std::filesystem::path& workdir() const;
   [[nodiscard]] const std::filesystem::path& netlistPath() const;

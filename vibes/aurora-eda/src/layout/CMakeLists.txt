@@ -6,13 +6,17 @@ target_sources(
   PRIVATE
     LayDocument.cpp
     LayEditorController.cpp
+    LayDefReader.cpp
     LayGdsReader.cpp
+    LayDefWriter.cpp
     LayGdsWriter.cpp
+    LayLefWriter.cpp
     LayTool.cpp
     LayToolGuardRing.cpp
     LayToolPath.cpp
     LayToolPolygon.cpp
     LayToolRect.cpp
+    LayToolRuler.cpp
     LayToolSelect.cpp
     LayToolViaArray.cpp
   PUBLIC
@@ -21,13 +25,17 @@ target_sources(
     FILES
       LayDocument.h
       LayEditorController.h
+      LayDefReader.h
       LayGdsReader.h
+      LayDefWriter.h
       LayGdsWriter.h
+      LayLefWriter.h
       LayTool.h
       LayToolGuardRing.h
       LayToolPath.h
       LayToolPolygon.h
       LayToolRect.h
+      LayToolRuler.h
       LayToolSelect.h
       LayToolViaArray.h
 )

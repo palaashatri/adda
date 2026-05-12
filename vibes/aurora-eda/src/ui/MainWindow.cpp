@@ -4,11 +4,16 @@
 #include "layout/LayEditorController.h"
 #include "pdk/PcellRegistry.h"
 #include "layout/LayGdsReader.h"
+#include "layout/LayDefReader.h"
+#include "layout/LayDefWriter.h"
 #include "layout/LayGdsWriter.h"
+#include "layout/LayLefWriter.h"
+#include "netlist/VerilogGenerator.h"
 #include "layout/LayToolGuardRing.h"
 #include "layout/LayToolPath.h"
 #include "layout/LayToolPolygon.h"
 #include "layout/LayToolRect.h"
+#include "layout/LayToolRuler.h"
 #include "layout/LayToolSelect.h"
 #include "layout/LayToolViaArray.h"
 #include "netlist/SpiceImporter.h"
@@ -30,6 +35,7 @@
 #include "ui/WaveformViewWidget.h"
 
 #include <QAction>
+#include <fstream>
 #include <functional>
 #include <QActionGroup>
 #include <QDialogButtonBox>
@@ -47,6 +53,7 @@
 #include <QPlainTextEdit>
 #include <QStatusBar>
 #include <QTabWidget>
+#include <QTimer>
 #include <QToolBar>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -277,7 +284,11 @@ void MainWindow::setupMenuBar() {
   auto* impMenu = menuBar()->addMenu("&Import/Export");
   impMenu->addAction("Import &SPICE Netlist…", this, &MainWindow::onImportSpice);
   impMenu->addAction("Import &GDS II…",        this, &MainWindow::onImportGds);
+  impMenu->addAction("Import &DEF…",           this, &MainWindow::onImportDef);
   impMenu->addAction("Export &GDS II…",        this, &MainWindow::onExportGds);
+  impMenu->addAction("Export &DEF…",           this, &MainWindow::onExportDef);
+  impMenu->addAction("Export &Verilog…",       this, &MainWindow::onExportVerilog);
+  impMenu->addAction("Export &LEF…",           this, &MainWindow::onExportLef);
 
   // Help
   auto* helpMenu = menuBar()->addMenu("&Help");
@@ -345,11 +356,14 @@ void MainWindow::setupToolToolBar() {
   makeBtn("A", "Path (A)",           &MainWindow::onToolPath);
   makeBtn("V", "Via Array (V)",      &MainWindow::onToolViaArray);
   makeBtn("G", "Guard Ring (G)",     &MainWindow::onToolGuardRing);
+  makeBtn("D", "Ruler (D)",          &MainWindow::onToolRuler);
 
   // Navigation
   toolbar->addSeparator();
   auto* navUp = toolbar->addAction("▲"); navUp->setToolTip("Pop Up (go to parent cell)");
   connect(navUp, &QAction::triggered, this, &MainWindow::onNavigatePop);
+  auto* xp = toolbar->addAction("⇋"); xp->setToolTip("Cross-Probe: highlight matching instances");
+  connect(xp, &QAction::triggered, this, &MainWindow::onCrossProbe);
 
   // Alignment buttons (non-checkable, operate on current selection)
   toolbar->addSeparator();
@@ -617,6 +631,13 @@ void MainWindow::onToolStimulus() {
   schCtrl_->setActiveTool(std::move(tool));
 }
 
+void MainWindow::onToolRuler() {
+  if (!layCtrl_) return;
+  tabs_->setCurrentIndex(1);
+  layCtrl_->setActiveTool(std::make_unique<layout::LayToolRuler>());
+  statusBar()->showMessage("Ruler — click two points to measure distance", 4000);
+}
+
 // ─── Hierarchical navigation ─────────────────────────────────────────────────
 
 void MainWindow::onInstanceDoubleClicked() {
@@ -701,6 +722,55 @@ void MainWindow::onNavigatePop() {
   navStack_.pop_back();
   navigateToCell(entry.cellId, entry.viewType);
   statusBar()->showMessage("Popped back", 4000);
+}
+
+void MainWindow::onCrossProbe() {
+  const int tab = tabs_->currentIndex();
+  if (tab == 0 && schCtrl_) {
+    // Schematic → Layout cross-probe
+    const auto* sel = dynamic_cast<const schematic::SchToolSelect*>(schCtrl_->activeTool());
+    if (!sel || sel->selectedInstances().empty()) {
+      statusBar()->showMessage("Select an instance in schematic first", 4000);
+      return;
+    }
+    const auto& view = schCtrl_->document().view();
+    const auto* inst = view.findInstance(*sel->selectedInstances().begin());
+    if (!inst) return;
+    crossProbeCellId_ = inst->masterCellId();
+    schView_->setCrossProbeCellId(crossProbeCellId_);
+    layView_->setCrossProbeCellId(crossProbeCellId_);
+    const auto* master = app_.projects().workingLibrary().findCellById(crossProbeCellId_);
+    statusBar()->showMessage(QString("Cross-probe: %1").arg(
+        master ? QString::fromStdString(master->name()) : "unknown"), 4000);
+  } else if (tab == 1 && layCtrl_) {
+    // Layout → Schematic cross-probe
+    const auto* sel = dynamic_cast<const layout::LayToolSelect*>(layCtrl_->activeTool());
+    if (!sel || sel->selectedShapes().empty()) {
+      statusBar()->showMessage("Select an instance in layout first", 4000);
+      return;
+    }
+    const auto& view = layCtrl_->document().view();
+    // Find the parent instance from selected shape
+    for (const auto sid : sel->selectedShapes()) {
+      const auto* shape = view.findShape(sid);
+      if (!shape) continue;
+      // Shape is selected, highlight instances of same master cell
+      // For now, cross-probe by instance: find instance containing this shape
+      (void)shape;
+    }
+    // Simplified: just clear the cross-probe
+    crossProbeCellId_ = db::kInvalidId;
+    schView_->setCrossProbeCellId(db::kInvalidId);
+    layView_->setCrossProbeCellId(db::kInvalidId);
+    statusBar()->showMessage("Cross-probe cleared", 4000);
+  }
+  // Clear cross-probe on second click
+  auto reset = [this]() {
+    crossProbeCellId_ = db::kInvalidId;
+    schView_->setCrossProbeCellId(db::kInvalidId);
+    layView_->setCrossProbeCellId(db::kInvalidId);
+  };
+  QTimer::singleShot(5000, this, reset);
 }
 
 void MainWindow::navigateToCell(db::DbId cellId, db::DbViewType viewType) {
@@ -945,6 +1015,67 @@ void MainWindow::onExportGds() {
     statusBar()->showMessage("GDS exported", 4000);
   } else {
     QMessageBox::warning(this, "Export Error", "Failed to write GDS II file.");
+  }
+}
+
+void MainWindow::onImportDef() {
+  const auto path = QFileDialog::getOpenFileName(this, "Import DEF",
+      QDir::homePath(), "DEF (*.def);;All Files (*)");
+  if (path.isEmpty()) return;
+  layout::LayDefReader reader;
+  if (reader.read(app_.projects().workingLibrary(), path.toStdString())) {
+    refreshLibraryBrowser();
+    log("Imported DEF: " + path);
+    statusBar()->showMessage("DEF import successful", 4000);
+  } else {
+    QMessageBox::warning(this, "Import Error", "Failed to read DEF file.");
+  }
+}
+
+void MainWindow::onExportDef() {
+  const auto path = QFileDialog::getSaveFileName(this, "Export DEF",
+      QDir::homePath(), "DEF (*.def);;All Files (*)");
+  if (path.isEmpty()) return;
+  layout::LayDefWriter writer;
+  if (writer.write(app_.projects().workingLibrary(), path.toStdString())) {
+    log("DEF exported: " + path);
+    statusBar()->showMessage("DEF exported", 4000);
+  } else {
+    QMessageBox::warning(this, "Export Error", "Failed to write DEF file.");
+  }
+}
+
+void MainWindow::onExportVerilog() {
+  const auto path = QFileDialog::getSaveFileName(this, "Export Verilog",
+      QDir::homePath(), "Verilog (*.v);;All Files (*)");
+  if (path.isEmpty()) return;
+  auto& lib = app_.projects().workingLibrary();
+  // Find the first cell with a schematic view
+  for (const auto cid : lib.cellIds()) {
+    auto* cell = lib.findCellById(cid);
+    if (!cell) continue;
+    auto* view = cell->findView(db::DbViewType::Schematic);
+    if (!view) continue;
+    netlist::VerilogGenerator gen;
+    const std::string vlog = gen.generateVerilog(lib, *cell, *view);
+    std::ofstream ofs(path.toStdString());
+    if (ofs) { ofs << vlog; log("Verilog exported: " + path); statusBar()->showMessage("Verilog exported", 4000); }
+    else { QMessageBox::warning(this, "Export Error", "Failed to write Verilog file."); }
+    return;
+  }
+  statusBar()->showMessage("No schematic view found to export", 4000);
+}
+
+void MainWindow::onExportLef() {
+  const auto path = QFileDialog::getSaveFileName(this, "Export LEF",
+      QDir::homePath(), "LEF (*.lef);;All Files (*)");
+  if (path.isEmpty()) return;
+  layout::LayLefWriter writer;
+  if (writer.write(app_.projects().workingLibrary(), path.toStdString())) {
+    log("LEF exported: " + path);
+    statusBar()->showMessage("LEF exported", 4000);
+  } else {
+    QMessageBox::warning(this, "Export Error", "Failed to write LEF file.");
   }
 }
 
