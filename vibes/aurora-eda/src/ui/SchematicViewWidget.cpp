@@ -6,15 +6,20 @@
 #include "db/DbView.h"
 #include "schematic/SchDocument.h"
 #include "schematic/SchEditorController.h"
+#include "db/DbConstraint.h"
+#include "schematic/SchToolStimulus.h"
 #include "schematic/SchToolWire.h"
 #include "schematic/SchToolSelect.h"
 #include "schematic/SchToolInstance.h"
+#include "schematic/SchToolLabel.h"
 
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
 #include <QWheelEvent>
+
+#include <QFont>
 
 #include <algorithm>
 #include <cmath>
@@ -282,6 +287,87 @@ void SchematicViewWidget::paintDocument(QPainter& painter) const {
     painter.setBrush(Qt::NoBrush);
   }
 
+  // Draw net labels
+  painter.setFont(QFont("sans-serif", 9));
+  for (const auto& label : doc_->netLabels()) {
+    const auto* net = doc_->view().findNet(label.netId);
+    if (!net) continue;
+    const auto sp = sceneToScreen({dbuToScene(label.position.x), dbuToScene(label.position.y)});
+    const QString text = QString::fromStdString(net->name());
+    const QRectF br = painter.fontMetrics().boundingRect(text);
+    // Background pill
+    const QRectF bg{sp.x() - 4, sp.y() - br.height() + 2, br.width() + 8, br.height() + 2};
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor("#ffffcc"));
+    painter.drawRoundedRect(bg, 3, 3);
+    // Text
+    painter.setPen(QColor("#004000"));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawText(sp + QPointF{0, 2}, text);
+  }
+
+  // Draw stimulus markers
+  painter.setFont(QFont("sans-serif", 8));
+  for (const auto cid : doc_->view().constraintIds()) {
+    const auto* con = doc_->view().findConstraint(cid);
+    if (!con) continue;
+    const auto& type = con->type();
+    bool isStim = (type == "vdc" || type == "idc" || type == "vpulse" || type == "vsin");
+    if (!isStim) continue;
+    const auto& props = con->properties();
+    auto prop = [&](const std::string& k, const std::string& d) -> std::string {
+  auto it = props.find(k); return it != props.end() ? it->second : d;
+};
+auto getX = props.find("x");
+    auto getY = props.find("y");
+    if (getX == props.end() || getY == props.end()) continue;
+    const geom::GeomPoint pos{std::stoll(getX->second), std::stoll(getY->second)};
+    const auto sp = sceneToScreen({dbuToScene(pos.x), dbuToScene(pos.y)});
+
+    // Draw marker symbol
+    painter.setPen(QPen(QColor("#c04040"), std::max(1.0, 1.5 * zoom_)));
+    painter.setBrush(QColor("#c0404020"));
+
+    QString label;
+    if (type == "vdc") {
+      // Circle with + and - labels
+      painter.drawEllipse(sp, 10, 10);
+      painter.drawText(sp + QPointF{-6, -14}, "V");
+      label = QString("DC=%1").arg(QString::fromStdString(prop("dc", "0")));
+    } else if (type == "idc") {
+      painter.drawEllipse(sp, 10, 10);
+      painter.drawText(sp + QPointF{-4, -14}, "I");
+      label = QString("DC=%1").arg(QString::fromStdString(prop("dc", "0")));
+    } else if (type == "vpulse") {
+      // Pulse symbol
+      auto path = QPainterPath();
+      path.moveTo(sp + QPointF{-8, 0});
+      path.lineTo(sp + QPointF{-4, 0});
+      path.lineTo(sp + QPointF{0, -8});
+      path.lineTo(sp + QPointF{4, 0});
+      path.lineTo(sp + QPointF{8, 0});
+      painter.drawPath(path);
+      label = QString("PULSE");
+    } else if (type == "vsin") {
+      // Sine wave
+      auto path = QPainterPath();
+      const int n = 20;
+      for (int i = 0; i <= n; ++i) {
+        const double a = 2.0 * 3.14159 * i / n;
+        const double sx = sp.x() + (i - n / 2.0) * 0.8;
+        const double sy = sp.y() - 8.0 * std::sin(a);
+        if (i == 0) path.moveTo(sx, sy);
+        else path.lineTo(sx, sy);
+      }
+      painter.drawPath(path);
+      label = QString("SIN");
+    }
+
+    // Label text below marker
+    painter.setPen(QColor("#c04040"));
+    painter.drawText(sp + QPointF{-20, 20}, label);
+  }
+
   // Origin marker
   const auto orig = sceneToScreen({0.0, 0.0});
   painter.setPen(QPen(QColor("#c8c8c0"), 1));
@@ -323,6 +409,17 @@ void SchematicViewWidget::paintToolOverlay(QPainter& painter) const {
       painter.setBrush(QColor(0, 170, 255, 30));
       painter.drawRect(QRectF{sp, ep}.normalized());
     }
+  }
+
+  // Label tool: crosshair cursor at click point
+  if (const auto* labelTool = dynamic_cast<const schematic::SchToolLabel*>(tool)) {
+    const auto cp = sceneToScreen({dbuToScene(labelTool->cursor().x),
+                                   dbuToScene(labelTool->cursor().y)});
+    painter.setPen(QPen(QColor("#008000"), 1, Qt::DashLine));
+    painter.drawLine(QPointF{cp.x() - 8, cp.y()}, QPointF{cp.x() + 8, cp.y()});
+    painter.drawLine(QPointF{cp.x(), cp.y() - 8}, QPointF{cp.x(), cp.y() + 8});
+    painter.setPen(QColor("#008000"));
+    painter.drawText(cp + QPointF{4, -8}, "label");
   }
 
   // Instance tool: ghost instance at cursor

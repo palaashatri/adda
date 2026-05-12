@@ -51,6 +51,10 @@ const geom::GeomPolygon& DbPolygon::polygon() const {
   return polygon_;
 }
 
+geom::GeomPolygon& DbPolygon::polygon() {
+  return polygon_;
+}
+
 void DbPolygon::setPolygon(geom::GeomPolygon polygon) {
   polygon_ = std::move(polygon);
 }
@@ -67,6 +71,10 @@ std::unique_ptr<DbShape> DbPath::clone() const {
 }
 
 const geom::GeomPath& DbPath::path() const {
+  return path_;
+}
+
+geom::GeomPath& DbPath::path() {
   return path_;
 }
 

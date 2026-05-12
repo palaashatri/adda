@@ -5,6 +5,7 @@
 #include "db/DbView.h"
 #include "sim/SimRunner.h"
 
+#include <algorithm>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFileDialog>
@@ -22,7 +23,7 @@ namespace aurora::ui {
 
 SimSetupDialog::SimSetupDialog(QWidget* parent) : QDialog(parent) {
   setWindowTitle("Simulation Setup (ADE)");
-  resize(560, 600);
+  resize(560, 700);
 
   auto* mainLayout = new QVBoxLayout(this);
 
@@ -94,13 +95,28 @@ SimSetupDialog::SimSetupDialog(QWidget* parent) : QDialog(parent) {
   aLayout->addWidget(paramStack_);
   mainLayout->addWidget(analysisBox);
 
+  // Parametric sweep
+  auto* sweepBox = new QGroupBox("Parametric Sweep (optional)", this);
+  auto* swForm   = new QFormLayout(sweepBox);
+  sweepEnable_ = new QCheckBox("Enable sweep", sweepBox);
+  swForm->addRow(sweepEnable_);
+  sweepParam_ = new QLineEdit("VDD", sweepBox);
+  swForm->addRow("Parameter:", sweepParam_);
+  sweepStart_ = new QLineEdit("0", sweepBox);
+  swForm->addRow("Start:", sweepStart_);
+  sweepStop_ = new QLineEdit("5", sweepBox);
+  swForm->addRow("Stop:", sweepStop_);
+  sweepSteps_ = new QLineEdit("10", sweepBox);
+  swForm->addRow("Steps:", sweepSteps_);
+  mainLayout->addWidget(sweepBox);
+
   // Output
   auto* outBox = new QGroupBox("Output", this);
   auto* outLay = new QVBoxLayout(outBox);
   outputPane_  = new QPlainTextEdit(outBox);
   outputPane_->setReadOnly(true);
   outputPane_->setMaximumBlockCount(1000);
-  outputPane_->setMinimumHeight(150);
+  outputPane_->setMinimumHeight(120);
   QFont mono("Courier New", 9);
   outputPane_->setFont(mono);
   outLay->addWidget(outputPane_);
@@ -162,10 +178,55 @@ void SimSetupDialog::onRun() {
     return;
   }
 
-  outputPane_->appendPlainText("Running simulation…");
-  runBtn_->setEnabled(false);
-  lastResult_ = runner_->run(buildExtraCommands().toStdString());
-  runBtn_->setEnabled(true);
+  if (sweepEnable_->isChecked()) {
+    // Parametric sweep
+    sim::SweepParam param;
+    param.name    = sweepParam_->text().toStdString();
+    param.start   = sweepStart_->text().toDouble();
+    param.stop    = sweepStop_->text().toDouble();
+    param.steps   = sweepSteps_->text().toInt();
+    param.logScale = false;
+
+    const auto extraCmds = buildExtraCommands().toStdString();
+    // Add .param statement for the sweep variable
+    std::string cmdWithParam = ".param " + param.name + " = $PARAM\n" + extraCmds;
+
+    outputPane_->appendPlainText(QString("Sweeping %1 from %2 to %3 (%4 steps)…")
+        .arg(sweepParam_->text()).arg(sweepStart_->text())
+        .arg(sweepStop_->text()).arg(sweepSteps_->text()));
+    runBtn_->setEnabled(false);
+
+    auto results = runner_->runSweep(param, cmdWithParam);
+    runBtn_->setEnabled(true);
+
+    outputPane_->appendPlainText(
+        QString("Sweep completed: %1 / %2 succeeded")
+            .arg(std::count_if(results.begin(), results.end(),
+                               [](const sim::SimResult& r) { return r.success; }))
+            .arg(results.size()));
+
+    // Emit the last result for compatibility, but also send sweep data
+    if (!results.empty()) {
+      lastResult_ = results.back();
+      // Merge waveforms from all sweep steps with tagged names
+      for (std::size_t ri = 0; ri < results.size(); ++ri) {
+        for (auto& wv : results[ri].waveforms) {
+          wv.name = param.name + "=" + std::to_string(
+              param.start + (param.stop - param.start) * ri / param.steps) + " " + wv.name;
+        }
+        if (!results[ri].waveforms.empty()) {
+          lastResult_.waveforms.insert(lastResult_.waveforms.end(),
+              results[ri].waveforms.begin(), results[ri].waveforms.end());
+        }
+      }
+    }
+  } else {
+    // Single simulation
+    outputPane_->appendPlainText("Running simulation…");
+    runBtn_->setEnabled(false);
+    lastResult_ = runner_->run(buildExtraCommands().toStdString());
+    runBtn_->setEnabled(true);
+  }
 
   if (!lastResult_.success) {
     outputPane_->appendPlainText("Simulation FAILED: " +
@@ -178,6 +239,8 @@ void SimSetupDialog::onRun() {
         outputPane_->appendPlainText(
             QString("  %1 = %2").arg(QString::fromStdString(k)).arg(v));
     }
+    outputPane_->appendPlainText(
+        QString("Waveforms: %1 traces").arg(lastResult_.waveforms.size()));
   }
 
   outputPane_->appendPlainText(QString::fromStdString(lastResult_.rawOutput));

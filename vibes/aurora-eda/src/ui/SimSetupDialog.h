@@ -2,8 +2,11 @@
 
 #include "sim/SimResult.h"
 
+#include <QCheckBox>
 #include <QDialog>
 #include <QString>
+
+#include <vector>
 
 class QComboBox;
 class QDialogButtonBox;
@@ -16,7 +19,7 @@ class QStackedWidget;
 
 namespace aurora {
 namespace db { class DbCellLib; class DbCell; }
-namespace sim { class SimRunner; }
+namespace sim { class SimRunner; struct SweepParam; }
 }  // namespace aurora
 
 namespace aurora::ui {
@@ -59,6 +62,13 @@ class SimSetupDialog : public QDialog {
 
   QLineEdit* tranStop_{nullptr};
   QLineEdit* tranStep_{nullptr};
+
+  // Sweep param widgets
+  QCheckBox* sweepEnable_{nullptr};
+  QLineEdit* sweepParam_{nullptr};
+  QLineEdit* sweepStart_{nullptr};
+  QLineEdit* sweepStop_{nullptr};
+  QLineEdit* sweepSteps_{nullptr};
 
   sim::SimRunner*      runner_{nullptr};
   const db::DbCellLib* lib_{nullptr};

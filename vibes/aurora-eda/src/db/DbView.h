@@ -46,6 +46,8 @@ class DbView {
   [[nodiscard]] const DbNet* findNet(DbId id) const;
   [[nodiscard]] DbPin* findPin(DbId id);
   [[nodiscard]] const DbPin* findPin(DbId id) const;
+  [[nodiscard]] DbConstraint* findConstraint(DbId id);
+  [[nodiscard]] const DbConstraint* findConstraint(DbId id) const;
   [[nodiscard]] std::vector<DbPin*> findInstancePins(DbId instanceId);
   [[nodiscard]] std::vector<const DbPin*> findInstancePins(DbId instanceId) const;
 

@@ -2,15 +2,22 @@
 
 #include "layout/LayDocument.h"
 #include "layout/LayEditorController.h"
+#include "pdk/PcellRegistry.h"
+#include "layout/LayGdsReader.h"
 #include "layout/LayGdsWriter.h"
+#include "layout/LayToolGuardRing.h"
+#include "layout/LayToolPath.h"
 #include "layout/LayToolPolygon.h"
 #include "layout/LayToolRect.h"
 #include "layout/LayToolSelect.h"
+#include "layout/LayToolViaArray.h"
 #include "netlist/SpiceImporter.h"
 #include "schematic/SchDocument.h"
 #include "schematic/SchEditorController.h"
 #include "schematic/SchToolInstance.h"
+#include "schematic/SchToolLabel.h"
 #include "schematic/SchToolSelect.h"
+#include "schematic/SchToolStimulus.h"
 #include "schematic/SchToolWire.h"
 #include "sim/SimRunner.h"
 #include "ui/CellBrowserDialog.h"
@@ -23,7 +30,11 @@
 #include "ui/WaveformViewWidget.h"
 
 #include <QAction>
+#include <functional>
 #include <QActionGroup>
+#include <QDialogButtonBox>
+#include <QFormLayout>
+#include <QLineEdit>
 #include <QApplication>
 #include <QDir>
 #include <QDockWidget>
@@ -193,6 +204,16 @@ void MainWindow::setupMenuBar() {
     a->setCheckable(true);
   }
   {
+    auto* a = toolMenu->addAction("&Label",         this, &MainWindow::onToolLabel);
+    a->setShortcut(Qt::Key_L);
+    a->setCheckable(true);
+  }
+  {
+    auto* a = toolMenu->addAction("Sti&mulus",      this, &MainWindow::onToolStimulus);
+    a->setShortcut(Qt::Key_M);
+    a->setCheckable(true);
+  }
+  {
     auto* a = toolMenu->addAction("Place &Instance",this, &MainWindow::onToolInstance);
     a->setShortcut(Qt::Key_I);
     a->setCheckable(true);
@@ -217,6 +238,34 @@ void MainWindow::setupMenuBar() {
   }
   simMenu->addAction("View &Waveforms", this, [this] { tabs_->setCurrentIndex(2); });
 
+  // PCells
+  auto* pcellMenu = menuBar()->addMenu("PCe&lls");
+  pcellMenu->addAction("Generate &NMOS…", this, [this] {
+    auto& lib = app_.projects().workingLibrary();
+    // Create a new cell
+    auto& cell = lib.createCell("NMOS_PCell");
+    auto& lv   = cell.createView(db::DbViewType::Layout);
+    bool ok = false;
+    const QString wStr = QInputDialog::getText(this, "NMOS PCell",
+        "Total width W (nm):", QLineEdit::Normal, "2000", &ok);
+    if (!ok) return;
+    const QString lStr = QInputDialog::getText(this, "NMOS PCell",
+        "Gate length L (nm):", QLineEdit::Normal, "180", &ok);
+    if (!ok) return;
+    const QString fStr = QInputDialog::getText(this, "NMOS PCell",
+        "Fingers:", QLineEdit::Normal, "1", &ok);
+    if (!ok) return;
+    pdk::ParamMap params;
+    params["W"] = wStr.toStdString();
+    params["L"] = lStr.toStdString();
+    params["fingers"] = fStr.toStdString();
+    if (app_.pcells().invoke("NMOS", lv, lib, app_.tech(), params)) {
+      refreshLibraryBrowser();
+      log("Generated NMOS PCell with W=" + wStr + " L=" + lStr + " fingers=" + fStr);
+      statusBar()->showMessage("NMOS PCell generated", 4000);
+    }
+  });
+
   // Verification
   auto* verMenu = menuBar()->addMenu("&Verification");
   {
@@ -227,6 +276,7 @@ void MainWindow::setupMenuBar() {
   // Import / Export
   auto* impMenu = menuBar()->addMenu("&Import/Export");
   impMenu->addAction("Import &SPICE Netlist…", this, &MainWindow::onImportSpice);
+  impMenu->addAction("Import &GDS II…",        this, &MainWindow::onImportGds);
   impMenu->addAction("Export &GDS II…",        this, &MainWindow::onExportGds);
 
   // Help
@@ -286,10 +336,39 @@ void MainWindow::setupToolToolBar() {
 
   makeBtn("S", "Select (S)",         &MainWindow::onToolSelect);
   makeBtn("W", "Wire (W)",           &MainWindow::onToolWire);
+  makeBtn("L", "Label (L)",          &MainWindow::onToolLabel);
+  makeBtn("M", "Stimulus (M)",       &MainWindow::onToolStimulus);
   makeBtn("I", "Place Instance (I)", &MainWindow::onToolInstance);
   toolbar->addSeparator();
   makeBtn("R", "Rectangle (R)",      &MainWindow::onToolRect);
   makeBtn("P", "Polygon (P)",        &MainWindow::onToolPolygon);
+  makeBtn("A", "Path (A)",           &MainWindow::onToolPath);
+  makeBtn("V", "Via Array (V)",      &MainWindow::onToolViaArray);
+  makeBtn("G", "Guard Ring (G)",     &MainWindow::onToolGuardRing);
+
+  // Navigation
+  toolbar->addSeparator();
+  auto* navUp = toolbar->addAction("▲"); navUp->setToolTip("Pop Up (go to parent cell)");
+  connect(navUp, &QAction::triggered, this, &MainWindow::onNavigatePop);
+
+  // Alignment buttons (non-checkable, operate on current selection)
+  toolbar->addSeparator();
+  auto* al = toolbar->addAction("◀▶"); al->setToolTip("Align Left");
+  connect(al, &QAction::triggered, this, &MainWindow::onAlignLeft);
+  al = toolbar->addAction("▶◀"); al->setToolTip("Align Right");
+  connect(al, &QAction::triggered, this, &MainWindow::onAlignRight);
+  al = toolbar->addAction("▲▼"); al->setToolTip("Align Top");
+  connect(al, &QAction::triggered, this, &MainWindow::onAlignTop);
+  al = toolbar->addAction("▼▲"); al->setToolTip("Align Bottom");
+  connect(al, &QAction::triggered, this, &MainWindow::onAlignBottom);
+  al = toolbar->addAction("⇔"); al->setToolTip("Align Center H");
+  connect(al, &QAction::triggered, this, &MainWindow::onAlignCenterH);
+  al = toolbar->addAction("⇕"); al->setToolTip("Align Center V");
+  connect(al, &QAction::triggered, this, &MainWindow::onAlignCenterV);
+  al = toolbar->addAction("⊞"); al->setToolTip("Distribute H");
+  connect(al, &QAction::triggered, this, &MainWindow::onDistributeH);
+  al = toolbar->addAction("⊟"); al->setToolTip("Distribute V");
+  connect(al, &QAction::triggered, this, &MainWindow::onDistributeV);
 }
 
 void MainWindow::setupDocks() {
@@ -384,6 +463,21 @@ void MainWindow::onToolWire() {
   }
 }
 
+void MainWindow::onToolLabel() {
+  if (!schCtrl_) return;
+  tabs_->setCurrentIndex(0);
+  auto tool = std::make_unique<schematic::SchToolLabel>();
+  tool->requestLabelName = [this](geom::GeomPoint) -> std::string {
+    bool ok = false;
+    const QString name = QInputDialog::getText(this, "Net Label",
+        "Enter net name:", QLineEdit::Normal, "", &ok);
+    if (!ok || name.isEmpty()) return {};
+    return name.toStdString();
+  };
+  schCtrl_->setActiveTool(std::move(tool));
+  statusBar()->showMessage("Label tool — click on a wire to name the net", 4000);
+}
+
 void MainWindow::onToolInstance() {
   if (!schCtrl_) return;
   tabs_->setCurrentIndex(0);
@@ -416,6 +510,347 @@ void MainWindow::onToolPolygon() {
     layCtrl_->setActiveTool(std::make_unique<layout::LayToolPolygon>());
     statusBar()->showMessage("Polygon tool — click to add vertices, Enter to close, Esc to cancel", 4000);
   }
+}
+
+void MainWindow::onToolPath() {
+  if (layCtrl_) {
+    tabs_->setCurrentIndex(1);
+    auto tool = std::make_unique<layout::LayToolPath>();
+    statusBar()->showMessage("Path tool — click to add vertices, Enter to commit, Esc to cancel", 4000);
+    layCtrl_->setActiveTool(std::move(tool));
+  }
+}
+
+void MainWindow::onToolViaArray() {
+  if (!layCtrl_) return;
+  tabs_->setCurrentIndex(1);
+  auto tool = std::make_unique<layout::LayToolViaArray>();
+  tool->params = {3, 3, 200, 400, 400};
+  tool->requestParams = [this]() -> std::optional<layout::ViaArrayParams> {
+    auto* dlg = new QDialog(this);
+    dlg->setWindowTitle("Via Array");
+    auto* lay = new QFormLayout(dlg);
+    auto* cols = new QLineEdit("3", dlg);
+    auto* rows = new QLineEdit("3", dlg);
+    auto* size = new QLineEdit("200", dlg);
+    auto* spX  = new QLineEdit("400", dlg);
+    auto* spY  = new QLineEdit("400", dlg);
+    lay->addRow("Columns:", cols);
+    lay->addRow("Rows:", rows);
+    lay->addRow("Via size (nm):", size);
+    lay->addRow("Spacing X (nm):", spX);
+    lay->addRow("Spacing Y (nm):", spY);
+    auto* btns = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, dlg);
+    lay->addRow(btns);
+    connect(btns, &QDialogButtonBox::accepted, dlg, &QDialog::accept);
+    connect(btns, &QDialogButtonBox::rejected, dlg, &QDialog::reject);
+    if (dlg->exec() != QDialog::Accepted) { dlg->deleteLater(); return std::nullopt; }
+    layout::ViaArrayParams p;
+    p.columns = cols->text().toInt();
+    p.rows = rows->text().toInt();
+    p.viaSize = cols->text().toInt();
+    p.spacingX = spX->text().toLongLong();
+    p.spacingY = spY->text().toLongLong();
+    p.viaSize = size->text().toLongLong();
+    dlg->deleteLater();
+    return p;
+  };
+  statusBar()->showMessage("Via Array — drag a rectangle to define the array area", 4000);
+  layCtrl_->setActiveTool(std::move(tool));
+}
+
+void MainWindow::onToolGuardRing() {
+  if (!layCtrl_) return;
+  tabs_->setCurrentIndex(1);
+  auto tool = std::make_unique<layout::LayToolGuardRing>();
+  tool->requestParams = [this]() -> std::optional<layout::GuardRingParams> {
+    bool ok = false;
+    const QString w = QInputDialog::getText(this, "Guard Ring",
+        "Ring width (nm):", QLineEdit::Normal, "400", &ok);
+    if (!ok) return std::nullopt;
+    const QString s = QInputDialog::getText(this, "Guard Ring",
+        "Spacing from inner area (nm):", QLineEdit::Normal, "200", &ok);
+    if (!ok) return std::nullopt;
+    return layout::GuardRingParams{w.toLongLong(), s.toLongLong()};
+  };
+  statusBar()->showMessage("Guard Ring — drag a rectangle around the area to protect", 4000);
+  layCtrl_->setActiveTool(std::move(tool));
+}
+
+void MainWindow::onToolStimulus() {
+  if (!schCtrl_) return;
+  tabs_->setCurrentIndex(0);
+  auto tool = std::make_unique<schematic::SchToolStimulus>();
+  tool->requestParams = [this]() -> std::optional<schematic::StimulusParams> {
+    QStringList types;
+    types << "VDC" << "IDC" << "VPULSE" << "VSIN";
+    bool ok = false;
+    const QString chosen = QInputDialog::getItem(this, "Stimulus Marker",
+        "Type:", types, 0, false, &ok);
+    if (!ok) return std::nullopt;
+    schematic::StimulusParams p;
+    if (chosen == "VDC") {
+      p.type = "vdc";
+      const QString dc = QInputDialog::getText(this, "VDC", "DC Voltage:",
+          QLineEdit::Normal, "1.8", &ok);
+      if (!ok) return std::nullopt;
+      p.values["dc"] = dc.toStdString();
+    } else if (chosen == "IDC") {
+      p.type = "idc";
+      const QString dc = QInputDialog::getText(this, "IDC", "DC Current:",
+          QLineEdit::Normal, "1e-3", &ok);
+      if (!ok) return std::nullopt;
+      p.values["dc"] = dc.toStdString();
+    } else if (chosen == "VPULSE") {
+      p.type = "vpulse";
+      p.values["v1"] = "0"; p.values["v2"] = "1.8";
+      p.values["td"] = "0"; p.values["tr"] = "1n";
+      p.values["tf"] = "1n"; p.values["pw"] = "10n"; p.values["per"] = "20n";
+    } else if (chosen == "VSIN") {
+      p.type = "vsin";
+      p.values["voff"] = "0"; p.values["vamp"] = "1";
+      p.values["freq"] = "1e6";
+    }
+    return p;
+  };
+  statusBar()->showMessage("Stimulus tool — click on a wire to place a source marker", 4000);
+  schCtrl_->setActiveTool(std::move(tool));
+}
+
+// ─── Hierarchical navigation ─────────────────────────────────────────────────
+
+void MainWindow::onInstanceDoubleClicked() {
+  if (!layCtrl_ && !schCtrl_) return;
+  // Find which instance is under cursor by checking selection
+  db::DbId targetCellId = db::kInvalidId;
+  db::DbViewType currentType;
+  db::DbId currentCellId = db::kInvalidId;
+
+  const int tab = tabs_->currentIndex();
+  if (tab == 0 && schCtrl_) {
+    currentType = db::DbViewType::Schematic;
+    const auto* sel = dynamic_cast<const schematic::SchToolSelect*>(schCtrl_->activeTool());
+    if (!sel || sel->selectedInstances().empty()) {
+      statusBar()->showMessage("Select an instance first, then double-click to push in", 4000);
+      return;
+    }
+    const auto& view = schCtrl_->document().view();
+    currentCellId = view.cellId();
+    const auto* inst = view.findInstance(*sel->selectedInstances().begin());
+    if (!inst) return;
+    targetCellId = inst->masterCellId();
+  } else if (tab == 1 && layCtrl_) {
+    currentType = db::DbViewType::Layout;
+    const auto* sel = dynamic_cast<const layout::LayToolSelect*>(layCtrl_->activeTool());
+    if (!sel || sel->selectedShapes().empty()) {
+      statusBar()->showMessage("Select an instance first, then double-click to push in", 4000);
+      return;
+    }
+    const auto& view = layCtrl_->document().view();
+    currentCellId = view.cellId();
+    const auto* inst = view.findInstance(*sel->selectedShapes().begin());
+    if (!inst) return;
+    targetCellId = inst->masterCellId();
+  } else {
+    return;
+  }
+
+  if (targetCellId == db::kInvalidId) return;
+
+  // Push current cell onto nav stack
+  navStack_.push_back({currentCellId, currentType});
+
+  // Navigate to target cell
+  const auto& lib = app_.projects().workingLibrary();
+  const auto* targetCell = lib.findCellById(targetCellId);
+  if (!targetCell) {
+    statusBar()->showMessage("Target cell not found", 4000);
+    navStack_.pop_back();
+    return;
+  }
+
+  // Try to open schematic view, then layout view
+  const auto* targetSch = targetCell->findView(db::DbViewType::Schematic);
+  const auto* targetLay = targetCell->findView(db::DbViewType::Layout);
+  if (!targetSch && !targetLay) {
+    statusBar()->showMessage("Target cell has no schematic or layout view", 4000);
+    navStack_.pop_back();
+    return;
+  }
+
+  if (targetSch && tab == 0) {
+    navigateToCell(targetCell->id(), db::DbViewType::Schematic);
+  } else if (targetLay && tab == 1) {
+    navigateToCell(targetCell->id(), db::DbViewType::Layout);
+  } else if (targetSch) {
+    navigateToCell(targetCell->id(), db::DbViewType::Schematic);
+  } else {
+    navigateToCell(targetCell->id(), db::DbViewType::Layout);
+  }
+
+  statusBar()->showMessage(
+      QString("Pushed into %1").arg(QString::fromStdString(targetCell->name())), 4000);
+}
+
+void MainWindow::onNavigatePop() {
+  if (navStack_.empty()) {
+    statusBar()->showMessage("Already at top level", 3000);
+    return;
+  }
+  const auto entry = navStack_.back();
+  navStack_.pop_back();
+  navigateToCell(entry.cellId, entry.viewType);
+  statusBar()->showMessage("Popped back", 4000);
+}
+
+void MainWindow::navigateToCell(db::DbId cellId, db::DbViewType viewType) {
+  auto& lib = app_.projects().workingLibrary();
+  auto* cell = lib.findCellById(cellId);
+  if (!cell) return;
+
+  if (viewType == db::DbViewType::Schematic || viewType == db::DbViewType::Symbol) {
+    auto* sv = cell->findView(db::DbViewType::Schematic);
+    if (!sv) sv = cell->findView(db::DbViewType::Symbol);
+    if (!sv) { sv = &cell->createView(db::DbViewType::Schematic); }
+    schDoc_ = std::make_unique<schematic::SchDocument>(*sv);
+    schCtrl_ = std::make_unique<schematic::SchEditorController>(*schDoc_);
+    schView_->setDocument(schDoc_.get(), &lib);
+    schView_->setController(schCtrl_.get());
+    tabs_->setCurrentIndex(0);
+  } else {
+    auto* lv = cell->findView(db::DbViewType::Layout);
+    if (!lv) { lv = &cell->createView(db::DbViewType::Layout); }
+    layDoc_ = std::make_unique<layout::LayDocument>(*lv);
+    layCtrl_ = std::make_unique<layout::LayEditorController>(*layDoc_);
+    layView_->setDocument(layDoc_.get(), &lib);
+    layView_->setController(layCtrl_.get());
+    tabs_->setCurrentIndex(1);
+  }
+  layView_->fitView();
+  schView_->fitView();
+}
+
+// ─── Layout alignment helpers ─────────────────────────────────────────────────
+// Align all selected shapes to the chosen edge/center of the first selected shape.
+
+static geom::GeomBox shapeBoundingBox(const aurora::db::DbShape& shape) {
+  switch (shape.kind()) {
+    case aurora::db::DbShapeKind::Rect:
+      return static_cast<const aurora::db::DbRect&>(shape).box();
+    case aurora::db::DbShapeKind::Polygon:
+      return static_cast<const aurora::db::DbPolygon&>(shape).polygon().boundingBox();
+    case aurora::db::DbShapeKind::Path: {
+      const auto& pts = static_cast<const aurora::db::DbPath&>(shape).path().points();
+      if (pts.empty()) return {};
+      geom::GeomBox bb{pts[0].x, pts[0].y, pts[0].x, pts[0].y};
+      for (const auto& pt : pts)
+        bb = geom::GeomBox{std::min(bb.left(), pt.x), std::min(bb.bottom(), pt.y),
+                           std::max(bb.right(), pt.x), std::max(bb.top(), pt.y)};
+      return bb;
+    }
+    default: return {};
+  }
+}
+
+static void translateShape(aurora::db::DbShape& shape, geom::DbUnit dx, geom::DbUnit dy) {
+  switch (shape.kind()) {
+    case aurora::db::DbShapeKind::Rect: {
+      auto& r = static_cast<aurora::db::DbRect&>(shape);
+      auto b = r.box();
+      b.translate(dx, dy);
+      r.setBox(b);
+      break;
+    }
+    case aurora::db::DbShapeKind::Polygon:
+      static_cast<aurora::db::DbPolygon&>(shape).polygon().translate(dx, dy);
+      break;
+    case aurora::db::DbShapeKind::Path:
+      static_cast<aurora::db::DbPath&>(shape).path().translate(dx, dy);
+      break;
+    default: break;
+  }
+}
+
+static void alignHorizontal(aurora::layout::LayEditorController& ctrl,
+                             std::function<geom::DbUnit(const geom::GeomBox&)> getEdge) {
+  auto& view = ctrl.document().view();
+  const auto* selTool = dynamic_cast<const aurora::layout::LayToolSelect*>(ctrl.activeTool());
+  if (!selTool || selTool->selectedShapes().empty()) return;
+  const auto& ids = selTool->selectedShapes();
+  auto* first = view.findShape(*ids.begin());
+  if (!first) return;
+  const geom::DbUnit target = getEdge(shapeBoundingBox(*first));
+  for (const auto sid : ids) {
+    auto* shape = view.findShape(sid);
+    if (!shape) continue;
+    const geom::DbUnit current = getEdge(shapeBoundingBox(*shape));
+    const geom::DbUnit dx = target - current;
+    if (dx != 0) translateShape(*shape, dx, 0);
+  }
+}
+
+static void alignVertical(aurora::layout::LayEditorController& ctrl,
+                           std::function<geom::DbUnit(const geom::GeomBox&)> getEdge) {
+  auto& view = ctrl.document().view();
+  const auto* selTool = dynamic_cast<const aurora::layout::LayToolSelect*>(ctrl.activeTool());
+  if (!selTool || selTool->selectedShapes().empty()) return;
+  const auto& ids = selTool->selectedShapes();
+  auto* first = view.findShape(*ids.begin());
+  if (!first) return;
+  const geom::DbUnit target = getEdge(shapeBoundingBox(*first));
+  for (const auto sid : ids) {
+    auto* shape = view.findShape(sid);
+    if (!shape) continue;
+    const geom::DbUnit current = getEdge(shapeBoundingBox(*shape));
+    const geom::DbUnit dy = target - current;
+    if (dy != 0) translateShape(*shape, 0, dy);
+  }
+}
+
+void MainWindow::onAlignLeft() {
+  if (!layCtrl_) { statusBar()->showMessage("No layout active", 3000); return; }
+  alignHorizontal(*layCtrl_, [](const geom::GeomBox& b) { return b.left(); });
+  layView_->update();
+}
+
+void MainWindow::onAlignRight() {
+  if (!layCtrl_) { statusBar()->showMessage("No layout active", 3000); return; }
+  alignHorizontal(*layCtrl_, [](const geom::GeomBox& b) { return b.right(); });
+  layView_->update();
+}
+
+void MainWindow::onAlignTop() {
+  if (!layCtrl_) { statusBar()->showMessage("No layout active", 3000); return; }
+  alignVertical(*layCtrl_, [](const geom::GeomBox& b) { return b.top(); });
+  layView_->update();
+}
+
+void MainWindow::onAlignBottom() {
+  if (!layCtrl_) { statusBar()->showMessage("No layout active", 3000); return; }
+  alignVertical(*layCtrl_, [](const geom::GeomBox& b) { return b.bottom(); });
+  layView_->update();
+}
+
+void MainWindow::onAlignCenterH() {
+  if (!layCtrl_) { statusBar()->showMessage("No layout active", 3000); return; }
+  alignHorizontal(*layCtrl_, [](const geom::GeomBox& b) { return (b.left() + b.right()) / 2; });
+  layView_->update();
+}
+
+void MainWindow::onAlignCenterV() {
+  if (!layCtrl_) { statusBar()->showMessage("No layout active", 3000); return; }
+  alignVertical(*layCtrl_, [](const geom::GeomBox& b) { return (b.bottom() + b.top()) / 2; });
+  layView_->update();
+}
+
+void MainWindow::onDistributeH() {
+  if (!layCtrl_) { statusBar()->showMessage("No layout active", 3000); return; }
+  statusBar()->showMessage("Distribute H — not yet implemented", 3000);
+}
+
+void MainWindow::onDistributeV() {
+  if (!layCtrl_) { statusBar()->showMessage("No layout active", 3000); return; }
+  statusBar()->showMessage("Distribute V — not yet implemented", 3000);
 }
 
 // ─── Simulation ───────────────────────────────────────────────────────────────
@@ -478,6 +913,24 @@ void MainWindow::onImportSpice() {
     QMessageBox::warning(this, "Import Error",
         QString::fromStdString(importer.lastError()));
     log("SPICE import failed: " + QString::fromStdString(importer.lastError()));
+  }
+}
+
+void MainWindow::onImportGds() {
+  const auto path = QFileDialog::getOpenFileName(this, "Import GDS II",
+      QDir::homePath(), "GDS II (*.gds);;All Files (*)");
+  if (path.isEmpty()) return;
+  layout::LayGdsReader reader;
+  if (reader.read(app_.projects().workingLibrary(), path.toStdString())) {
+    refreshLibraryBrowser();
+    log("Imported GDS II: " + path);
+    statusBar()->showMessage("GDS import successful", 4000);
+    // Switch to layout view if possible
+    tabs_->setCurrentIndex(1);
+    if (layView_) layView_->fitView();
+  } else {
+    QMessageBox::warning(this, "Import Error", "Failed to read GDS II file.");
+    log("GDS import failed: " + path);
   }
 }
 

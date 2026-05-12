@@ -1,5 +1,6 @@
 #include "netlist/NetlistGenerator.h"
 #include "db/DbCellLib.h"
+#include "db/DbConstraint.h"
 #include "db/DbInstance.h"
 #include "db/DbNet.h"
 #include "db/DbPin.h"
@@ -8,61 +9,91 @@
 
 namespace aurora::netlist {
 
+namespace {
+const std::string& getOrDefault(const std::map<std::string, std::string>& m,
+                                 const std::string& key, const std::string& def) {
+  auto it = m.find(key);
+  return it != m.end() ? it->second : def;
+}
+}
+
 std::string NetlistGenerator::generateSpice(const db::DbCellLib& lib, const db::DbCell& cell,
                                             const db::DbView& view) const {
   std::ostringstream out;
 
   out << "* aurora-eda  cell=" << cell.name() << "  view=" << db::toString(view.type()) << "\n";
 
-  // Collect pin names ordered by ID for the port list
   const auto pinIds = view.pinIds();
   std::vector<std::string> topPortNames;
   for (const auto pid : pinIds) {
     const auto* pin = view.findPin(pid);
-    if (pin != nullptr && pin->instanceId() == db::kInvalidId) {
+    if (pin != nullptr && pin->instanceId() == db::kInvalidId)
       topPortNames.push_back(pin->name());
-    }
   }
 
-  // .subckt header
   out << ".subckt " << cell.name();
-  for (const auto& port : topPortNames) {
+  for (const auto& port : topPortNames)
     out << " " << port;
-  }
   out << "\n";
 
-  // Net connectivity helper: id → SPICE name
   const auto netName = [&](db::DbId netId) -> std::string {
-    if (netId == db::kInvalidId) {
-      return "0";
-    }
+    if (netId == db::kInvalidId) return "0";
     const auto* net = view.findNet(netId);
     return (net != nullptr) ? net->name() : "0";
   };
 
-  // Emit one X-line per instance
+  // Emit stimulus markers as SPICE sources
+  int stimIdx = 0;
+  for (const auto cid : view.constraintIds()) {
+    const auto* con = view.findConstraint(cid);
+    if (!con) continue;
+    const auto& type = con->type();
+    bool isStim = (type == "vdc" || type == "idc" || type == "vpulse" || type == "vsin");
+    if (!isStim) continue;
+
+    const auto& props = con->properties();
+    const auto& netStr = netName(con->objectIds().empty() ? db::kInvalidId : con->objectIds()[0]);
+    const std::string ref = netStr + " 0";
+    ++stimIdx;
+
+    if (type == "vdc") {
+      out << "V" << stimIdx << " " << ref << " DC "
+          << getOrDefault(props, "dc", "0") << "\n";
+    } else if (type == "idc") {
+      out << "I" << stimIdx << " " << ref << " DC "
+          << getOrDefault(props, "dc", "0") << "\n";
+    } else if (type == "vpulse") {
+      out << "V" << stimIdx << " " << ref << " PULSE("
+          << getOrDefault(props, "v1", "0") << " "
+          << getOrDefault(props, "v2", "1") << " "
+          << getOrDefault(props, "td", "0") << " "
+          << getOrDefault(props, "tr", "1n") << " "
+          << getOrDefault(props, "tf", "1n") << " "
+          << getOrDefault(props, "pw", "10n") << " "
+          << getOrDefault(props, "per", "20n") << ")\n";
+    } else if (type == "vsin") {
+      out << "V" << stimIdx << " " << ref << " SIN("
+          << getOrDefault(props, "voff", "0") << " "
+          << getOrDefault(props, "vamp", "1") << " "
+          << getOrDefault(props, "freq", "1e6") << ")\n";
+    }
+  }
+
   for (const auto iid : view.instanceIds()) {
     const auto* inst = view.findInstance(iid);
-    if (inst == nullptr) {
-      continue;
-    }
+    if (inst == nullptr) continue;
 
     const auto& instName = inst->name();
     const auto xPrefix = (!instName.empty() && instName[0] == 'X') ? "" : "X";
     out << xPrefix << instName;
 
-    // Resolve nets for each pin of the master
     const auto* masterCell = lib.findCellById(inst->masterCellId());
     if (masterCell) {
-      // Find the Symbol view of the master to get pin order
       if (const auto* symbolView = masterCell->findView(db::DbViewType::Symbol)) {
         const auto masterPinIds = symbolView->pinIds();
-        // For each master pin, find the corresponding pin in the current view
         for (const auto mpid : masterPinIds) {
           const auto* mpin = symbolView->findPin(mpid);
           if (!mpin) continue;
-
-          // Search for a pin in 'view' that has instanceId == iid AND same name
           std::string connectedNet = "0";
           auto instPins = view.findInstancePins(iid);
           for (const auto* ipin : instPins) {
@@ -74,16 +105,13 @@ std::string NetlistGenerator::generateSpice(const db::DbCellLib& lib, const db::
           out << " " << connectedNet;
         }
       }
-
       out << " " << masterCell->name();
     } else {
       out << " cell_" << inst->masterCellId();
     }
 
-    // Parameters
-    for (const auto& [name, value] : inst->parameters()) {
+    for (const auto& [name, value] : inst->parameters())
       out << " " << name << "=" << value;
-    }
     out << "\n";
   }
 
@@ -91,4 +119,4 @@ std::string NetlistGenerator::generateSpice(const db::DbCellLib& lib, const db::
   return out.str();
 }
 
-}  // namespace aurora::netlist
+}  // namespace aurora::netlib

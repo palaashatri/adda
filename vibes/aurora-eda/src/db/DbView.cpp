@@ -87,6 +87,16 @@ DbConstraint& DbView::createConstraint(std::string type) {
   return it->second;
 }
 
+DbConstraint* DbView::findConstraint(DbId id) {
+  auto it = constraints_.find(id);
+  return it == constraints_.end() ? nullptr : &it->second;
+}
+
+const DbConstraint* DbView::findConstraint(DbId id) const {
+  auto it = constraints_.find(id);
+  return it == constraints_.end() ? nullptr : &it->second;
+}
+
 DbShape* DbView::findShape(DbId id) {
   auto it = shapes_.find(id);
   return it == shapes_.end() ? nullptr : it->second.get();

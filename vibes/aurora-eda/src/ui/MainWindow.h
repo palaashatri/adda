@@ -54,9 +54,28 @@ class MainWindow : public QMainWindow {
   // Tools
   void onToolSelect();
   void onToolWire();
+  void onToolLabel();
   void onToolInstance();
   void onToolRect();
   void onToolPolygon();
+  void onToolPath();
+  void onToolViaArray();
+  void onToolGuardRing();
+  void onToolStimulus();
+
+  // Hierarchical navigation
+  void onInstanceDoubleClicked();
+  void onNavigatePop();
+
+  // Alignment (layout)
+  void onAlignLeft();
+  void onAlignRight();
+  void onAlignTop();
+  void onAlignBottom();
+  void onAlignCenterH();
+  void onAlignCenterV();
+  void onDistributeH();
+  void onDistributeV();
 
   // Simulation
   void onSimSetup();
@@ -68,6 +87,7 @@ class MainWindow : public QMainWindow {
   // Import / Export
   void onImportSpice();
   void onExportGds();
+  void onImportGds();
 
   // Library
   void onLibraryItemDoubleClicked(QTreeWidgetItem* item, int col);
@@ -80,6 +100,7 @@ class MainWindow : public QMainWindow {
   void createDemoData();
   void refreshLibraryBrowser();
   void log(const QString& message);
+  void navigateToCell(db::DbId cellId, db::DbViewType viewType);
 
   aurora::core::CoreApp& app_;
   QTabWidget* tabs_{nullptr};
@@ -103,6 +124,10 @@ class MainWindow : public QMainWindow {
 
   QActionGroup* schToolGroup_{nullptr};
   QActionGroup* layToolGroup_{nullptr};
+
+  // Hierarchical navigation stack: pairs of (cellId, viewType)
+  struct NavEntry { db::DbId cellId; db::DbViewType viewType; };
+  std::vector<NavEntry> navStack_;
 };
 
 }  // namespace aurora::ui

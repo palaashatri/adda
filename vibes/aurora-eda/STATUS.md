@@ -110,6 +110,9 @@ feature milestone so the implemented and pending work stays visible.
   - `SimResult` struct with waveforms and DC operating-point map
   - `SimRunner` writes SPICE netlist via `NetlistGenerator`, invokes ngspice via popen
   - Parses `<name> = <value>` lines from simulator output into `dcOperatingPoint`
+  - Parses SPICE table output (Index/columns) into `SimWaveform` vectors
+  - `runSweep()` — parametric sweep over any variable using `.param` substitution
+  - `NetlistGenerator` now emits source statements (V/I) for stimulus markers on schematic
   - `aurora_sim_test` validates write-netlist and error-path behaviour
 - Task 8 DRC/LVS (completed):
   - `DrcViolation` struct with type, layer name, message, bounding-box location
@@ -119,6 +122,11 @@ feature milestone so the implemented and pending work stays visible.
 - PDK C++ registry (completed):
   - `PcellDescriptor` — name, default params, generator `std::function`
   - `PcellRegistry` — register, find, invoke; merges default + caller params
+- MOS C++ PCell (completed):
+  - `MosPcell` — NMOS generator with W/L/fingers parameters
+  - Generates diffusion, poly gate, active contacts geometry
+  - Registered in `PcellRegistry` during `CoreApp::initialize()`
+  - Invocable via PCells > Generate NMOS… menu action
 - Python improvements:
   - `aurora.sim` — `run_spice()`, `SimResult`, `SimWaveform`, SPICE header helpers
   - `aurora.examples.NmosPcell` — single-finger NMOS reference PCell with diff/poly/metal1 geometry
@@ -127,7 +135,13 @@ feature milestone so the implemented and pending work stays visible.
   - `SchTool` abstract base with `SchKeyEvent` enum (decouples tools from Qt)
   - `SchToolWire` — multi-segment wire drawing with Escape/Enter commit
   - `SchToolSelect` — rubber-band area selection, point-click select, Delete removes instances
+  - `SchToolLabel` — click-on-wire label tool renames nets via dialog; labels rendered as yellow pills
+  - `SchToolStimulus` — place VDC/IDC/VPULSE/VSIN markers on wires; type dialog; rendered as circle/sine/pulse symbols
   - `SchToolInstance` — place cell instances at snapped cursor positions
+- Hierarchical navigation (completed):
+  - Double-click instance in schematic/layout pushes into its master cell
+  - Toolbar ▲ button pops back through navigation stack
+  - `navigateToCell` switches views between cells with proper document/controller setup
   - `SchEditorController` rewritten with full tool dispatch, snap-to-grid, nextNetName/nextInstanceName
   - `SchDocument` updated with `removeWireAt`, `clearWires`, mutable wire access
   - `DbView` updated with `removeShape`, `removeInstance`, `removeNet`, `removePin`, `findInstanceByName`, `findNetByName`
@@ -135,6 +149,10 @@ feature milestone so the implemented and pending work stays visible.
   - `LayToolSelect` — rubber-band/point selection of shapes, Delete/Backspace removes selected shapes
   - `LayToolPolygon` — multi-click polygon drawing with Enter to commit, Escape to cancel
   - `LayToolRect` updated with ghost preview (`isDrawing`, `firstPoint`, `cursor`) and Escape cancel
+  - `LayToolPath` — click-to-add-vertices path drawing with configurable width, Enter to commit, Escape to cancel
+  - `LayToolViaArray` — drag rectangle, dialog configures columns/rows/size/spacing; generates grid of vias
+  - `LayToolGuardRing` — drag rectangle around area; dialog configures ring width/spacing; generates 4-sided ring as rect bars
+  - Alignment tools — align left/right/top/bottom/center H/V operate on selected shapes via toolbar buttons
   - `LayEditorController` updated with `keyPress` forwarding
 - New UI dialogs and widgets (completed):
   - `WaveformViewWidget` — dark-background custom painter, auto-scaling axes, multiple traces, zoom/pan
@@ -143,6 +161,12 @@ feature milestone so the implemented and pending work stays visible.
   - `CellBrowserDialog` — cell library tree, view list, double-click to open, New Cell input
 - SPICE import (completed):
   - `SpiceImporter` — parses `.subckt`/`.ends`, X-element instances, R/C/L/V/I/M passives into `DbCellLib`
+- GDS II import (completed):
+  - `LayGdsReader` — parses binary GDS, reconstructs cells/views/shapes/instances
+  - Auto-creates layers from GDS layer/datatype pairs
+  - Rect detection from 5-point closed BOUNDARY records
+  - Full support: BOUNDARY (rect/polygon), PATH (with width), TEXT, SREF (with STRANS/ANGLE)
+  - `aurora_gds_reader_test` validates round-trip fidelity
 - JSON project persistence (completed):
   - `ProjectManager::saveProject()` writes `config/design.json` with layers, cells, views, shapes, instances, nets
   - `ProjectManager::openProject()` reconstructs `DbCellLib` from JSON via nlohmann_json
@@ -171,9 +195,9 @@ feature milestone so the implemented and pending work stays visible.
 - `./build.sh --build-dir build-task3`
 - `cmake -S . -B build`
 - `cmake --build build`                 # zero warnings
-- `ctest --test-dir build --output-on-failure`  # 7/7 passed
+- `ctest --test-dir build --output-on-failure`  # 8/8 passed
 
-Latest known result: all 7 CTest tests pass on macOS (AppleClang 16 + Qt 6.8)
+Latest known result: all 8 CTest tests pass on macOS (AppleClang 16 + Qt 6.8)
 with zero compiler warnings. The `aurora_sim_test` does not require ngspice to
 be installed — it only validates file-write and error-path behaviour.
 
@@ -189,11 +213,11 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 |------|-----|----------|
 | Bus definition / multi-bit routing | Bus objects, bus-to-bus connections, bus entry points | High |
 | Bus ripping and naming | Rip individual signals from buses, bus name labels | High |
-| Wire labels / net name labels | Named labels attached to wires/nets | High |
+| Wire labels / net name labels | ✓ done |
 | Pin labels and port definitions | Graphical pin labels on schematic | High |
-| Stimulus markers (vsrc, isrc, etc.) | Place DC/AC/Transient sources as schematic markers | High |
+| Stimulus markers (vsrc, isrc, etc.) | ✓ done (B5) |
 | Probe markers (voltage, current) | Place simulation probes on nets/pins | High |
-| Hierarchical navigation | Push into cell (double-click instance), pop back | Medium |
+| Hierarchical navigation | ✓ done (B7) |
 | Symbol editor (graphical) | Create/edit cell symbols: shapes, pins, labels | Medium |
 | Schematic consistency checks | Unconnected pins, floating nets, shorted outputs | Medium |
 | DC operating point annotation | Display DC voltages/currents on schematic after sim | Medium |
@@ -208,9 +232,9 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | Area | Gap | Priority |
 |------|-----|----------|
 | Path tool with width/corner styles | Path creation with width, round/square/miter corners | High |
-| Via array generator | Automatic rows/columns of vias; via parameters | High |
-| Guard ring generator | Well tie, substrate tie, double-ring generation | High |
-| Alignment and distribution tools | Align left/right/top/bottom/center; distribute H/V | High |
+| Via array generator | ✓ done (C2) |
+| Guard ring generator | ✓ done (C3) |
+| Alignment and distribution tools | Align left/right/top/bottom/center H/V implemented; distribute H/V needs work | ◐ partial |
 | Measurement / ruler tool | Interactive distance measurement with annotation | Medium |
 | Interactive DRC (iDRC) | Real-time feedback during drawing | Medium |
 | Constraint-driven layout | Same-net spacing, differential pair, shielding | Medium |
@@ -233,7 +257,7 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 |------|-----|----------|
 | Xyce backend plugin | Plugin wrapper for Xyce simulator | High |
 | Analysis: Noise, Distortion, PZ, Sensitivity | Extend SimSetupDialog; add netlist generation | High |
-| Parametric sweeps | Sweep temperature, device parameters across ranges | High |
+| Parametric sweeps | ✓ done (D4) |
 | Corner simulation | Process/voltage/temperature corner matrix | High |
 | Monte Carlo analysis | Statistical distributions; histogram results | High |
 | Design optimization | Optimize component values for target specs | Medium |
@@ -275,7 +299,7 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | PCell evaluation engine with caching | Evaluate once; cache; invalidate on param change | High |
 | Stretch handles on PCells | Interactive drag handles for parameterized resizing | Medium |
 | C compile mode for PCells | Pre-compile Python PCells to evaluated state | Low |
-| PCell library: MOS devices | NMOS, PMOS: single-finger, multi-finger, common-centroid | High |
+| PCell library: MOS devices | NMOS C++ PCell with W/L/fingers implemented; PMOS/common-centroid pending | ◐ partial |
 | PCell library: passive devices | Resistors, capacitors (MIM, MOM), inductors | High |
 | PCell library: BJT devices | NPN, PNP: single-finger, multi-finger, matched pairs | Medium |
 | PCell library: diode devices | pn junction, Schottky, ESD | Medium |
@@ -352,16 +376,16 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | Milestone | Done | Not Started | Completion |
 |-----------|------|-------------|------------|
 | A — Core Infrastructure | 30/30 | 0 | **100%** |
-| B — Schematic Editor | 1/15 | 14 | **7%** |
-| C — Layout Editor | 2/19 | 17 | **11%** |
-| D — Simulation Environment | 2/18 | 16 | **11%** |
+| B — Schematic Editor | 4/15 | 11 | **27%** |
+| C — Layout Editor | 6/19 | 13 | **32%** |
+| D — Simulation Environment | 3/18 | 15 | **17%** |
 | E — Physical Verification | 2/13 | 11 | **15%** |
-| F — PCells and PDK | 2/14 | 12 | **14%** |
-| G — Import / Export | 2/17 | 15 | **12%** |
+| F — PCells and PDK | 3/14 | 11 | **21%** |
+| G — Import / Export | 3/17 | 14 | **18%** |
 | H — Project Management | 1/9 | 8 | **11%** |
 | I — Scripting | 1/9 | 8 | **11%** |
 | J — Advanced UI | 1/10 | 9 | **10%** |
-| **Total** | **44/154** | **110** | **~29%** |
+| **Total** | **54/154** | **100** | **~35%** |
 
 Note: "Done" counts items marked ✓ done or ◐ partial in the CLAUDE.md checklist.
 The application builds, runs, and passes all 7 CTest tests, but represents only

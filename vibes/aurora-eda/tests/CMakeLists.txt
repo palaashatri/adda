@@ -24,6 +24,11 @@ target_link_libraries(aurora_gds_writer_test PRIVATE aurora_layout)
 target_compile_features(aurora_gds_writer_test PRIVATE cxx_std_20)
 add_test(NAME aurora_gds_writer_test COMMAND aurora_gds_writer_test)
 
+add_executable(aurora_gds_reader_test layout/LayGdsReaderTest.cpp)
+target_link_libraries(aurora_gds_reader_test PRIVATE aurora_layout)
+target_compile_features(aurora_gds_reader_test PRIVATE cxx_std_20)
+add_test(NAME aurora_gds_reader_test COMMAND aurora_gds_reader_test)
+
 add_executable(aurora_drc_lvs_test drc_lvs/DrcEngineTest.cpp)
 target_link_libraries(aurora_drc_lvs_test PRIVATE aurora_core)
 target_compile_features(aurora_drc_lvs_test PRIVATE cxx_std_20)

@@ -9,7 +9,9 @@ target_sources(
     SchSymbol.cpp
     SchTool.cpp
     SchToolInstance.cpp
+    SchToolLabel.cpp
     SchToolSelect.cpp
+    SchToolStimulus.cpp
     SchToolWire.cpp
     SchWire.cpp
   PUBLIC
@@ -21,7 +23,9 @@ target_sources(
       SchSymbol.h
       SchTool.h
       SchToolInstance.h
+      SchToolLabel.h
       SchToolSelect.h
+      SchToolStimulus.h
       SchToolWire.h
       SchWire.h
 )

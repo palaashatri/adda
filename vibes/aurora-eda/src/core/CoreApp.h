@@ -2,6 +2,7 @@
 
 #include "core/PluginManager.h"
 #include "core/ProjectManager.h"
+#include "pdk/PcellRegistry.h"
 #include "tech/TechDatabase.h"
 
 #include <filesystem>
@@ -23,6 +24,8 @@ class CoreApp {
   [[nodiscard]] const PluginManager& plugins() const;
   [[nodiscard]] tech::TechDatabase& tech();
   [[nodiscard]] const tech::TechDatabase& tech() const;
+  [[nodiscard]] pdk::PcellRegistry& pcells();
+  [[nodiscard]] const pdk::PcellRegistry& pcells() const;
 
   [[nodiscard]] static std::string_view applicationName();
   [[nodiscard]] static std::string_view version();
@@ -32,6 +35,7 @@ class CoreApp {
   ProjectManager projectManager_;
   PluginManager pluginManager_;
   tech::TechDatabase techDatabase_;
+  pdk::PcellRegistry pcellRegistry_;
 };
 
 }  // namespace aurora::core

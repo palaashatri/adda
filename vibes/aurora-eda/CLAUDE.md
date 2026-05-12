@@ -112,7 +112,7 @@ ctest --test-dir build --output-on-failure
 
 Registered CTest targets: `aurora_db_smoke`, `aurora_geom_ops_test`,
 `aurora_tech_database_test`, `aurora_netlist_test`, `aurora_gds_writer_test`,
-`aurora_drc_lvs_test`, `aurora_sim_test`.
+`aurora_gds_reader_test`, `aurora_drc_lvs_test`, `aurora_sim_test`.
 
 ## Feature Roadmap
 
@@ -159,11 +159,11 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 |---|-------------|--------|-------|
 | B1 | Bus definition and multi-bit net routing | ○ not started | Bus objects, bus-to-bus connections, bus entry points |
 | B2 | Bus ripping and naming | ○ not started | Rip individual signals from buses, bus name labels |
-| B3 | Wire labels / net name labels | ○ not started | Named labels attached to wires/nets |
+| B3 | Wire labels / net name labels | ✓ done | Click-on-wire label tool renames nets; yellow pill labels rendered on schematic |
 | B4 | Pin labels and port definitions | ○ not started | Graphical pin labels on schematic |
-| B5 | Stimulus markers (vsrc, isrc, etc.) | ○ not started | Place DC/AC/Transient sources as schematic markers |
+| B5 | Stimulus markers (vsrc, isrc, etc.) | ✓ done | Place VDC/IDC/VPULSE/VSIN markers on schematic wires; markers rendered as symbols; NetlistGenerator emits source statements; tool with type selection dialog |
 | B6 | Probe markers (voltage, current) | ○ not started | Place simulation probes on nets/pins |
-| B7 | Hierarchical navigation | ○ not started | Push into cell (double-click instance), pop back |
+| B7 | Hierarchical navigation | ✓ done | Double-click instance pushes into its cell; toolbar ▲ button pops back; full nav stack |
 | B8 | Symbol editor (graphical) | ○ not started | Create/edit cell symbols: shapes, pins, labels |
 | B9 | Schematic consistency checks | ○ not started | Check and save: unconnected pins, floating nets, shorted outputs |
 | B10 | DC operating point annotation | ○ not started | Display DC voltages/currents on schematic after sim |
@@ -177,10 +177,10 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| C1 | Path tool with width and corner styles | ○ not started | Path creation with width, round/square/miter corners |
-| C2 | Via array generator | ○ not started | Automatic rows/columns of vias; via parameters (size, spacing) |
-| C3 | Guard ring generator | ○ not started | Ring generation: well tie, substrate tie, double-ring |
-| C4 | Alignment and distribution tools | ○ not started | Align left/right/top/bottom/center; distribute H/V evenly |
+| C1 | Path tool with width and corner styles | ◐ partial | Click-to-add-vertices path creation with width; Enter to commit, Esc to cancel. Needs corner-style selection (round/square/miter). |
+| C2 | Via array generator | ✓ done | Drag rectangle, dialog configures columns/rows/size/spacing; generates rect grid |
+| C3 | Guard ring generator | ✓ done | Drag rectangle around protected area; dialog configures ring width/spacing; generates 4-sided ring as rect bars |
+| C4 | Alignment and distribution tools | ◐ partial | Align left/right/top/bottom/center H/V implemented. Distribute H/V not started. |
 | C5 | Measurement / ruler tool | ○ not started | Interactive distance measurement with annotation |
 | C6 | Interactive DRC (iDRC) | ○ not started | Real-time feedback during drawing: width/spacing/enclosure |
 | C7 | Constraint-driven layout | ○ not started | Same-net spacing, differential pair constraints, shielding |
@@ -204,7 +204,7 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | D1 | ngspice backend (existing) | ✓ done | SimRunner with popen, waveform parsing |
 | D2 | Xyce backend plugin | ○ not started | Plugin wrappers for Xyce simulator |
 | D3 | Analysis types: Noise, Distortion, Pole-Zero, Sensitivity | ○ not started | Extend SimSetupDialog; add netlist generation for each type |
-| D4 | Parametric sweeps | ○ not started | Sweep temperature, device parameters across ranges |
+| D4 | Parametric sweeps | ✓ done | Sweep any parameter via SimSetupDialog; runSweep() generates netlists per step; waveforms tagged with sweep value; overlaid in waveform viewer |
 | D5 | Corner simulation | ○ not started | Process/voltage/temperature corner matrix |
 | D6 | Monte Carlo analysis | ○ not started | Statistical distributions (Gaussian, uniform); histogram results |
 | D7 | Design optimization | ○ not started | Optimize component values for target specs (min/max/bound) |
@@ -248,7 +248,7 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | F4 | PCell evaluation engine with caching | ○ not started | Evaluate PCell once; cache results; invalidate on param change |
 | F5 | Stretch handles on PCells | ○ not started | Interactive drag handles for parameterized resizing |
 | F6 | C compile mode for PCells | ○ not started | Pre-compile Python PCells to evaluated state |
-| F7 | PCell library: MOS devices | ○ not started | NMOS, PMOS: single-finger, multi-finger, common-centroid |
+| F7 | PCell library: MOS devices | ◐ partial | NMOS C++ PCell with W/L/fingers generates diff/poly/contact geometry. Registered in PcellRegistry during CoreApp init. PMOS and common-centroid pending. |
 | F8 | PCell library: passive devices | ○ not started | Resistors (poly, diffusion, metal), capacitors (MIM, MOM), inductors |
 | F9 | PCell library: BJT devices | ○ not started | NPN, PNP: single-finger, multi-finger, matched pairs |
 | F10 | PCell library: diode devices | ○ not started | Various diode types (pn junction, Schottky, ESD) |
@@ -262,7 +262,7 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
 | G1 | GDS II export | ✓ done | Binary GDS writer with hierarchy |
-| G2 | GDS II import | ○ not started | Parse binary GDS; reconstruct cells, hierarchy, geometries |
+| G2 | GDS II import | ✓ done | Parses binary GDS; reconstructs cells, hierarchy, geometries, layers. Supports BOUNDARY (rect/polygon), PATH, TEXT, SREF. |
 | G3 | LEF export | ○ not started | Library Exchange Format: cell boundaries, pin locations, obstructions |
 | G4 | LEF import | ○ not started | Parse LEF macro definitions |
 | G5 | DEF export | ○ not started | Design Exchange Format: net connectivity, placement |

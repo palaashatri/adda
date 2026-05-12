@@ -5,9 +5,12 @@
 #include "db/DbView.h"
 #include "layout/LayDocument.h"
 #include "layout/LayEditorController.h"
+#include "layout/LayToolGuardRing.h"
+#include "layout/LayToolPath.h"
 #include "layout/LayToolRect.h"
 #include "layout/LayToolSelect.h"
 #include "layout/LayToolPolygon.h"
+#include "layout/LayToolViaArray.h"
 
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -275,6 +278,62 @@ void LayoutViewWidget::paintToolOverlay(QPainter& painter) const {
             sceneToScreen({dbuToScene(pts.back().x), dbuToScene(pts.back().y)}),
             sceneToScreen({dbuToScene(cur.x), dbuToScene(cur.y)}));
       }
+    }
+  }
+
+  // Path tool preview
+  if (const auto* pathTool = dynamic_cast<const layout::LayToolPath*>(tool)) {
+    if (pathTool->isDrawing()) {
+      const auto& pts = pathTool->points();
+      const double penW = std::max(1.0, dbuToScene(pathTool->pathWidth()) * zoom_);
+      painter.setPen(QPen(QColor("#ff8800"), penW, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin));
+      painter.setBrush(Qt::NoBrush);
+      for (std::size_t i = 1; i < pts.size(); ++i) {
+        painter.drawLine(
+            sceneToScreen({dbuToScene(pts[i-1].x), dbuToScene(pts[i-1].y)}),
+            sceneToScreen({dbuToScene(pts[i].x),   dbuToScene(pts[i].y)}));
+      }
+      if (!pts.empty()) {
+        const auto cur = pathTool->cursor();
+        painter.setPen(QPen(QColor("#ff8800"), 1, Qt::DashLine));
+        painter.drawLine(
+            sceneToScreen({dbuToScene(pts.back().x), dbuToScene(pts.back().y)}),
+            sceneToScreen({dbuToScene(cur.x), dbuToScene(cur.y)}));
+      }
+    }
+  }
+
+  // Via array tool preview
+  if (const auto* viaTool = dynamic_cast<const layout::LayToolViaArray*>(tool)) {
+    if (viaTool->isDrawing()) {
+      const auto fp = viaTool->firstPoint();
+      const auto cp = viaTool->cursor();
+      QColor fill("#c080e0");
+      fill.setAlpha(60);
+      painter.setBrush(fill);
+      painter.setPen(QPen(QColor("#c080e0"), 1, Qt::DashLine));
+      const double x0 = dbuToScene(std::min(fp.x, cp.x));
+      const double y0 = dbuToScene(std::min(fp.y, cp.y));
+      const double w  = dbuToScene(std::abs(cp.x - fp.x));
+      const double h  = dbuToScene(std::abs(cp.y - fp.y));
+      painter.drawRect(sceneRectToScreen({x0, y0, w, h}));
+    }
+  }
+
+  // Guard ring tool preview
+  if (const auto* grTool = dynamic_cast<const layout::LayToolGuardRing*>(tool)) {
+    if (grTool->isDrawing()) {
+      const auto fp = grTool->firstPoint();
+      const auto cp = grTool->cursor();
+      QColor fill("#e0c060");
+      fill.setAlpha(50);
+      painter.setBrush(fill);
+      painter.setPen(QPen(QColor("#e0c060"), 1, Qt::DashLine));
+      const double x0 = dbuToScene(std::min(fp.x, cp.x));
+      const double y0 = dbuToScene(std::min(fp.y, cp.y));
+      const double w  = dbuToScene(std::abs(cp.x - fp.x));
+      const double h  = dbuToScene(std::abs(cp.y - fp.y));
+      painter.drawRect(sceneRectToScreen({x0, y0, w, h}));
     }
   }
 

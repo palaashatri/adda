@@ -53,6 +53,7 @@ class DbPolygon final : public DbShape {
   [[nodiscard]] DbShapeKind kind() const override;
   [[nodiscard]] std::unique_ptr<DbShape> clone() const override;
   [[nodiscard]] const geom::GeomPolygon& polygon() const;
+  [[nodiscard]] geom::GeomPolygon& polygon();
   void setPolygon(geom::GeomPolygon polygon);
 
  private:
@@ -66,6 +67,7 @@ class DbPath final : public DbShape {
   [[nodiscard]] DbShapeKind kind() const override;
   [[nodiscard]] std::unique_ptr<DbShape> clone() const override;
   [[nodiscard]] const geom::GeomPath& path() const;
+  [[nodiscard]] geom::GeomPath& path();
   void setPath(geom::GeomPath path);
 
  private:
