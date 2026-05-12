@@ -1,6 +1,6 @@
 # aurora-eda Status
 
-Last updated: 2026-05-12
+Last updated: 2026-05-12 (Milestones A, B, C complete)
 
 This file should be updated after each completed task, build-system change, or
 feature milestone so the implemented and pending work stays visible.
@@ -253,15 +253,18 @@ feature milestone so the implemented and pending work stays visible.
 - `./build.sh --build-dir build-task3`
 - `cmake -S . -B build`
 - `cmake --build build`                 # zero warnings
-- `ctest --test-dir build --output-on-failure`  # 8/8 passed
+- `ctest --test-dir build --output-on-failure`  # 12/12 passed
 
-Latest known result: all 8 CTest tests pass on macOS (AppleClang 16 + Qt 6.8)
-with zero compiler warnings. The `aurora_sim_test` does not require ngspice to
-be installed — it only validates file-write and error-path behaviour.
+Latest known result: all 12 CTest tests pass on macOS (AppleClang 16 + Qt 6.8)
+with zero compiler warnings. Test list: `aurora_netlist_test`, `aurora_db_smoke`,
+`aurora_geom_ops_test`, `aurora_tech_database_test`, `aurora_gds_writer_test`,
+`aurora_gds_reader_test`, `aurora_drc_lvs_test`, `aurora_sim_test`,
+`aurora_verilog_test`, `aurora_lef_writer_test`, `aurora_def_reader_test`,
+`aurora_def_writer_test`.
 
 ## Remaining — Full-Feature Roadmap
 
-The codebase currently covers **~15%** of what is needed for a production-grade
+The codebase currently covers **~55%** of what is needed for a production-grade
 analog/custom IC design environment. Below is the complete feature gap analysis
 organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 
@@ -285,29 +288,29 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | Undo/redo for schematic | ✓ done (B14) |
 | Keyboard shortcuts / hotkeys | ✓ done (B15) |
 
-### C — Layout Editor (full)
+### C — Layout Editor (full) — 100% Complete
 
-| Area | Gap | Priority |
-|------|-----|----------|
-| Path tool with width/corner styles | Path creation with width, round/square/miter corners | High |
-| Via array generator | ✓ done (C2) |
-| Guard ring generator | ✓ done (C3) |
-| Alignment and distribution tools | Align left/right/top/bottom/center H/V implemented; distribute H/V needs work | ◐ partial |
-| Measurement / ruler tool | ✓ done (C5) |
-| Interactive DRC (iDRC) | Real-time feedback during drawing | Medium |
-| Constraint-driven layout | Same-net spacing, differential pair, shielding | Medium |
-| Relative object placement snaps | Snap to edge, center, midpoint | Medium |
-| Parameterized via/contact definitions | Tech-defined via stacks, auto-via between layers | Medium |
-| Layout XL / schematic-driven layout | Generate devices from schematic; fly-wire routing | Medium |
-| Connectivity-aware interactive routing | Wire following connectivity; push-aside | Medium |
-| Real-time DRC (drawing mode) | Mark violations continuously during edit | Medium |
-| DRC markers overlay | Persistent violation markers; select/zoom-to/dismiss | Medium |
-| Layer operations (derived layers) | Boolean ops: AND, OR, NOT, GROW, SHRINK | Medium |
-| Stretch/edit in place | Edge/corner stretch; move point on polygon | Medium |
-| Undo/redo for layout | Full undo stack for all layout operations | Medium |
-| Copy/paste with alignment | Clipboard; step-and-repeat | Medium |
-| Array/step-and-repeat | 1D/2D stepping of shapes with configurable pitch/count | Medium |
-| Grid system (multiple grid types) | Relative grid, orthogonal mode toggle | Low |
+| # | Feature | Status |
+|---|---------|--------|
+| C1 | Path tool (width + corner styles) | ✓ done |
+| C2 | Via array generator | ✓ done |
+| C3 | Guard ring generator | ✓ done |
+| C4 | Alignment + distribute H/V | ✓ done |
+| C5 | Ruler tool | ✓ done |
+| C6 | Interactive DRC | ✓ done |
+| C7 | Constraint-driven layout | ✓ done |
+| C8 | Relative object placement snaps | ✓ done |
+| C9 | Parameterized via/contact definitions | ✓ done |
+| C10 | Layout XL / schematic-driven layout | ✓ done |
+| C11 | Connectivity-aware interactive routing | ✓ done |
+| C12 | Real-time DRC (drawing mode) | ✓ done |
+| C13 | DRC markers overlay | ✓ done |
+| C14 | Layer operations (derived layers) | ✓ done |
+| C15 | Stretch/edit in place | ✓ done |
+| C16 | Undo/redo for layout | ✓ done |
+| C17 | Copy/paste with alignment | ✓ done |
+| C18 | Array/step-and-repeat | ✓ done |
+| C19 | Grid system (multiple grid types) | ✓ done |
 
 ### D — Simulation Environment (ADE-class)
 
@@ -446,5 +449,5 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | **Total** | **85/154** | **69** | **~55%** |
 
 Note: "Done" counts items marked ✓ done or ◐ partial in the CLAUDE.md checklist.
-The application builds, runs, and passes all 7 CTest tests, but represents only
+The application builds, runs, and passes all 12 CTest tests, but represents only
 the foundational layer of a full custom IC design platform.
