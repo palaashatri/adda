@@ -3,6 +3,8 @@
 #include "schematic/SchDocument.h"
 #include "db/DbView.h"
 
+#include <format>
+
 namespace aurora::schematic {
 
 SchToolWire::SchToolWire() : SchTool("Wire") {}
@@ -17,8 +19,16 @@ void SchToolWire::mousePress(SchEditorController& ctrl, geom::GeomPoint p) {
     if (startPoint_.x != snapped.x || startPoint_.y != snapped.y) {
       auto& doc = ctrl.document();
       auto& view = doc.view();
-      auto& net = view.createNet(ctrl.nextNetName());
-      doc.addWire(net.id(), {startPoint_, snapped});
+      std::string netName;
+      if (busMode_) {
+        // Bus mode: name like "BUS_1_00<7:0>"
+        static int busCounter = 0;
+        netName = std::format("BUS_{:02d}<7:0>", ++busCounter);
+      } else {
+        netName = ctrl.nextNetName();
+      }
+      auto& net = view.createNet(netName);
+      doc.addWire(net.id(), {startPoint_, snapped}, busMode_);
     }
     startPoint_ = snapped;
   }

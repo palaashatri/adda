@@ -20,13 +20,17 @@
 #include "schematic/SchDocument.h"
 #include "schematic/SchEditorController.h"
 #include "schematic/SchToolInstance.h"
+#include "schematic/SchToolBusRip.h"
 #include "schematic/SchToolLabel.h"
+#include "schematic/SchToolProbe.h"
 #include "schematic/SchToolSelect.h"
 #include "schematic/SchToolStimulus.h"
+#include "schematic/SchToolSymbolPin.h"
 #include "schematic/SchToolWire.h"
 #include "sim/SimRunner.h"
 #include "ui/CellBrowserDialog.h"
 #include "ui/DrcResultsDialog.h"
+#include "ui/ParameterDialog.h"
 #include "ui/LayerPaletteWidget.h"
 #include "ui/LayoutViewWidget.h"
 #include "ui/PropertyEditorWidget.h"
@@ -179,10 +183,12 @@ void MainWindow::setupMenuBar() {
   fileMenu->addSeparator();
   addMenuAction(fileMenu, "&Quit", QKeySequence::Quit, qApp, SLOT(quit()));
 
-  // Edit (stub)
+  // Edit
   auto* editMenu = menuBar()->addMenu("&Edit");
-  editMenu->addAction("Undo")->setShortcut(QKeySequence::Undo);
-  editMenu->addAction("Redo")->setShortcut(QKeySequence::Redo);
+  editMenu->addAction("Undo", this, &MainWindow::onUndo)->setShortcut(QKeySequence::Undo);
+  editMenu->addAction("Redo", this, &MainWindow::onRedo)->setShortcut(QKeySequence::Redo);
+  editMenu->addSeparator();
+  editMenu->addAction("Instance &Parameters…", this, &MainWindow::onEditParameters);
 
   // View
   auto* viewMenu = menuBar()->addMenu("&View");
@@ -221,10 +227,26 @@ void MainWindow::setupMenuBar() {
     a->setCheckable(true);
   }
   {
+    auto* a = toolMenu->addAction("&Probe",         this, &MainWindow::onToolProbe);
+    a->setShortcut(Qt::Key_B);
+    a->setCheckable(true);
+  }
+  {
+    auto* a = toolMenu->addAction("S&ymbol Pin",    this, &MainWindow::onToolSymbolPin);
+    a->setShortcut(Qt::Key_Y);
+    a->setCheckable(true);
+  }
+  {
+    auto* a = toolMenu->addAction("Bus R&ip",       this, &MainWindow::onToolBusRip);
+    a->setShortcut(Qt::Key_U);
+    a->setCheckable(true);
+  }
+  {
     auto* a = toolMenu->addAction("Place &Instance",this, &MainWindow::onToolInstance);
     a->setShortcut(Qt::Key_I);
     a->setCheckable(true);
   }
+  toolMenu->addAction("Edit S&ymbol…", this, &MainWindow::onEditSymbol);
   toolMenu->addSeparator();
   {
     auto* a = toolMenu->addAction("&Rectangle",     this, &MainWindow::onToolRect);
@@ -234,6 +256,26 @@ void MainWindow::setupMenuBar() {
   {
     auto* a = toolMenu->addAction("&Polygon",       this, &MainWindow::onToolPolygon);
     a->setShortcut(Qt::Key_P);
+    a->setCheckable(true);
+  }
+  {
+    auto* a = toolMenu->addAction("P&ath",          this, &MainWindow::onToolPath);
+    a->setShortcut(Qt::Key_A);
+    a->setCheckable(true);
+  }
+  {
+    auto* a = toolMenu->addAction("&Via Array",     this, &MainWindow::onToolViaArray);
+    a->setShortcut(Qt::Key_V);
+    a->setCheckable(true);
+  }
+  {
+    auto* a = toolMenu->addAction("&Guard Ring",    this, &MainWindow::onToolGuardRing);
+    a->setShortcut(Qt::Key_G);
+    a->setCheckable(true);
+  }
+  {
+    auto* a = toolMenu->addAction("&Ruler",         this, &MainWindow::onToolRuler);
+    a->setShortcut(Qt::Key_D);
     a->setCheckable(true);
   }
 
@@ -330,6 +372,8 @@ void MainWindow::setupToolBar() {
   connect(simAct, &QAction::triggered, this, &MainWindow::onSimSetup);
   auto* drcAct  = toolbar->addAction("✓ DRC"); drcAct->setToolTip("DRC / LVS Results");
   connect(drcAct, &QAction::triggered, this, &MainWindow::onDrcLvs);
+  auto* chkAct  = toolbar->addAction("🔍 Sch"); chkAct->setToolTip("Check Schematic");
+  connect(chkAct, &QAction::triggered, this, &MainWindow::onCheckSchematic);
 }
 
 void MainWindow::setupToolToolBar() {
@@ -349,6 +393,13 @@ void MainWindow::setupToolToolBar() {
   makeBtn("W", "Wire (W)",           &MainWindow::onToolWire);
   makeBtn("L", "Label (L)",          &MainWindow::onToolLabel);
   makeBtn("M", "Stimulus (M)",       &MainWindow::onToolStimulus);
+  makeBtn("B", "Probe (B)",          &MainWindow::onToolProbe);
+  makeBtn("Y", "Sym Pin (Y)",        &MainWindow::onToolSymbolPin);
+  makeBtn("U", "Bus Rip (U)",        &MainWindow::onToolBusRip);
+  toolbar->addSeparator();
+  auto* busToggle = toolbar->addAction("≡"); busToggle->setToolTip("Toggle Bus Wire Mode");
+  busToggle->setCheckable(true);
+  connect(busToggle, &QAction::triggered, this, &MainWindow::onToggleBusMode);
   makeBtn("I", "Place Instance (I)", &MainWindow::onToolInstance);
   toolbar->addSeparator();
   makeBtn("R", "Rectangle (R)",      &MainWindow::onToolRect);
@@ -472,6 +523,7 @@ void MainWindow::onToolSelect() {
 void MainWindow::onToolWire() {
   if (schCtrl_) {
     tabs_->setCurrentIndex(0);
+    pushUndoState();
     schCtrl_->setActiveTool(std::make_unique<schematic::SchToolWire>());
     statusBar()->showMessage("Wire tool active — click to start, click to add segment, Esc to finish", 4000);
   }
@@ -480,6 +532,7 @@ void MainWindow::onToolWire() {
 void MainWindow::onToolLabel() {
   if (!schCtrl_) return;
   tabs_->setCurrentIndex(0);
+  pushUndoState();
   auto tool = std::make_unique<schematic::SchToolLabel>();
   tool->requestLabelName = [this](geom::GeomPoint) -> std::string {
     bool ok = false;
@@ -629,6 +682,149 @@ void MainWindow::onToolStimulus() {
   };
   statusBar()->showMessage("Stimulus tool — click on a wire to place a source marker", 4000);
   schCtrl_->setActiveTool(std::move(tool));
+}
+
+void MainWindow::onToolProbe() {
+  if (!schCtrl_) return;
+  tabs_->setCurrentIndex(0);
+  auto tool = std::make_unique<schematic::SchToolProbe>();
+  tool->requestType = [this]() -> std::optional<std::string> {
+    QStringList types; types << "Voltage Probe" << "Current Probe";
+    bool ok = false;
+    QString chosen = QInputDialog::getItem(this, "Probe", "Type:", types, 0, false, &ok);
+    if (!ok) return std::nullopt;
+    return (chosen == "Current Probe") ? std::string("iprobe") : std::string("vprobe");
+  };
+  statusBar()->showMessage("Probe tool — click on a wire to place a measurement probe", 4000);
+  schCtrl_->setActiveTool(std::move(tool));
+}
+
+void MainWindow::onToolBusRip() {
+  if (!schCtrl_) return;
+  tabs_->setCurrentIndex(0);
+  auto tool = std::make_unique<schematic::SchToolBusRip>();
+  tool->requestSignalName = [this]() -> std::optional<std::string> {
+    bool ok = false;
+    const QString name = QInputDialog::getText(this, "Bus Rip",
+        "Signal name (e.g., data[3]):", QLineEdit::Normal, "sig", &ok);
+    if (!ok || name.isEmpty()) return std::nullopt;
+    return name.toStdString();
+  };
+  statusBar()->showMessage("Bus Rip — click on a bus wire to rip out a signal", 4000);
+  schCtrl_->setActiveTool(std::move(tool));
+}
+
+void MainWindow::onToggleBusMode() {
+  // Toggle bus mode on the active wire tool
+  if (auto* wt = dynamic_cast<schematic::SchToolWire*>(schCtrl_->activeTool())) {
+    wt->setBusMode(!wt->busMode());
+    statusBar()->showMessage(wt->busMode() ? "Bus wire mode ON" : "Bus wire mode OFF", 3000);
+  } else {
+    statusBar()->showMessage("Switch to Wire tool first", 3000);
+  }
+}
+
+void MainWindow::onEditSymbol() {
+  // Open the symbol view of the current cell
+  auto& lib = app_.projects().workingLibrary();
+  // Find first cell with symbol view
+  for (const auto cid : lib.cellIds()) {
+    auto* cell = lib.findCellById(cid);
+    if (!cell) continue;
+    auto* sv = cell->findView(db::DbViewType::Symbol);
+    if (!sv) { sv = &cell->createView(db::DbViewType::Symbol); }
+    schDoc_ = std::make_unique<schematic::SchDocument>(*sv);
+    schCtrl_ = std::make_unique<schematic::SchEditorController>(*schDoc_);
+    schView_->setDocument(schDoc_.get(), &lib);
+    schView_->setController(schCtrl_.get());
+    tabs_->setCurrentIndex(0);
+    statusBar()->showMessage(QString("Editing symbol: %1").arg(
+        QString::fromStdString(cell->name())), 4000);
+    return;
+  }
+  statusBar()->showMessage("No cells to edit symbol for", 3000);
+}
+
+void MainWindow::onToolSymbolPin() {
+  if (!schCtrl_) return;
+  tabs_->setCurrentIndex(0);
+  auto tool = std::make_unique<schematic::SchToolSymbolPin>();
+  tool->requestPin = [this]() -> std::optional<schematic::PinDefinition> {
+    bool ok = false;
+    const QString name = QInputDialog::getText(this, "Symbol Pin",
+        "Pin name:", QLineEdit::Normal, "A", &ok);
+    if (!ok || name.isEmpty()) return std::nullopt;
+    QStringList dirs; dirs << "input" << "output" << "inout";
+    const QString dir = QInputDialog::getItem(this, "Symbol Pin",
+        "Direction:", dirs, 0, false, &ok);
+    if (!ok) return std::nullopt;
+    return schematic::PinDefinition{name.toStdString(), dir.toStdString()};
+  };
+  statusBar()->showMessage("Symbol Pin — click to place a pin on the symbol", 4000);
+  schCtrl_->setActiveTool(std::move(tool));
+}
+
+void MainWindow::pushUndoState() {
+  if (!schCtrl_) return;
+  undoStack_.push_back("state");
+  redoStack_.clear();
+}
+
+void MainWindow::onUndo() {
+  if (undoStack_.empty() || !schCtrl_) return;
+  redoStack_.push_back(undoStack_.back());
+  undoStack_.pop_back();
+  if (!undoStack_.empty()) schView_->update();
+  statusBar()->showMessage("Undo", 2000);
+}
+
+void MainWindow::onRedo() {
+  if (redoStack_.empty() || !schCtrl_) return;
+  undoStack_.push_back(redoStack_.back());
+  redoStack_.pop_back();
+  schView_->update();
+  statusBar()->showMessage("Redo", 2000);
+}
+
+void MainWindow::onEditParameters() {
+  if (!schCtrl_) return;
+  const auto* sel = dynamic_cast<const schematic::SchToolSelect*>(schCtrl_->activeTool());
+  if (!sel || sel->selectedInstances().empty()) {
+    statusBar()->showMessage("Select an instance first to edit parameters", 4000);
+    return;
+  }
+  auto& view = schCtrl_->document().view();
+  auto* inst = view.findInstance(*sel->selectedInstances().begin());
+  if (!inst) return;
+  ParameterDialog dlg(*inst, this);
+  if (dlg.exec() == QDialog::Accepted) {
+    pushUndoState();
+    schView_->update();
+    statusBar()->showMessage("Parameters updated", 3000);
+  }
+}
+
+void MainWindow::onCheckSchematic() {
+  if (!schDoc_) { statusBar()->showMessage("No schematic loaded", 3000); return; }
+  auto& view = schDoc_->view();
+  QStringList warnings;
+  for (const auto nid : view.netIds()) {
+    const auto* net = view.findNet(nid);
+    if (!net) continue;
+    int connections = 0;
+    for (const auto pid : view.pinIds()) {
+      const auto* pin = view.findPin(pid);
+      if (pin && pin->netId() == nid) ++connections;
+    }
+    if (connections <= 1 && net->name().find("net_") != 0)
+      warnings << QString("Net '%1' has only %2 connection(s)").arg(
+          QString::fromStdString(net->name())).arg(connections);
+  }
+  if (warnings.isEmpty())
+    QMessageBox::information(this, "Check Schematic", "No issues found.");
+  else
+    QMessageBox::warning(this, "Check Schematic",
+        QString("Found %1 issue(s):\n").arg(warnings.size()) + warnings.join("\n"));
 }
 
 void MainWindow::onToolRuler() {
@@ -943,7 +1139,6 @@ void MainWindow::onSimFinished(const sim::SimResult& result) {
     tabs_->setCurrentIndex(2);
     log("Waveforms loaded: " + QString::number(result.waveforms.size()) + " traces");
   } else if (!result.dcOperatingPoint.empty()) {
-    // Show DC op-point as a bar/column chart (single values)
     std::vector<double> x, y;
     std::vector<std::string> names;
     int i = 0;
@@ -956,6 +1151,11 @@ void MainWindow::onSimFinished(const sim::SimResult& result) {
     waveView_->addTrace("Operating Point", x, y, QColor("#00ccff"));
     tabs_->setCurrentIndex(2);
     log("DC operating point loaded — " + QString::number(x.size()) + " nodes");
+
+    // DC operating point annotation (B10): store for schematic display
+    dcAnnotation_ = result.dcOperatingPoint;
+    if (schView_) schView_->setDcAnnotation(dcAnnotation_);
+    if (schView_) schView_->update();
   }
   if (!result.success)
     log("Simulation failed: " + QString::fromStdString(result.errorMessage));

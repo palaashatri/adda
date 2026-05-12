@@ -21,6 +21,7 @@ if(AURORA_BUILD_UI)
       LayerPaletteWidget.cpp
       LayoutViewWidget.cpp
       MainWindow.cpp
+      ParameterDialog.cpp
       PropertyEditorWidget.cpp
       SchematicViewWidget.cpp
       SimSetupDialog.cpp
@@ -34,6 +35,7 @@ if(AURORA_BUILD_UI)
         LayerPaletteWidget.h
         LayoutViewWidget.h
         MainWindow.h
+        ParameterDialog.h
         PropertyEditorWidget.h
         SchematicViewWidget.h
         SimSetupDialog.h

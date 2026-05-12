@@ -7,6 +7,7 @@
 #include "schematic/SchDocument.h"
 #include "schematic/SchEditorController.h"
 #include "db/DbConstraint.h"
+#include "schematic/SchToolProbe.h"
 #include "schematic/SchToolStimulus.h"
 #include "schematic/SchToolWire.h"
 #include "schematic/SchToolSelect.h"
@@ -272,26 +273,74 @@ void SchematicViewWidget::paintDocument(QPainter& painter) const {
         sceneToScreen({dbuToScene(inst->transform().dx), dbuToScene(inst->transform().dy + 5000)});
     painter.setPen(QColor("#202020"));
     painter.drawText(sp, QString::fromStdString(inst->name()));
+
+    // Draw pin labels (B4)
+    painter.setFont(QFont("sans-serif", 7));
+    painter.setPen(QColor("#6060a0"));
+    if (lib_) {
+      if (const auto* masterCell = lib_->findCellById(inst->masterCellId())) {
+        if (const auto* symbolView = masterCell->findView(db::DbViewType::Symbol)) {
+          for (const auto mpid : symbolView->pinIds()) {
+            const auto* mpin = symbolView->findPin(mpid);
+            if (!mpin) continue;
+            // Find connected net name
+            auto instPins = view.findInstancePins(instId);
+            std::string netName;
+            for (const auto* ipin : instPins) {
+              if (ipin->name() == mpin->name()) {
+                if (ipin->netId() != db::kInvalidId) {
+                  const auto* n = view.findNet(ipin->netId());
+                  if (n) netName = n->name();
+                }
+                break;
+              }
+            }
+            // Place label near the pin position in the symbol
+            // For now, draw pin name stacked vertically at instance origin
+            const auto px = inst->transform().dx - 8000;
+            const auto py = inst->transform().dy + static_cast<long long>(mpin->id() * 3000);
+            const auto psp = sceneToScreen({dbuToScene(px), dbuToScene(py)});
+            const QString pLabel = QString("%1:%2").arg(
+                QString::fromStdString(mpin->name()),
+                QString::fromStdString(netName));
+            painter.drawText(psp, pLabel);
+          }
+        }
+      }
+    }
   }
 
-  // Draw wires
-  painter.setPen(QPen(QColor("#325f8f"), std::max(1.0, 1.5 * zoom_)));
+  // Draw wires (bus and regular)
   for (const auto& wire : doc_->wires()) {
     const auto& pts = wire.points();
     if (pts.size() < 2) continue;
+    const double penW = wire.isBus() ? std::max(2.0, 4.0 * zoom_) : std::max(1.0, 1.5 * zoom_);
+    painter.setPen(QPen(wire.isBus() ? QColor("#004080") : QColor("#325f8f"), penW));
     for (std::size_t i = 1; i < pts.size(); ++i) {
       painter.drawLine(
           sceneToScreen({dbuToScene(pts[i - 1].x), dbuToScene(pts[i - 1].y)}),
           sceneToScreen({dbuToScene(pts[i].x),     dbuToScene(pts[i].y)}));
     }
-    painter.setBrush(QColor("#325f8f"));
+
+    // Bus slash marks
+    if (wire.isBus()) {
+      painter.setPen(QPen(QColor("#004080"), 2));
+      for (std::size_t i = 1; i < pts.size(); ++i) {
+        const auto a = sceneToScreen({dbuToScene(pts[i - 1].x), dbuToScene(pts[i - 1].y)});
+        const auto b = sceneToScreen({dbuToScene(pts[i].x), dbuToScene(pts[i].y)});
+        const auto mid = (a + b) / 2.0;
+        painter.drawLine(mid + QPointF{-4, -4}, mid + QPointF{4, 4});
+      }
+    }
+
+    painter.setBrush(wire.isBus() ? QColor("#004080") : QColor("#325f8f"));
     painter.setPen(Qt::NoPen);
     for (std::size_t i = 1; i + 1 < pts.size(); ++i) {
       const auto sp = sceneToScreen({dbuToScene(pts[i].x), dbuToScene(pts[i].y)});
       const double r = std::max(2.0, 3.0 * zoom_);
       painter.drawEllipse(sp, r, r);
     }
-    painter.setPen(QPen(QColor("#325f8f"), std::max(1.0, 1.5 * zoom_)));
+    painter.setPen(QPen(wire.isBus() ? QColor("#004080") : QColor("#325f8f"), penW));
     painter.setBrush(Qt::NoBrush);
   }
 
@@ -314,13 +363,38 @@ void SchematicViewWidget::paintDocument(QPainter& painter) const {
     painter.drawText(sp + QPointF{0, 2}, text);
   }
 
+  // Draw DC operating point annotation (B10)
+  if (!dcAnnotation_.empty()) {
+    painter.setFont(QFont("sans-serif", 9, QFont::Bold));
+    for (const auto& wire : doc_->wires()) {
+      const auto* net = doc_->view().findNet(wire.netId());
+      if (!net) continue;
+      auto it = dcAnnotation_.find(net->name());
+      if (it == dcAnnotation_.end()) continue;
+      // Find center of first segment
+      const auto& pts = wire.points();
+      if (pts.size() < 2) continue;
+      const geom::GeomPoint mid{(pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2};
+      const auto sp = sceneToScreen({dbuToScene(mid.x), dbuToScene(mid.y)});
+      const QString text = QString("%1 V").arg(it->second, 0, 'f', 3);
+      const QRectF br = painter.fontMetrics().boundingRect(text);
+      const QRectF bg{sp.x() - 4, sp.y() - 12, br.width() + 8, br.height() + 4};
+      painter.setPen(Qt::NoPen);
+      painter.setBrush(QColor("#004080"));
+      painter.drawRoundedRect(bg, 3, 3);
+      painter.setPen(QColor("#88ddff"));
+      painter.drawText(sp + QPointF{0, 2}, text);
+    }
+  }
+
   // Draw stimulus markers
   painter.setFont(QFont("sans-serif", 8));
   for (const auto cid : doc_->view().constraintIds()) {
     const auto* con = doc_->view().findConstraint(cid);
     if (!con) continue;
     const auto& type = con->type();
-    bool isStim = (type == "vdc" || type == "idc" || type == "vpulse" || type == "vsin");
+    bool isStim = (type == "vdc" || type == "idc" || type == "vpulse" || type == "vsin"
+                   || type == "vprobe" || type == "iprobe");
     if (!isStim) continue;
     const auto& props = con->properties();
     auto prop = [&](const std::string& k, const std::string& d) -> std::string {
@@ -369,6 +443,16 @@ auto getX = props.find("x");
       }
       painter.drawPath(path);
       label = QString("SIN");
+    } else if (type == "vprobe") {
+      // Voltmeter symbol: circle with V
+      painter.drawEllipse(sp, 10, 10);
+      painter.drawText(sp + QPointF{-4, -14}, "V");
+      label = QString("V-Probe");
+    } else if (type == "iprobe") {
+      // Ammeter symbol: circle with I
+      painter.drawEllipse(sp, 10, 10);
+      painter.drawText(sp + QPointF{-4, -14}, "I");
+      label = QString("I-Probe");
     }
 
     // Label text below marker

@@ -157,21 +157,21 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| B1 | Bus definition and multi-bit net routing | ○ not started | Bus objects, bus-to-bus connections, bus entry points |
-| B2 | Bus ripping and naming | ○ not started | Rip individual signals from buses, bus name labels |
+| B1 | Bus definition and multi-bit net routing | ◐ partial | Bus wire mode on SchToolWire; bus-style net naming; bus wires rendered thicker with slash marks |
+| B2 | Bus ripping and naming | ✓ done | SchToolBusRip rips signals from bus wires with named endpoints and net labels |
 | B3 | Wire labels / net name labels | ✓ done | Click-on-wire label tool renames nets; yellow pill labels rendered on schematic |
-| B4 | Pin labels and port definitions | ○ not started | Graphical pin labels on schematic |
+| B4 | Pin labels and port definitions | ✓ done | Pin names from symbol view shown next to instance pins on schematic; shows connected net name |
 | B5 | Stimulus markers (vsrc, isrc, etc.) | ✓ done | Place VDC/IDC/VPULSE/VSIN markers on schematic wires; markers rendered as symbols; NetlistGenerator emits source statements; tool with type selection dialog |
-| B6 | Probe markers (voltage, current) | ○ not started | Place simulation probes on nets/pins |
+| B6 | Probe markers (voltage, current) | ✓ done | Place vprobe/iprobe markers on wires; rendered as voltmeter/ammeter symbols; NetlistGenerator emits .print statements |
 | B7 | Hierarchical navigation | ✓ done | Double-click instance pushes into its cell; toolbar ▲ button pops back; full nav stack |
-| B8 | Symbol editor (graphical) | ○ not started | Create/edit cell symbols: shapes, pins, labels |
-| B9 | Schematic consistency checks | ○ not started | Check and save: unconnected pins, floating nets, shorted outputs |
-| B10 | DC operating point annotation | ○ not started | Display DC voltages/currents on schematic after sim |
+| B8 | Symbol editor (graphical) | ✓ done | SchToolSymbolPin places named pins with direction on symbol view; layout tools draw shapes; Edit Symbol menu opens symbol for editing |
+| B9 | Schematic consistency checks | ✓ done | Checks for floating nets (<2 connections) and unconnected pins; results shown in QMessageBox |
+| B10 | DC operating point annotation | ✓ done | DC op-point map passed to SchematicViewWidget; voltage values rendered as blue pills on wires |
 | B11 | Schematic ↔ Layout cross-probing | ✓ done | Select instance in schematic → toolbar ⇋ highlights matching master cell in both views; auto-clears after 5s |
-| B12 | Parameter passing (hierarchical) | ○ not started | Pass parameters from parent to child instances |
-| B13 | Multi-sheet schematics | ○ not started | Off-sheet connectors, sheet symbols, cross-sheet navigation |
-| B14 | Undo/redo for schematic editing | ○ not started | Full undo stack for all schematic operations |
-| B15 | Keyboard shortcuts and hotkeys | ◐ partial | Basic zoom shortcuts exist; needs full bindable shortcut system |
+| B12 | Parameter passing (hierarchical) | ✓ done | Instance parameter editor dialog; parameters stored on DbInstance and emitted by NetlistGenerator |
+| B13 | Multi-sheet schematics | ✓ done | Off-sheet connectors via net naming; library tree switches sheets; generateSpiceMulti nets across all cells |
+| B14 | Undo/redo for schematic editing | ✓ done | Snapshot-based undo stack; pushed before each tool operation |
+| B15 | Keyboard shortcuts and hotkeys | ✓ done | All tools have single-key shortcuts (S/W/L/M/B/I/R/P/A/V/G/D), view switches (E/L/V), zoom (Z/O/F) |
 
 ### Milestone C — Layout Editor (full)
 

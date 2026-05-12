@@ -8,10 +8,13 @@ target_sources(
     SchEditorController.cpp
     SchSymbol.cpp
     SchTool.cpp
+    SchToolBusRip.cpp
     SchToolInstance.cpp
     SchToolLabel.cpp
+    SchToolProbe.cpp
     SchToolSelect.cpp
     SchToolStimulus.cpp
+    SchToolSymbolPin.cpp
     SchToolWire.cpp
     SchWire.cpp
   PUBLIC
@@ -22,10 +25,13 @@ target_sources(
       SchEditorController.h
       SchSymbol.h
       SchTool.h
+      SchToolBusRip.h
       SchToolInstance.h
       SchToolLabel.h
+      SchToolProbe.h
       SchToolSelect.h
       SchToolStimulus.h
+      SchToolSymbolPin.h
       SchToolWire.h
       SchWire.h
 )

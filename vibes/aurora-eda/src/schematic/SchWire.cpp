@@ -4,8 +4,8 @@
 
 namespace aurora::schematic {
 
-SchWire::SchWire(db::DbId netId, std::vector<geom::GeomPoint> points)
-    : netId_(netId), points_(std::move(points)) {}
+SchWire::SchWire(db::DbId netId, std::vector<geom::GeomPoint> points, bool isBus)
+    : netId_(netId), points_(std::move(points)), isBus_(isBus) {}
 
 db::DbId SchWire::netId() const {
   return netId_;

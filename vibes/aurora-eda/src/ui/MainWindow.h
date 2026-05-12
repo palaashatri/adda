@@ -64,6 +64,15 @@ class MainWindow : public QMainWindow {
   void onToolGuardRing();
   void onToolRuler();
   void onToolStimulus();
+  void onToolProbe();
+  void onToolBusRip();
+  void onToggleBusMode();
+  void onEditSymbol();
+  void onToolSymbolPin();
+  void onUndo();
+  void onRedo();
+  void onEditParameters();
+  void onCheckSchematic();
 
   // Hierarchical navigation
   void onInstanceDoubleClicked();
@@ -125,8 +134,15 @@ class MainWindow : public QMainWindow {
   std::unique_ptr<schematic::SchEditorController> schCtrl_;
   std::unique_ptr<sim::SimRunner>                 simRunner_;
 
+  // Undo stack
+  std::vector<std::string> undoStack_;
+  std::vector<std::string> redoStack_;
+  void pushUndoState();
+
   // Cross-probing
   db::DbId crossProbeCellId_{db::kInvalidId};
+  // DC operating point annotation
+  std::map<std::string, double> dcAnnotation_;
 
   SimSetupDialog*    simDialog_{nullptr};
   DrcResultsDialog*  drcDialog_{nullptr};

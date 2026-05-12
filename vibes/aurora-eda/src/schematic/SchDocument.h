@@ -30,7 +30,8 @@ class SchDocument {
   [[nodiscard]] db::DbView& view();
   [[nodiscard]] const db::DbView& view() const;
 
-  [[nodiscard]] SchWire& addWire(db::DbId netId, std::vector<geom::GeomPoint> points);
+  [[nodiscard]] SchWire& addWire(db::DbId netId, std::vector<geom::GeomPoint> points,
+                                   bool isBus = false);
   void removeWireAt(std::size_t index);
   void clearWires();
   [[nodiscard]] const std::vector<SchWire>& wires() const;

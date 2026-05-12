@@ -46,4 +46,8 @@ void DbInstance::setParameter(std::string name, std::string value) {
   parameters_[std::move(name)] = std::move(value);
 }
 
+void DbInstance::clearParameters() {
+  parameters_.clear();
+}
+
 }  // namespace aurora::db

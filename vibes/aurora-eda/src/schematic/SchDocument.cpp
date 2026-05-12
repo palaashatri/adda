@@ -14,8 +14,8 @@ SchDocument::SchDocument(db::DbView& view) : view_(&view) {
 db::DbView& SchDocument::view() { return *view_; }
 const db::DbView& SchDocument::view() const { return *view_; }
 
-SchWire& SchDocument::addWire(db::DbId netId, std::vector<geom::GeomPoint> points) {
-  wires_.emplace_back(netId, std::move(points));
+SchWire& SchDocument::addWire(db::DbId netId, std::vector<geom::GeomPoint> points, bool isBus) {
+  wires_.emplace_back(netId, std::move(points), isBus);
   return wires_.back();
 }
 

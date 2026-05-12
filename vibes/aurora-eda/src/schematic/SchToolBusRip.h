@@ -3,28 +3,26 @@
 #include "schematic/SchTool.h"
 #include "geom/GeomPoint.h"
 
+#include <functional>
+#include <optional>
+#include <string>
+
 namespace aurora::schematic {
 
-class SchToolWire : public SchTool {
+class SchToolBusRip : public SchTool {
  public:
-  SchToolWire();
+  SchToolBusRip();
 
   void mousePress(SchEditorController& ctrl, geom::GeomPoint p) override;
   void mouseMove(SchEditorController& ctrl, geom::GeomPoint p) override;
   void keyPress(SchEditorController& ctrl, SchKeyEvent key) override;
-  void deactivate(SchEditorController& ctrl) override;
 
-  [[nodiscard]] bool isDrawing() const { return drawing_; }
-  [[nodiscard]] geom::GeomPoint startPoint() const { return startPoint_; }
+  std::function<std::optional<std::string>()> requestSignalName;
+
   [[nodiscard]] geom::GeomPoint cursor() const { return cursor_; }
-  [[nodiscard]] bool busMode() const { return busMode_; }
-  void setBusMode(bool b) { busMode_ = b; }
 
  private:
-  bool drawing_{false};
-  geom::GeomPoint startPoint_{};
   geom::GeomPoint cursor_{};
-  bool busMode_{false};
 };
 
 }  // namespace aurora::schematic

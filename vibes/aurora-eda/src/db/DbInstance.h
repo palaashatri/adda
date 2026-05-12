@@ -30,6 +30,7 @@ class DbInstance {
   void setMasterCellId(DbId masterCellId);
   void setTransform(DbTransform transform);
   void setParameter(std::string name, std::string value);
+  void clearParameters();
 
  private:
   DbId id_{kInvalidId};

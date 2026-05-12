@@ -36,6 +36,8 @@ class SchematicViewWidget : public QWidget {
   void setController(schematic::SchEditorController* ctrl);
   void fitView();
   void setCrossProbeCellId(db::DbId cellId) { crossProbeCellId_ = cellId; update(); }
+  void setDcAnnotation(const std::map<std::string, double>& ann) { dcAnnotation_ = ann; }
+  [[nodiscard]] const std::map<std::string, double>& dcAnnotation() const { return dcAnnotation_; }
 
  signals:
   void coordinatesChanged(QPointF scenePt);
@@ -72,6 +74,7 @@ class SchematicViewWidget : public QWidget {
   bool    panning_{false};
   bool    hasSelection_{false};
   db::DbId crossProbeCellId_{db::kInvalidId};
+  std::map<std::string, double> dcAnnotation_;
 };
 
 }  // namespace aurora::ui
