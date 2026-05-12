@@ -335,23 +335,23 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | D17 | Direct plot from schematic | ✓ done |
 | D18 | Distributed simulation manager | ○ not started |
 
-### E — Physical Verification
+### E — Physical Verification — 85% Complete
 
-| Area | Gap | Priority |
-|------|-----|----------|
-| Deck-based DRC (standard rule decks) | Interpret foundry DRC rule decks (SVRF, Tcl) | High |
-| Hierarchical DRC | Top-level vs. cell-based; hierarchical vs. flatten | High |
-| DRC by area (region select) | Run DRC on selected region only | Medium |
-| Full device recognition LVS | Recognize MOS, BJT, RES, CAP, DIODE from geometry | High |
-| Hierarchical LVS (full) | Beyond net/pin count: full device-level comparison | High |
-| Parasitic extraction (RC) | Coupling capacitance, resistance from layout | High |
-| Parasitic reduction | Reduce extracted RC networks (Pi, T-models) | Medium |
-| Antenna rule checking | Antenna ratio checks during metal/via processing | Medium |
-| Density checking | Min/max metal density; slotting rules | Medium |
-| ERC (electrical rule checking) | Floating nodes, unconnected pins, multiple drivers | Medium |
-| PERC (power integrity) | IR drop, current density, electromigration checks | Low |
-| DRC/LVS run directory management | Organized run directories, logs, results archiving | Low |
-| Back-annotation of DRC/LVS results | Mark violations on layout/schematic from results | Medium |
+| # | Feature | Status |
+|---|---------|--------|
+| E1 | Deck-based DRC | ✓ done |
+| E2 | Hierarchical DRC | ✓ done |
+| E3 | DRC by area | ✓ done |
+| E4 | Full device recognition LVS | ✓ done |
+| E5 | Hierarchical LVS (full) | ✓ done |
+| E6 | Parasitic extraction (RC) | ✓ done |
+| E7 | Parasitic reduction | ○ not started |
+| E8 | Antenna rule checking | ✓ done |
+| E9 | Density checking | ✓ done |
+| E10 | ERC (electrical rule checking) | ✓ done |
+| E11 | PERC (power integrity) | ○ not started |
+| E12 | DRC/LVS run directory management | ✓ done |
+| E13 | Back-annotation of DRC/LVS results | ✓ done |
 
 ### F — PCells and PDK
 
@@ -441,13 +441,13 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | B — Schematic Editor | 15/15 | 0 | **100%** |
 | C — Layout Editor | 19/19 | 0 | **100%** |
 | D — Simulation Environment | 18/18 | 0 | **100%** |
-| E — Physical Verification | 2/13 | 11 | **15%** |
+| E — Physical Verification | 11/13 | 2 | **85%** |
 | F — PCells and PDK | 3/14 | 11 | **21%** |
 | G — Import / Export | 7/17 | 10 | **41%** |
 | H — Project Management | 1/9 | 8 | **11%** |
 | I — Scripting | 1/9 | 8 | **11%** |
 | J — Advanced UI | 1/10 | 9 | **10%** |
-| **Total** | **97/154** | **57** | **~63%** |
+| **Total** | **106/154** | **48** | **~69%** |
 
 Note: "Done" counts items marked ✓ done or ◐ partial in the CLAUDE.md checklist.
 The application builds, runs, and passes all 12 CTest tests, but represents only

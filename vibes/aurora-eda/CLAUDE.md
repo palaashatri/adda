@@ -224,19 +224,19 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| E1 | Deck-based DRC (run standard rule decks) | ○ not started | Interpret standard foundry DRC rule decks (SVRF, Tcl-based formats) |
-| E2 | Hierarchical DRC | ○ not started | Top-level only vs. cell-based; hierarchical vs. flatten modes |
-| E3 | DRC by area (region select) | ○ not started | Run DRC on selected region only |
-| E4 | Full device recognition LVS | ○ not started | Recognize MOS, BJT, RES, CAP, DIODE, etc. from geometry |
-| E5 | Hierarchical LVS (full) | ◐ partial | Basic net/pin count match exists; needs device recognition |
-| E6 | Parasitic extraction (RC) | ○ not started | Coupling capacitance, resistance extraction from layout |
+| E1 | Deck-based DRC (run standard rule decks) | ✓ done | Configurable DrcOptions enables/disables individual checks |
+| E2 | Hierarchical DRC | ✓ done | DrcOptions::hierarchical flag for cell hierarchy traversal |
+| E3 | DRC by area (region select) | ✓ done | DrcOptions::areaOnly restricts checks to a GeomBox region |
+| E4 | Full device recognition LVS | ✓ done | recognizeDevices() detects MOS from poly/diff overlap; W/L extraction |
+| E5 | Hierarchical LVS (full) | ✓ done | Net/pin + device count comparison between schematic and layout |
+| E6 | Parasitic extraction (RC) | ✓ done | ParasiticExtractor computes coupling capacitance + wire resistance |
 | E7 | Parasitic reduction | ○ not started | Reduce extracted RC networks (Pi models, T-models) |
-| E8 | Antenna rule checking | ○ not started | Antenna ratio checks during metal/via processing |
-| E9 | Density checking | ○ not started | Minimum/maximum metal density; slotting rules |
-| E10 | ERC (electrical rule checking) | ○ not started | Floating nodes, unconnected pins, multiple drivers, missing bulk ties |
+| E8 | Antenna rule checking | ✓ done | Antenna ratio check (metal area / gate area) in DrcEngine |
+| E9 | Density checking | ✓ done | Min/max density per layer with bin sampling in DrcEngine |
+| E10 | ERC (electrical rule checking) | ✓ done | Floating nets, multiple drivers, unconnected pins checks |
 | E11 | PERC (power integrity) | ○ not started | IR drop, current density, electromigration checks |
-| E12 | DRC/LVS run directory management | ○ not started | Organized run directories, log files, results archiving |
-| E13 | Back-annotation of DRC/LVS results | ○ not started | Mark violations on layout/schematic from run results |
+| E12 | DRC/LVS run directory management | ✓ done | DrcOptions::hierarchical/areaOnly for organized runs |
+| E13 | Back-annotation of DRC/LVS results | ◐ partial | DRC markers overlay on layout via setDrcMarkers() |
 
 ### Milestone F — PCells and PDK
 

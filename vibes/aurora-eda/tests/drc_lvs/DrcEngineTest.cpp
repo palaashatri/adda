@@ -61,7 +61,9 @@ static void test_no_violations_compliant() {
   (void)view.createRect(layer.id(), B{2000, 0, 3000, 1000}); // spaced 1µm apart
 
   aurora::drc_lvs::DrcEngine drc(tech);
-  const auto violations = drc.run(view, lib);
+  aurora::drc_lvs::DrcOptions opts;
+  opts.checkErc = false; opts.checkAntenna = false; opts.checkDensity = false;
+  const auto violations = drc.run(view, lib, opts);
   CHECK(violations.empty());
 }
 
@@ -83,7 +85,9 @@ static void test_min_width_violation() {
   (void)view.createRect(layer.id(), aurora::geom::GeomBox{0, 0, 1000, 100});
 
   aurora::drc_lvs::DrcEngine drc(tech);
-  const auto violations = drc.run(view, lib);
+  aurora::drc_lvs::DrcOptions opts;
+  opts.checkErc = false; opts.checkAntenna = false; opts.checkDensity = false;
+  const auto violations = drc.run(view, lib, opts);
   bool found = false;
   for (const auto& v : violations)
     if (v.type == aurora::drc_lvs::DrcViolationType::MinWidth) found = true;
@@ -109,7 +113,9 @@ static void test_min_spacing_violation() {
   (void)view.createRect(layer.id(), aurora::geom::GeomBox{550, 0, 1050, 500});
 
   aurora::drc_lvs::DrcEngine drc(tech);
-  const auto violations = drc.run(view, lib);
+  aurora::drc_lvs::DrcOptions opts;
+  opts.checkErc = false; opts.checkAntenna = false; opts.checkDensity = false;
+  const auto violations = drc.run(view, lib, opts);
   bool found = false;
   for (const auto& v : violations)
     if (v.type == aurora::drc_lvs::DrcViolationType::MinSpacing) found = true;

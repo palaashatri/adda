@@ -11,6 +11,9 @@ enum class DrcViolationType {
   MinSpacing,
   Enclosure,
   NonManhattan,
+  ERC,        // E10
+  Antenna,    // E8
+  Density,    // E9
 };
 
 struct DrcViolation {
