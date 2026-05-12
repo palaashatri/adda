@@ -177,9 +177,192 @@ Latest known result: all 7 CTest tests pass on macOS (AppleClang 16 + Qt 6.8)
 with zero compiler warnings. The `aurora_sim_test` does not require ngspice to
 be installed — it only validates file-write and error-path behaviour.
 
-## Remaining
+## Remaining — Full-Feature Roadmap
 
-- **Task 9**: OpenAccess import plugin — optional, requires a legal OA
-  installation. Not vendored in this repository (see `src/plugins/io/CMakeLists.txt`).
-  The `src/plugins/` directory contains empty CMakeLists.txt stubs for
-  io/, pdk/, and tools/ ready for future plugin development.
+The codebase currently covers **~15%** of what is needed for a production-grade
+analog/custom IC design environment. Below is the complete feature gap analysis
+organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
+
+### B — Schematic Editor (full)
+
+| Area | Gap | Priority |
+|------|-----|----------|
+| Bus definition / multi-bit routing | Bus objects, bus-to-bus connections, bus entry points | High |
+| Bus ripping and naming | Rip individual signals from buses, bus name labels | High |
+| Wire labels / net name labels | Named labels attached to wires/nets | High |
+| Pin labels and port definitions | Graphical pin labels on schematic | High |
+| Stimulus markers (vsrc, isrc, etc.) | Place DC/AC/Transient sources as schematic markers | High |
+| Probe markers (voltage, current) | Place simulation probes on nets/pins | High |
+| Hierarchical navigation | Push into cell (double-click instance), pop back | Medium |
+| Symbol editor (graphical) | Create/edit cell symbols: shapes, pins, labels | Medium |
+| Schematic consistency checks | Unconnected pins, floating nets, shorted outputs | Medium |
+| DC operating point annotation | Display DC voltages/currents on schematic after sim | Medium |
+| Schematic ↔ Layout cross-probing | Select in schematic → highlight in layout and vice versa | Medium |
+| Parameter passing (hierarchical) | Pass parameters from parent to child instances | Medium |
+| Multi-sheet schematics | Off-sheet connectors, sheet symbols, cross-sheet navigation | Medium |
+| Undo/redo for schematic | Full undo stack for all schematic operations | Medium |
+| Keyboard shortcuts / hotkeys | Full bindable shortcut system | Low |
+
+### C — Layout Editor (full)
+
+| Area | Gap | Priority |
+|------|-----|----------|
+| Path tool with width/corner styles | Path creation with width, round/square/miter corners | High |
+| Via array generator | Automatic rows/columns of vias; via parameters | High |
+| Guard ring generator | Well tie, substrate tie, double-ring generation | High |
+| Alignment and distribution tools | Align left/right/top/bottom/center; distribute H/V | High |
+| Measurement / ruler tool | Interactive distance measurement with annotation | Medium |
+| Interactive DRC (iDRC) | Real-time feedback during drawing | Medium |
+| Constraint-driven layout | Same-net spacing, differential pair, shielding | Medium |
+| Relative object placement snaps | Snap to edge, center, midpoint | Medium |
+| Parameterized via/contact definitions | Tech-defined via stacks, auto-via between layers | Medium |
+| Layout XL / schematic-driven layout | Generate devices from schematic; fly-wire routing | Medium |
+| Connectivity-aware interactive routing | Wire following connectivity; push-aside | Medium |
+| Real-time DRC (drawing mode) | Mark violations continuously during edit | Medium |
+| DRC markers overlay | Persistent violation markers; select/zoom-to/dismiss | Medium |
+| Layer operations (derived layers) | Boolean ops: AND, OR, NOT, GROW, SHRINK | Medium |
+| Stretch/edit in place | Edge/corner stretch; move point on polygon | Medium |
+| Undo/redo for layout | Full undo stack for all layout operations | Medium |
+| Copy/paste with alignment | Clipboard; step-and-repeat | Medium |
+| Array/step-and-repeat | 1D/2D stepping of shapes with configurable pitch/count | Medium |
+| Grid system (multiple grid types) | Relative grid, orthogonal mode toggle | Low |
+
+### D — Simulation Environment (ADE-class)
+
+| Area | Gap | Priority |
+|------|-----|----------|
+| Xyce backend plugin | Plugin wrapper for Xyce simulator | High |
+| Analysis: Noise, Distortion, PZ, Sensitivity | Extend SimSetupDialog; add netlist generation | High |
+| Parametric sweeps | Sweep temperature, device parameters across ranges | High |
+| Corner simulation | Process/voltage/temperature corner matrix | High |
+| Monte Carlo analysis | Statistical distributions; histogram results | High |
+| Design optimization | Optimize component values for target specs | Medium |
+| Waveform calculator / expression math | V(net1)-V(net2), dV/dt, RMS, average | High |
+| FFT / spectrum analysis | FFT of time-domain waveforms; SFDR, THD | Medium |
+| Eye diagram tool | Eye diagram from transient data; eye measurements | Medium |
+| Multiple testbenches (config views) | Different testbenches, simulation setups per cell | Medium |
+| Simulation state save/restore | Save analysis setup, sweep params, outputs | Medium |
+| Results browser | Tree browser for multiple runs; compare across runs | Medium |
+| Waveform overlay and comparison | Legend, math difference traces | Low |
+| Waveform measurements | Rise/Fall time, period, freq, pulse width, delay, slew | Medium |
+| Expression editor (GUI) | Visual builder for sim output expressions | Medium |
+| Direct plot from schematic | Click net → auto-plot after sim | Medium |
+| Distributed simulation manager | Farm out Monte Carlo/parametric runs across machines | Low |
+
+### E — Physical Verification
+
+| Area | Gap | Priority |
+|------|-----|----------|
+| Deck-based DRC (standard rule decks) | Interpret foundry DRC rule decks (SVRF, Tcl) | High |
+| Hierarchical DRC | Top-level vs. cell-based; hierarchical vs. flatten | High |
+| DRC by area (region select) | Run DRC on selected region only | Medium |
+| Full device recognition LVS | Recognize MOS, BJT, RES, CAP, DIODE from geometry | High |
+| Hierarchical LVS (full) | Beyond net/pin count: full device-level comparison | High |
+| Parasitic extraction (RC) | Coupling capacitance, resistance from layout | High |
+| Parasitic reduction | Reduce extracted RC networks (Pi, T-models) | Medium |
+| Antenna rule checking | Antenna ratio checks during metal/via processing | Medium |
+| Density checking | Min/max metal density; slotting rules | Medium |
+| ERC (electrical rule checking) | Floating nodes, unconnected pins, multiple drivers | Medium |
+| PERC (power integrity) | IR drop, current density, electromigration checks | Low |
+| DRC/LVS run directory management | Organized run directories, logs, results archiving | Low |
+| Back-annotation of DRC/LVS results | Mark violations on layout/schematic from results | Medium |
+
+### F — PCells and PDK
+
+| Area | Gap | Priority |
+|------|-----|----------|
+| CDF parameter system | Component Description Format: typed params, units, choices | High |
+| PCell evaluation engine with caching | Evaluate once; cache; invalidate on param change | High |
+| Stretch handles on PCells | Interactive drag handles for parameterized resizing | Medium |
+| C compile mode for PCells | Pre-compile Python PCells to evaluated state | Low |
+| PCell library: MOS devices | NMOS, PMOS: single-finger, multi-finger, common-centroid | High |
+| PCell library: passive devices | Resistors, capacitors (MIM, MOM), inductors | High |
+| PCell library: BJT devices | NPN, PNP: single-finger, multi-finger, matched pairs | Medium |
+| PCell library: diode devices | pn junction, Schottky, ESD | Medium |
+| PCell library: matching structures | Common-centroid layouts, interdigitated pairs | Medium |
+| PCell parameter callbacks | Validate params, derive params, update on change | Medium |
+| PDK installation mechanism | Wizard/script to install PDKs | High |
+| PDK validation tools | Verify PDK structure, check PCells, test DRC deck | Medium |
+
+### G — Import / Export
+
+| Area | Gap | Priority |
+|------|-----|----------|
+| GDS II import | Parse binary GDS; reconstruct cells, hierarchy, geometries | High |
+| LEF export | Library Exchange Format: cell boundaries, pin locations | High |
+| LEF import | Parse LEF macro definitions | High |
+| DEF export | Design Exchange Format: net connectivity, placement | High |
+| DEF import | Parse DEF placement, routing, nets | High |
+| Verilog structural netlist export | Module/instance connectivity for digital flow | High |
+| Verilog structural netlist import | Parse module/instance connectivity | High |
+| CDL netlist export | Enhanced SPICE: device parameters, model references | High |
+| CDL netlist import (enhanced) | Device parameter parsing beyond basic SPICE | Medium |
+| DSPF/RSPF/SDF parasitic export | Standard parasitic formats | Medium |
+| OASIS export | More compact alternative to GDS II | Medium |
+| OASIS import | Parse OASIS mask data format | Medium |
+| CIF export/import | Caltech Intermediate Form | Low |
+| DXF export | AutoCAD exchange for mechanical integration | Low |
+| PDF/PNG export (schematic/layout) | Document-quality vector/raster export | Medium |
+
+### H — Project and Library Management
+
+| Area | Gap | Priority |
+|------|-----|----------|
+| Technology library management | Attach/detach tech library; tech selection in project | High |
+| Multi-library support (full) | Library search paths, lib priority | High |
+| Library path management | Configurable library search order | Medium |
+| Library versioning | Design revisions; check-in/check-out; access control | Low |
+| Design hierarchy browser | Tree view of design hierarchy; cross-references | Medium |
+| Design import wizards | Guided import: GDS→library, SPICE→schematic, etc. | Medium |
+| Revision control integration | Git-based diff for cells/views; version annotations | Low |
+| Project archiving | Package project + PDK for transfer; zip/tar | Low |
+| Design health dashboard | Summary: cell count, warnings, errors, verification status | Low |
+
+### I — Scripting and Automation
+
+| Area | Gap | Priority |
+|------|-----|----------|
+| Python interactive shell (embedded) | QPythonConsole or embedded REPL in GUI | Medium |
+| Comprehensive Python API | Schematic, layout, sim bindings (currently only core) | High |
+| Macro recording and playback | Record user actions → Python script; replay | Medium |
+| User-defined menu items / toolbar | Register Python callbacks as menu/toolbar actions | Medium |
+| Custom DRC rules (Python) | Python API for custom DRC rule creation | Medium |
+| Custom simulation analyses (Python) | Python API for custom analysis types | Low |
+| Batch / headless mode (full) | Run scripts, export data from CLI without GUI | Medium |
+| Layout automation scripts | Python API for layout generation | Medium |
+| Schematic automation scripts | Python API for schematic creation, netlisting | Medium |
+
+### J — Advanced UI / Workflow
+
+| Area | Gap | Priority |
+|------|-----|----------|
+| Customizable workspace layout | Save/restore dock positions; per-window layouts | Medium |
+| Dark/light theme support | Qt stylesheet theming; configurable colors | Low |
+| Multi-window support | Drag tab out → new window; multiple views of same cell | Low |
+| Search and replace in design | Search nets, instances, shapes by name/property | Low |
+| Design rule table editor (GUI) | Edit tech.json rules from dialog; validation | Medium |
+| Layer purpose pair management (GUI) | Edit layer/purpose combinations; display settings | Medium |
+| Hotkey/macro configuration UI | Graphical editor for keyboard shortcuts and macros | Low |
+| Startup wizard (new project/PDK) | Project creation wizard; PDK selection | Low |
+| Status/progress system (full) | Progress bars for long ops (DRC, import) | Low |
+| Notification center | System for warnings, errors, completion notifications | Low |
+
+## Summary
+
+| Milestone | Done | Not Started | Completion |
+|-----------|------|-------------|------------|
+| A — Core Infrastructure | 30/30 | 0 | **100%** |
+| B — Schematic Editor | 1/15 | 14 | **7%** |
+| C — Layout Editor | 2/19 | 17 | **11%** |
+| D — Simulation Environment | 2/18 | 16 | **11%** |
+| E — Physical Verification | 2/13 | 11 | **15%** |
+| F — PCells and PDK | 2/14 | 12 | **14%** |
+| G — Import / Export | 2/17 | 15 | **12%** |
+| H — Project Management | 1/9 | 8 | **11%** |
+| I — Scripting | 1/9 | 8 | **11%** |
+| J — Advanced UI | 1/10 | 9 | **10%** |
+| **Total** | **44/154** | **110** | **~29%** |
+
+Note: "Done" counts items marked ✓ done or ◐ partial in the CLAUDE.md checklist.
+The application builds, runs, and passes all 7 CTest tests, but represents only
+the foundational layer of a full custom IC design platform.
