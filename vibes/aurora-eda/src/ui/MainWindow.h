@@ -61,6 +61,7 @@ class MainWindow : public QMainWindow {
   void onToolPolygon();
   void onToolPath();
   void onToolViaArray();
+  void onToolVia();
   void onToolGuardRing();
   void onToolRuler();
   void onToolStimulus();
@@ -71,6 +72,9 @@ class MainWindow : public QMainWindow {
   void onToolSymbolPin();
   void onUndo();
   void onRedo();
+  void onCopyShapes();
+  void onPasteShapes();
+  void onStepRepeat();
   void onEditParameters();
   void onCheckSchematic();
 
@@ -87,6 +91,13 @@ class MainWindow : public QMainWindow {
   void onAlignCenterV();
   void onDistributeH();
   void onDistributeV();
+  void onRunIdrc();
+  void onLayerOperation();
+  void onToggleGridType();
+  void onToolStretch();
+  void onAddConstraint();
+  void onGenerateFromSchematic();
+  void onSnapModeChanged();
 
   // Simulation
   void onSimSetup();
@@ -133,6 +144,13 @@ class MainWindow : public QMainWindow {
   std::unique_ptr<schematic::SchDocument>         schDoc_;
   std::unique_ptr<schematic::SchEditorController> schCtrl_;
   std::unique_ptr<sim::SimRunner>                 simRunner_;
+
+  // Layout undo stack
+  std::vector<std::string> layUndoStack_;
+  std::vector<std::string> layRedoStack_;
+  void pushLayUndoState();
+  // Shape clipboard (serialized shape IDs)
+  std::vector<db::DbId> shapeClipboard_;
 
   // Undo stack
   std::vector<std::string> undoStack_;

@@ -10,6 +10,8 @@ class LayTool;
 
 class LayEditorController {
  public:
+  enum SnapMode { SnapToGrid, SnapToObject };
+
   explicit LayEditorController(LayDocument& document);
   ~LayEditorController();
 
@@ -31,12 +33,17 @@ class LayEditorController {
   void mouseRelease(geom::GeomPoint p);
   void keyPress(int qtKey);
 
+  [[nodiscard]] geom::GeomPoint snap(geom::GeomPoint p) const;
+  [[nodiscard]] SnapMode snapMode() const { return snapMode_; }
+  void setSnapMode(SnapMode m) { snapMode_ = m; }
+
  private:
   LayDocument* document_{nullptr};
   geom::DbUnit grid_{100};
   double zoom_{1.0};
   db::DbId activeLayerId_{db::kInvalidId};
   std::unique_ptr<LayTool> activeTool_;
+  SnapMode snapMode_{SnapToGrid};
 };
 
 }  // namespace aurora::layout

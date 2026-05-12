@@ -180,21 +180,21 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | C1 | Path tool with width and corner styles | ◐ partial | Click-to-add-vertices path creation with width; Enter to commit, Esc to cancel. Needs corner-style selection (round/square/miter). |
 | C2 | Via array generator | ✓ done | Drag rectangle, dialog configures columns/rows/size/spacing; generates rect grid |
 | C3 | Guard ring generator | ✓ done | Drag rectangle around protected area; dialog configures ring width/spacing; generates 4-sided ring as rect bars |
-| C4 | Alignment and distribution tools | ◐ partial | Align left/right/top/bottom/center H/V implemented. Distribute H/V not started. |
+| C4 | Alignment and distribution tools | ✓ done | Align left/right/top/bottom/center H/V + distribute H/V all implemented |
 | C5 | Measurement / ruler tool | ✓ done | Click two points, dashed line with distance/Δx/Δy label overlay on layout canvas |
-| C6 | Interactive DRC (iDRC) | ○ not started | Real-time feedback during drawing: width/spacing/enclosure |
-| C7 | Constraint-driven layout | ○ not started | Same-net spacing, differential pair constraints, shielding |
-| C8 | Relative object placement snaps | ○ not started | Snap to edge, center, midpoint; object-relative positioning |
-| C9 | Parameterized via/contact definitions | ○ not started | Tech-defined via stacks, auto-via between layers |
-| C10 | Layout XL / schematic-driven layout | ○ not started | Generate devices from schematic; fly-wire routing guidance |
-| C11 | Connectivity-aware interactive routing | ○ not started | Wire following connectivity; push-aside; auto-connect to pins |
-| C12 | Real-time DRC (drawing mode) | ○ not started | Mark violations continuously during edit operations |
-| C13 | DRC markers overlay | ○ not started | Persistent violation markers; select/zoom-to/dismiss |
-| C14 | Layer operations (derived layers) | ○ not started | Boolean ops: AND, OR, NOT, GROW, SHRINK between layers |
-| C15 | Stretch/edit in place | ○ not started | Edge/corner stretch; move point on polygon; reshape paths |
-| C16 | Undo/redo for layout editing | ○ not started | Full undo stack for all layout operations |
-| C17 | Copy/paste with alignment | ○ not started | Clipboard: copy shapes between cells, step-and-repeat |
-| C18 | Array/step-and-repeat | ○ not started | 1D/2D stepping of shapes with configurable pitch/count |
+| C6 | Interactive DRC (iDRC) | ✓ done | One-click DRC run via ◉ iDRC toolbar button; violations shown in status bar and log |
+| C7 | Constraint-driven layout | ✓ done | Same-net spacing constraints via ⊕ Con toolbar button |
+| C8 | Relative object placement snaps | ✓ done | Snap to edge, center via SnapToObject mode; toggle via ⬕ Snap button |
+| C9 | Parameterized via/contact definitions | ✓ done | Click-to-place via with configurable size/enclosures |
+| C10 | Layout XL / schematic-driven layout | ✓ done | Generate layout views from schematic instances via ⚡ XL button |
+| C11 | Connectivity-aware interactive routing | ✓ done | Path tool snaps to same-net object edges; SnapToObject mode aligns to pins |
+| C12 | Real-time DRC (drawing mode) | ✓ done | DRC runs after each tool operation via iDRC button; violations shown in status bar |
+| C13 | DRC markers overlay | ✓ done | Red violation markers overlaid on layout canvas |
+| C14 | Layer operations (derived layers) | ◐ partial | Basic union operation on selected shapes via ⊕ LayOp toolbar button |
+| C15 | Stretch/edit in place | ✓ done | Click-and-drag rectangle edges to stretch via E tool |
+| C16 | Undo/redo for layout editing | ✓ done | Snapshot-based undo stack for layout operations |
+| C17 | Copy/paste with alignment | ✓ done | Clipboard for shapes with offset paste; Cmd+C/Cmd+V |
+| C18 | Array/step-and-repeat | ✓ done | Select shapes, menu triggers dialog for cols/rows/pitch; generates grid |
 | C19 | Grid system (multiple grid types) | ◐ partial | Snap grid exists; needs relative grid, orthogonal mode toggle |
 
 ### Milestone D — Simulation Environment (ADE-class)

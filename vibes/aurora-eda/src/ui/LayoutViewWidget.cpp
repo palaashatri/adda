@@ -400,6 +400,17 @@ void LayoutViewWidget::paintDocument(QPainter& painter) const {
 
   paintView(painter, doc_->view(), 0, 0);
 
+  // DRC markers overlay (C13)
+  if (!drcMarkers_.empty()) {
+    painter.setPen(QPen(QColor("#ff4444"), 2, Qt::SolidLine));
+    painter.setBrush(QColor(255, 68, 68, 30));
+    for (const auto& m : drcMarkers_) {
+      painter.drawRect(sceneRectToScreen(
+          {dbuToScene(m.left()), dbuToScene(m.bottom()),
+           dbuToScene(m.width()), dbuToScene(m.height())}));
+    }
+  }
+
   const auto orig = sceneToScreen({0.0, 0.0});
   painter.setPen(QPen(QColor("#404850"), 1));
   painter.drawLine(QPointF{orig.x(), 0.0}, QPointF{orig.x(), (double)height()});

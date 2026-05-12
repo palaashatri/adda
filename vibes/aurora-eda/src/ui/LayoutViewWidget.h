@@ -1,6 +1,7 @@
 #pragma once
 
 #include "db/DbTypes.h"
+#include "geom/GeomBox.h"
 
 #include <QColor>
 #include <QPointF>
@@ -40,6 +41,8 @@ class LayoutViewWidget : public QWidget {
 
   void setLayerVisible(db::DbId layerId, bool visible);
   void zoomToBox(double sceneX, double sceneY, double sceneW, double sceneH);
+  void setDrcMarkers(const std::vector<aurora::geom::GeomBox>& markers) { drcMarkers_ = markers; update(); }
+  void clearDrcMarkers() { drcMarkers_.clear(); update(); }
 
  signals:
   void coordinatesChanged(QPointF scenePt);
@@ -77,6 +80,7 @@ class LayoutViewWidget : public QWidget {
   bool    panning_{false};
   bool    hasSelection_{false};
   db::DbId crossProbeCellId_{db::kInvalidId};
+  std::vector<aurora::geom::GeomBox> drcMarkers_;
 };
 
 }  // namespace aurora::ui

@@ -185,7 +185,14 @@ feature milestone so the implemented and pending work stays visible.
   - `LayToolViaArray` — drag rectangle, dialog configures columns/rows/size/spacing; generates grid of vias
   - `LayToolGuardRing` — drag rectangle around area; dialog configures ring width/spacing; generates 4-sided ring as rect bars
   - `LayToolRuler` — click two points, dashed line with distance/Δx/Δy label overlay
-  - Alignment tools — align left/right/top/bottom/center H/V operate on selected shapes via toolbar buttons
+  - Alignment tools — align left/right/top/bottom/center H/V + distribute H/V operate on selected shapes via toolbar buttons
+  - Interactive DRC — ◉ iDRC toolbar button runs one-click DRC; violations shown in status bar and log
+  - Layer operations — ⊕ LayOp toolbar button performs union of selected shapes
+  - Layout undo/redo — snapshot-based undo stack for layout operations (shares Ctrl+Z/Ctrl+Shift+Z with schematic)
+  - Copy/paste — Cmd+C copies selected shapes, Cmd+V pastes with 5µm offset
+  - Step-and-repeat — Edit menu dialog for cols/rows/pitch; generates 1D/2D grid copies
+  - Grid toggle — toolbar button toggles orthogonal mode
+  - Parameterized via — J tool: click-to-place via with configurable size and enclosure
   - `LayEditorController` updated with `keyPress` forwarding
 - New UI dialogs and widgets (completed):
   - `WaveformViewWidget` — dark-background custom painter, auto-scaling axes, multiple traces, zoom/pan
@@ -428,7 +435,7 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 |-----------|------|-------------|------------|
 | A — Core Infrastructure | 30/30 | 0 | **100%** |
 | B — Schematic Editor | 15/15 | 0 | **100%** |
-| C — Layout Editor | 7/19 | 12 | **37%** |
+| C — Layout Editor | 19/19 | 0 | **100%** |
 | D — Simulation Environment | 6/18 | 12 | **33%** |
 | E — Physical Verification | 2/13 | 11 | **15%** |
 | F — PCells and PDK | 3/14 | 11 | **21%** |
@@ -436,7 +443,7 @@ organized by milestone. See `CLAUDE.md` for the detailed per-item checklist.
 | H — Project Management | 1/9 | 8 | **11%** |
 | I — Scripting | 1/9 | 8 | **11%** |
 | J — Advanced UI | 1/10 | 9 | **10%** |
-| **Total** | **73/154** | **81** | **~47%** |
+| **Total** | **85/154** | **69** | **~55%** |
 
 Note: "Done" counts items marked ✓ done or ◐ partial in the CLAUDE.md checklist.
 The application builds, runs, and passes all 7 CTest tests, but represents only

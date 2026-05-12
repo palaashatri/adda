@@ -18,6 +18,8 @@ target_sources(
     LayToolRect.cpp
     LayToolRuler.cpp
     LayToolSelect.cpp
+    LayToolStretch.cpp
+    LayToolVia.cpp
     LayToolViaArray.cpp
   PUBLIC
     FILE_SET HEADERS
@@ -37,6 +39,8 @@ target_sources(
       LayToolRect.h
       LayToolRuler.h
       LayToolSelect.h
+      LayToolStretch.h
+      LayToolVia.h
       LayToolViaArray.h
 )
 

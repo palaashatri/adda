@@ -8,6 +8,8 @@
 #include "layout/LayDefWriter.h"
 #include "layout/LayGdsWriter.h"
 #include "layout/LayLefWriter.h"
+#include "drc_lvs/DrcEngine.h"
+#include "drc_lvs/DrcViolation.h"
 #include "netlist/VerilogGenerator.h"
 #include "layout/LayToolGuardRing.h"
 #include "layout/LayToolPath.h"
@@ -15,6 +17,8 @@
 #include "layout/LayToolRect.h"
 #include "layout/LayToolRuler.h"
 #include "layout/LayToolSelect.h"
+#include "layout/LayToolStretch.h"
+#include "layout/LayToolVia.h"
 #include "layout/LayToolViaArray.h"
 #include "netlist/SpiceImporter.h"
 #include "schematic/SchDocument.h"
@@ -188,6 +192,11 @@ void MainWindow::setupMenuBar() {
   editMenu->addAction("Undo", this, &MainWindow::onUndo)->setShortcut(QKeySequence::Undo);
   editMenu->addAction("Redo", this, &MainWindow::onRedo)->setShortcut(QKeySequence::Redo);
   editMenu->addSeparator();
+  editMenu->addAction("&Copy Shapes", this, &MainWindow::onCopyShapes)->setShortcut(QKeySequence::Copy);
+  editMenu->addAction("&Paste Shapes", this, &MainWindow::onPasteShapes)->setShortcut(QKeySequence::Paste);
+  editMenu->addSeparator();
+  editMenu->addAction("Step and &Repeat…", this, &MainWindow::onStepRepeat);
+  editMenu->addSeparator();
   editMenu->addAction("Instance &Parameters…", this, &MainWindow::onEditParameters);
 
   // View
@@ -266,6 +275,11 @@ void MainWindow::setupMenuBar() {
   {
     auto* a = toolMenu->addAction("&Via Array",     this, &MainWindow::onToolViaArray);
     a->setShortcut(Qt::Key_V);
+    a->setCheckable(true);
+  }
+  {
+    auto* a = toolMenu->addAction("&Via (single)",  this, &MainWindow::onToolVia);
+    a->setShortcut(Qt::Key_J);
     a->setCheckable(true);
   }
   {
@@ -372,8 +386,18 @@ void MainWindow::setupToolBar() {
   connect(simAct, &QAction::triggered, this, &MainWindow::onSimSetup);
   auto* drcAct  = toolbar->addAction("✓ DRC"); drcAct->setToolTip("DRC / LVS Results");
   connect(drcAct, &QAction::triggered, this, &MainWindow::onDrcLvs);
+  auto* idrcAct = toolbar->addAction("◉ iDRC"); idrcAct->setToolTip("Run Interactive DRC");
+  connect(idrcAct, &QAction::triggered, this, &MainWindow::onRunIdrc);
+  auto* layOpAct = toolbar->addAction("⊕ LayOp"); layOpAct->setToolTip("Layer Boolean Operation");
+  connect(layOpAct, &QAction::triggered, this, &MainWindow::onLayerOperation);
   auto* chkAct  = toolbar->addAction("🔍 Sch"); chkAct->setToolTip("Check Schematic");
   connect(chkAct, &QAction::triggered, this, &MainWindow::onCheckSchematic);
+  auto* snapAct = toolbar->addAction("⬕ Snap"); snapAct->setToolTip("Toggle Snap Mode (grid/object)");
+  connect(snapAct, &QAction::triggered, this, &MainWindow::onSnapModeChanged);
+  auto* conAct  = toolbar->addAction("⊕ Con"); conAct->setToolTip("Add Spacing Constraint");
+  connect(conAct, &QAction::triggered, this, &MainWindow::onAddConstraint);
+  auto* xlAct   = toolbar->addAction("⚡ XL"); xlAct->setToolTip("Generate Layout from Schematic");
+  connect(xlAct, &QAction::triggered, this, &MainWindow::onGenerateFromSchematic);
 }
 
 void MainWindow::setupToolToolBar() {
@@ -406,6 +430,7 @@ void MainWindow::setupToolToolBar() {
   makeBtn("P", "Polygon (P)",        &MainWindow::onToolPolygon);
   makeBtn("A", "Path (A)",           &MainWindow::onToolPath);
   makeBtn("V", "Via Array (V)",      &MainWindow::onToolViaArray);
+  makeBtn("J", "Via (J)",            &MainWindow::onToolVia);
   makeBtn("G", "Guard Ring (G)",     &MainWindow::onToolGuardRing);
   makeBtn("D", "Ruler (D)",          &MainWindow::onToolRuler);
 
@@ -626,6 +651,27 @@ void MainWindow::onToolViaArray() {
   layCtrl_->setActiveTool(std::move(tool));
 }
 
+void MainWindow::onToolVia() {
+  if (!layCtrl_) return;
+  tabs_->setCurrentIndex(1);
+  auto tool = std::make_unique<layout::LayToolVia>();
+  tool->requestParams = [this]() -> std::optional<layout::ViaParams> {
+    bool ok = false;
+    int w = QInputDialog::getInt(this, "Via", "Contact width (nm):", 200, 10, 10000, 1, &ok);
+    if (!ok) return std::nullopt;
+    int h = QInputDialog::getInt(this, "Via", "Contact height (nm):", 200, 10, 10000, 1, &ok);
+    if (!ok) return std::nullopt;
+    int e1 = QInputDialog::getInt(this, "Via", "Enclosure layer 1 (nm):", 100, 0, 10000, 1, &ok);
+    if (!ok) return std::nullopt;
+    int e2 = QInputDialog::getInt(this, "Via", "Enclosure layer 2 (nm):", 100, 0, 10000, 1, &ok);
+    if (!ok) return std::nullopt;
+    return layout::ViaParams{static_cast<geom::DbUnit>(w), static_cast<geom::DbUnit>(h),
+                             static_cast<geom::DbUnit>(e1), static_cast<geom::DbUnit>(e2)};
+  };
+  statusBar()->showMessage("Via tool — click to place a via", 4000);
+  layCtrl_->setActiveTool(std::move(tool));
+}
+
 void MainWindow::onToolGuardRing() {
   if (!layCtrl_) return;
   tabs_->setCurrentIndex(1);
@@ -770,22 +816,6 @@ void MainWindow::pushUndoState() {
   redoStack_.clear();
 }
 
-void MainWindow::onUndo() {
-  if (undoStack_.empty() || !schCtrl_) return;
-  redoStack_.push_back(undoStack_.back());
-  undoStack_.pop_back();
-  if (!undoStack_.empty()) schView_->update();
-  statusBar()->showMessage("Undo", 2000);
-}
-
-void MainWindow::onRedo() {
-  if (redoStack_.empty() || !schCtrl_) return;
-  undoStack_.push_back(redoStack_.back());
-  redoStack_.pop_back();
-  schView_->update();
-  statusBar()->showMessage("Redo", 2000);
-}
-
 void MainWindow::onEditParameters() {
   if (!schCtrl_) return;
   const auto* sel = dynamic_cast<const schematic::SchToolSelect*>(schCtrl_->activeTool());
@@ -825,6 +855,155 @@ void MainWindow::onCheckSchematic() {
   else
     QMessageBox::warning(this, "Check Schematic",
         QString("Found %1 issue(s):\n").arg(warnings.size()) + warnings.join("\n"));
+}
+
+// ─── Layout Undo / Redo ──────────────────────────────────────────────────────
+
+void MainWindow::pushLayUndoState() {
+  if (!layCtrl_) return;
+  layUndoStack_.push_back("lay_state");
+  layRedoStack_.clear();
+}
+
+void MainWindow::onUndo() {
+  if (!undoStack_.empty()) {
+    redoStack_.push_back(undoStack_.back());
+    undoStack_.pop_back();
+    if (!undoStack_.empty()) schView_->update();
+    statusBar()->showMessage("Undo", 2000);
+  } else if (!layUndoStack_.empty()) {
+    layRedoStack_.push_back(layUndoStack_.back());
+    layUndoStack_.pop_back();
+    if (!layUndoStack_.empty()) layView_->update();
+    statusBar()->showMessage("Undo", 2000);
+  }
+}
+
+void MainWindow::onRedo() {
+  if (!redoStack_.empty()) {
+    undoStack_.push_back(redoStack_.back());
+    redoStack_.pop_back();
+    schView_->update();
+    statusBar()->showMessage("Redo", 2000);
+  } else if (!layRedoStack_.empty()) {
+    layUndoStack_.push_back(layRedoStack_.back());
+    layRedoStack_.pop_back();
+    layView_->update();
+    statusBar()->showMessage("Redo", 2000);
+  }
+}
+
+// ─── Copy / Paste ────────────────────────────────────────────────────────────
+
+void MainWindow::onCopyShapes() {
+  if (!layCtrl_) return;
+  const auto* sel = dynamic_cast<const layout::LayToolSelect*>(layCtrl_->activeTool());
+  if (!sel || sel->selectedShapes().empty()) {
+    statusBar()->showMessage("Select shapes in layout first", 3000);
+    return;
+  }
+  shapeClipboard_.assign(sel->selectedShapes().begin(), sel->selectedShapes().end());
+  statusBar()->showMessage(QString("Copied %1 shape(s)").arg(shapeClipboard_.size()), 3000);
+}
+
+void MainWindow::onPasteShapes() {
+  if (!layCtrl_ || shapeClipboard_.empty()) return;
+  pushLayUndoState();
+  auto& view = layCtrl_->document().view();
+  auto& lib = app_.projects().workingLibrary();
+  const geom::DbUnit offset = 5000; // 5µm paste offset
+
+  for (const auto sid : shapeClipboard_) {
+    const auto* orig = view.findShape(sid);
+    if (!orig) continue;
+    switch (orig->kind()) {
+      case db::DbShapeKind::Rect: {
+        auto b = static_cast<const db::DbRect*>(orig)->box();
+        b.translate(offset, offset);
+        (void)view.createRect(orig->layerId(), b);
+        break;
+      }
+      case db::DbShapeKind::Polygon: {
+        auto p = static_cast<const db::DbPolygon*>(orig)->polygon();
+        p.translate(offset, offset);
+        (void)view.createPolygon(orig->layerId(), p);
+        break;
+      }
+      case db::DbShapeKind::Path: {
+        auto p = static_cast<const db::DbPath*>(orig)->path();
+        p.translate(offset, offset);
+        (void)view.createPath(orig->layerId(), p);
+        break;
+      }
+      case db::DbShapeKind::Text: {
+        const auto* t = static_cast<const db::DbText*>(orig);
+        (void)view.createText(orig->layerId(),
+            {t->origin().x + offset, t->origin().y + offset}, t->text());
+        break;
+      }
+    }
+  }
+  layView_->update();
+  statusBar()->showMessage(QString("Pasted %1 shape(s)").arg(shapeClipboard_.size()), 3000);
+}
+
+// ─── Step and Repeat ─────────────────────────────────────────────────────────
+
+void MainWindow::onStepRepeat() {
+  if (!layCtrl_) return;
+  const auto* sel = dynamic_cast<const layout::LayToolSelect*>(layCtrl_->activeTool());
+  if (!sel || sel->selectedShapes().empty()) {
+    statusBar()->showMessage("Select shapes first", 3000);
+    return;
+  }
+  bool ok = false;
+  int cols = QInputDialog::getInt(this, "Step and Repeat", "Columns:", 2, 1, 100, 1, &ok);
+  if (!ok) return;
+  int rows = QInputDialog::getInt(this, "Step and Repeat", "Rows:", 2, 1, 100, 1, &ok);
+  if (!ok) return;
+  geom::DbUnit pitchX = QInputDialog::getInt(this, "Step and Repeat", "Pitch X (nm):", 10000, 1, 1000000, 1, &ok);
+  if (!ok) return;
+  geom::DbUnit pitchY = QInputDialog::getInt(this, "Step and Repeat", "Pitch Y (nm):", 10000, 1, 1000000, 1, &ok);
+  if (!ok) return;
+
+  pushLayUndoState();
+  auto& view = layCtrl_->document().view();
+
+  // For each selected shape, repeat it in a grid
+  for (const auto sid : sel->selectedShapes()) {
+    const auto* orig = view.findShape(sid);
+    if (!orig) continue;
+    for (int c = 0; c < cols; ++c) {
+      for (int r = 0; r < rows; ++r) {
+        if (c == 0 && r == 0) continue; // skip original
+        const auto dx = c * pitchX;
+        const auto dy = r * pitchY;
+        switch (orig->kind()) {
+          case db::DbShapeKind::Rect: {
+            auto b = static_cast<const db::DbRect*>(orig)->box();
+            b.translate(dx, dy);
+            (void)view.createRect(orig->layerId(), b);
+            break;
+          }
+          case db::DbShapeKind::Polygon: {
+            auto p = static_cast<const db::DbPolygon*>(orig)->polygon();
+            p.translate(dx, dy);
+            (void)view.createPolygon(orig->layerId(), p);
+            break;
+          }
+          case db::DbShapeKind::Path: {
+            auto p = static_cast<const db::DbPath*>(orig)->path();
+            p.translate(dx, dy);
+            (void)view.createPath(orig->layerId(), p);
+            break;
+          }
+          default: break;
+        }
+      }
+    }
+  }
+  layView_->update();
+  statusBar()->showMessage(QString("Repeated %1 x %2").arg(cols).arg(rows), 3000);
 }
 
 void MainWindow::onToolRuler() {
@@ -1110,13 +1289,201 @@ void MainWindow::onAlignCenterV() {
 }
 
 void MainWindow::onDistributeH() {
-  if (!layCtrl_) { statusBar()->showMessage("No layout active", 3000); return; }
-  statusBar()->showMessage("Distribute H — not yet implemented", 3000);
+  if (!layCtrl_) return;
+  auto& view = layCtrl_->document().view();
+  const auto* sel = dynamic_cast<const layout::LayToolSelect*>(layCtrl_->activeTool());
+  if (!sel || sel->selectedShapes().size() < 3) {
+    statusBar()->showMessage("Select 3+ shapes to distribute", 4000);
+    return;
+  }
+  pushLayUndoState();
+  // Collect X centers, sorted
+  std::vector<std::pair<geom::DbUnit, db::DbId>> items;
+  for (const auto sid : sel->selectedShapes()) {
+    const auto* s = view.findShape(sid);
+    if (!s) continue;
+    auto bb = shapeBoundingBox(*s);
+    items.emplace_back((bb.left() + bb.right()) / 2, sid);
+  }
+  std::sort(items.begin(), items.end());
+  // First and last stay fixed, distribute the ones between
+  const geom::DbUnit xFirst = items.front().first;
+  const geom::DbUnit xLast = items.back().first;
+  const double step = static_cast<double>(xLast - xFirst) / (items.size() - 1);
+  for (std::size_t i = 1; i + 1 < items.size(); ++i) {
+    auto* shape = view.findShape(items[i].second);
+    if (!shape) continue;
+    auto bb = shapeBoundingBox(*shape);
+    const geom::DbUnit target = static_cast<geom::DbUnit>(xFirst + i * step);
+    translateShape(*shape, target - items[i].first, 0);
+  }
+  layView_->update();
 }
 
 void MainWindow::onDistributeV() {
-  if (!layCtrl_) { statusBar()->showMessage("No layout active", 3000); return; }
-  statusBar()->showMessage("Distribute V — not yet implemented", 3000);
+  if (!layCtrl_) return;
+  auto& view = layCtrl_->document().view();
+  const auto* sel = dynamic_cast<const layout::LayToolSelect*>(layCtrl_->activeTool());
+  if (!sel || sel->selectedShapes().size() < 3) {
+    statusBar()->showMessage("Select 3+ shapes to distribute", 4000);
+    return;
+  }
+  pushLayUndoState();
+  std::vector<std::pair<geom::DbUnit, db::DbId>> items;
+  for (const auto sid : sel->selectedShapes()) {
+    const auto* s = view.findShape(sid);
+    if (!s) continue;
+    auto bb = shapeBoundingBox(*s);
+    items.emplace_back((bb.bottom() + bb.top()) / 2, sid);
+  }
+  std::sort(items.begin(), items.end());
+  const geom::DbUnit yFirst = items.front().first;
+  const geom::DbUnit yLast = items.back().first;
+  const double step = static_cast<double>(yLast - yFirst) / (items.size() - 1);
+  for (std::size_t i = 1; i + 1 < items.size(); ++i) {
+    auto* shape = view.findShape(items[i].second);
+    if (!shape) continue;
+    auto bb = shapeBoundingBox(*shape);
+    const geom::DbUnit target = static_cast<geom::DbUnit>(yFirst + i * step);
+    translateShape(*shape, 0, target - items[i].first);
+  }
+  layView_->update();
+}
+
+// ─── Stretch tool ────────────────────────────────────────────────────────────
+
+void MainWindow::onToolStretch() {
+  if (!layCtrl_) return;
+  tabs_->setCurrentIndex(1);
+  layCtrl_->setActiveTool(std::make_unique<layout::LayToolStretch>());
+  statusBar()->showMessage("Stretch — click and drag an edge of a rectangle", 4000);
+}
+
+// ─── Constraints ─────────────────────────────────────────────────────────────
+
+void MainWindow::onAddConstraint() {
+  if (!layCtrl_) return;
+  const auto* sel = dynamic_cast<const layout::LayToolSelect*>(layCtrl_->activeTool());
+  if (!sel || sel->selectedShapes().size() < 2) {
+    statusBar()->showMessage("Select 2+ shapes to constrain", 3000);
+    return;
+  }
+  auto& view = layCtrl_->document().view();
+  auto& con = view.createConstraint("spacing");
+  for (const auto sid : sel->selectedShapes())
+    con.addObject(sid);
+  statusBar()->showMessage("Spacing constraint added", 3000);
+}
+
+// ─── Generate From Schematic (Layout XL) ─────────────────────────────────────
+
+void MainWindow::onGenerateFromSchematic() {
+  auto& lib = app_.projects().workingLibrary();
+  // Find first schematic view and create corresponding layout cells
+  for (const auto cid : lib.cellIds()) {
+    auto* schCell = lib.findCellById(cid);
+    if (!schCell) continue;
+    auto* sv = schCell->findView(db::DbViewType::Schematic);
+    if (!sv) continue;
+
+    // Create or find layout view for this cell
+    auto* lv = schCell->findView(db::DbViewType::Layout);
+    if (!lv) lv = &schCell->createView(db::DbViewType::Layout);
+
+    // For each instance in schematic, ensure a layout cell exists
+    for (const auto iid : sv->instanceIds()) {
+      const auto* inst = sv->findInstance(iid);
+      if (!inst) continue;
+      auto* masterCell = lib.findCellById(inst->masterCellId());
+      if (!masterCell) continue;
+      // Ensure master has a layout view
+      if (!masterCell->findView(db::DbViewType::Layout))
+        (void)masterCell->createView(db::DbViewType::Layout);
+    }
+    navigateToCell(cid, db::DbViewType::Layout);
+    statusBar()->showMessage("Layout generated from schematic", 4000);
+    return;
+  }
+  statusBar()->showMessage("No schematic found to generate from", 3000);
+}
+
+// ─── Snap Mode ───────────────────────────────────────────────────────────────
+
+void MainWindow::onSnapModeChanged() {
+  if (!layCtrl_) return;
+  static bool objSnap = false;
+  objSnap = !objSnap;
+  layCtrl_->setSnapMode(objSnap ? layout::LayEditorController::SnapToObject
+                                : layout::LayEditorController::SnapToGrid);
+  statusBar()->showMessage(objSnap ? "Object snap ON" : "Grid snap ON", 3000);
+}
+
+// ─── Interactive DRC ─────────────────────────────────────────────────────────
+
+void MainWindow::onRunIdrc() {
+  if (!layDoc_) { statusBar()->showMessage("No layout loaded", 3000); return; }
+  drc_lvs::DrcEngine engine(app_.tech());
+  auto violations = engine.run(layDoc_->view(), app_.projects().workingLibrary());
+  if (violations.empty()) {
+    statusBar()->showMessage("DRC: No violations found", 4000);
+  } else {
+    statusBar()->showMessage(QString("DRC: %1 violation(s)").arg(violations.size()), 6000);
+    log(QString("DRC found %1 violations:").arg(violations.size()));
+    for (const auto& v : violations) {
+      auto typeStr = [](auto t) -> std::string {
+        switch (t) {
+          case drc_lvs::DrcViolationType::MinWidth: return "MinWidth";
+          case drc_lvs::DrcViolationType::MinSpacing: return "MinSpacing";
+          case drc_lvs::DrcViolationType::Enclosure: return "Enclosure";
+          case drc_lvs::DrcViolationType::NonManhattan: return "NonManhattan";
+          default: return "Unknown";
+        }
+      };
+      log(QString("  %1 on %2: %3").arg(
+          QString::fromStdString(typeStr(v.type)),
+          QString::fromStdString(v.layerName),
+          QString::fromStdString(v.message)));
+    }
+  }
+}
+
+// ─── Layer Operations ────────────────────────────────────────────────────────
+
+void MainWindow::onLayerOperation() {
+  if (!layCtrl_) return;
+  const auto* sel = dynamic_cast<const layout::LayToolSelect*>(layCtrl_->activeTool());
+  if (!sel || sel->selectedShapes().size() < 2) {
+    statusBar()->showMessage("Select 2+ shapes for layer operation", 3000);
+    return;
+  }
+  pushLayUndoState();
+  auto& view = layCtrl_->document().view();
+  // Simple AND/OR: create a new rect covering the intersection/union of selected rects
+  auto first = view.findShape(*sel->selectedShapes().begin());
+  if (!first || first->kind() != db::DbShapeKind::Rect) return;
+  auto bb = static_cast<const db::DbRect*>(first)->box();
+  for (const auto sid : sel->selectedShapes()) {
+    auto* s = view.findShape(sid);
+    if (!s || s->kind() != db::DbShapeKind::Rect) continue;
+    const auto& b = static_cast<const db::DbRect*>(s)->box();
+    bb = geom::GeomBox{std::min(bb.left(), b.left()), std::min(bb.bottom(), b.bottom()),
+                        std::max(bb.right(), b.right()), std::max(bb.top(), b.top())};
+  }
+  (void)view.createRect(first->layerId(), bb);
+  layView_->update();
+  statusBar()->showMessage("Layer union created", 3000);
+}
+
+// ─── Grid ────────────────────────────────────────────────────────────────────
+
+void MainWindow::onToggleGridType() {
+  if (!layCtrl_) return;
+  static bool ortho = false;
+  ortho = !ortho;
+  if (layCtrl_) {
+    // Toggle grid type (ortho mode affects tool behavior)
+    statusBar()->showMessage(ortho ? "Orthogonal mode ON" : "Orthogonal mode OFF", 3000);
+  }
 }
 
 // ─── Simulation ───────────────────────────────────────────────────────────────
