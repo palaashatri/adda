@@ -37,6 +37,9 @@ class LayEditorController {
   [[nodiscard]] SnapMode snapMode() const { return snapMode_; }
   void setSnapMode(SnapMode m) { snapMode_ = m; }
 
+  [[nodiscard]] bool orthogonalMode() const { return orthoMode_; }
+  void setOrthogonalMode(bool on) { orthoMode_ = on; }
+
  private:
   LayDocument* document_{nullptr};
   geom::DbUnit grid_{100};
@@ -44,6 +47,8 @@ class LayEditorController {
   db::DbId activeLayerId_{db::kInvalidId};
   std::unique_ptr<LayTool> activeTool_;
   SnapMode snapMode_{SnapToGrid};
+  bool orthoMode_{false};
+  geom::GeomPoint lastPoint_{};
 };
 
 }  // namespace aurora::layout

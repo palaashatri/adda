@@ -1,5 +1,7 @@
 #pragma once
 
+#include "db/DbTypes.h"
+
 #include <filesystem>
 #include <map>
 #include <string>
@@ -48,6 +50,9 @@ class ThemeManager {
   void apply(Theme t) { current_ = std::move(t); }
   [[nodiscard]] static Theme dark();
   [[nodiscard]] static Theme light();
+
+ private:
+  Theme current_;
 };
 
 // J4 — Search and replace.
@@ -55,7 +60,7 @@ struct SearchHit {
   std::string cellName;
   std::string kind;        // "net" | "instance" | "shape"
   std::string objectName;
-  long long viewId{0};
+  db::DbId viewId{db::kInvalidId};
 };
 
 class DesignSearch {

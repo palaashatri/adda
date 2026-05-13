@@ -30,7 +30,7 @@ void LayToolPolygon::commitPolygon(LayEditorController& ctrl) {
   if (points_.size() < 3) { cancel(); return; }
   geom::GeomPolygon poly;
   for (const auto& pt : points_) poly.addPoint(pt);
-  ctrl.document().view().createPolygon(ctrl.activeLayerId(), poly);
+  (void)ctrl.document().view().createPolygon(ctrl.activeLayerId(), poly);
   cancel();
 }
 

@@ -26,9 +26,6 @@ void LayToolVia::mousePress(LayEditorController& ctrl, geom::GeomPoint p) {
                      p.x + pr->width / 2 + pr->encLayer1,
                      p.y + pr->height / 2 + pr->encLayer1};
 
-  // Try to find a second layer if available
-  auto& lib_ = ctrl.document().view();
-  (void)lib_;
   // Create enclosure on the same layer as visual marker
   (void)view.createRect(layerId, enc1);
 }

@@ -86,7 +86,7 @@ std::vector<SearchHit> DesignSearch::findNet(const db::DbCellLib& lib, const std
       for (auto nid : v->netIds()) {
         const auto* n = v->findNet(nid);
         if (n && std::regex_search(n->name(), re)) {
-          hits.push_back({cell->name(), "net", n->name(), static_cast<long long>(vid)});
+          hits.push_back({cell->name(), "net", n->name(), vid});
         }
       }
     }
@@ -107,8 +107,7 @@ std::vector<SearchHit> DesignSearch::findInstance(const db::DbCellLib& lib,
       for (auto iid : v->instanceIds()) {
         const auto* inst = v->findInstance(iid);
         if (inst && std::regex_search(inst->name(), re)) {
-          hits.push_back({cell->name(), "instance", inst->name(),
-                          static_cast<long long>(vid)});
+          hits.push_back({cell->name(), "instance", inst->name(), vid});
         }
       }
     }

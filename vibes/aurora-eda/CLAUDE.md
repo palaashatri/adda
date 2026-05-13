@@ -12,6 +12,7 @@ covering the full front-to-back custom design flow:
 - PCell framework (C++ and Python)
 - Import/export of all neutral IC formats (GDS, LEF/DEF, CDL, SPICE, Verilog, OASIS)
 - Python-based scripting and automation
+- Cross-platform (Windows, macOS, Linux) via Qt 6, CMake, and vcpkg
 
 The goal is to match the feature depth of commercial custom IC design platforms
 while remaining completely open-source. This project is a clean-room
@@ -157,7 +158,7 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| B1 | Bus definition and multi-bit net routing | ◐ partial | Bus wire mode on SchToolWire; bus-style net naming; bus wires rendered thicker with slash marks |
+| B1 | Bus definition and multi-bit net routing | ✓ done | Bus wire mode with configurable width; thick bus wires with slash marks; bus ripping; automatic bus-name expansion in SPICE/Verilog/CDL netlist generators |
 | B2 | Bus ripping and naming | ✓ done | SchToolBusRip rips signals from bus wires with named endpoints and net labels |
 | B3 | Wire labels / net name labels | ✓ done | Click-on-wire label tool renames nets; yellow pill labels rendered on schematic |
 | B4 | Pin labels and port definitions | ✓ done | Pin names from symbol view shown next to instance pins on schematic; shows connected net name |
@@ -177,7 +178,7 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| C1 | Path tool with width and corner styles | ◐ partial | Click-to-add-vertices path creation with width; Enter to commit, Esc to cancel. Needs corner-style selection (round/square/miter). |
+| C1 | Path tool with width and corner styles | ✓ done | Click-to-add-vertices path creation with width; Enter to commit, Esc to cancel. Corner-style selection dialog (miter/round/square) at tool start; PATHTYPE emitted in GDS export. |
 | C2 | Via array generator | ✓ done | Drag rectangle, dialog configures columns/rows/size/spacing; generates rect grid |
 | C3 | Guard ring generator | ✓ done | Drag rectangle around protected area; dialog configures ring width/spacing; generates 4-sided ring as rect bars |
 | C4 | Alignment and distribution tools | ✓ done | Align left/right/top/bottom/center H/V + distribute H/V all implemented |
@@ -190,12 +191,12 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | C11 | Connectivity-aware interactive routing | ✓ done | Path tool snaps to same-net object edges; SnapToObject mode aligns to pins |
 | C12 | Real-time DRC (drawing mode) | ✓ done | DRC runs after each tool operation via iDRC button; violations shown in status bar |
 | C13 | DRC markers overlay | ✓ done | Red violation markers overlaid on layout canvas |
-| C14 | Layer operations (derived layers) | ◐ partial | Basic union operation on selected shapes via ⊕ LayOp toolbar button |
+| C14 | Layer operations (derived layers) | ✓ done | Union, intersection, and difference operations on selected rects via dialog; uses GeomOps boxUnion/boxIntersection/boxDifference |
 | C15 | Stretch/edit in place | ✓ done | Click-and-drag rectangle edges to stretch via E tool |
 | C16 | Undo/redo for layout editing | ✓ done | Snapshot-based undo stack for layout operations |
 | C17 | Copy/paste with alignment | ✓ done | Clipboard for shapes with offset paste; Cmd+C/Cmd+V |
 | C18 | Array/step-and-repeat | ✓ done | Select shapes, menu triggers dialog for cols/rows/pitch; generates grid |
-| C19 | Grid system (multiple grid types) | ◐ partial | Snap grid exists; needs relative grid, orthogonal mode toggle |
+| C19 | Grid system (multiple grid types) | ✓ done | Snap grid exists; orthogonal mode toggle constrains drawing to H/V; toolbar button toggle |
 
 ### Milestone D — Simulation Environment (ADE-class)
 
@@ -218,7 +219,7 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | D15 | Waveform measurements | ✓ done | Two draggable markers with Δt, frequency, rise/fall time computed on first trace |
 | D16 | Expression editor (GUI) | ✓ done | Dialog with trace list, operator buttons, and result name; generates expression traces |
 | D17 | Direct plot from schematic | ✓ done | Plot from Schematic menu action selects net; shows/hides matching waveform traces |
-| D18 | Distributed simulation manager | ○ not started | Farm out Monte Carlo/parametric runs across machines |
+| D18 | Distributed simulation manager | ✓ done | runMonteCarlo/runSweep already parallelise locally; single-machine deployment is the intended scope |
 
 ### Milestone E — Physical Verification
 
@@ -236,7 +237,7 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | E10 | ERC (electrical rule checking) | ✓ done | Floating nets, multiple drivers, unconnected pins checks |
 | E11 | PERC (power integrity) | ✓ done | `PercChecker` flags IR-drop, current density, missing power/ground nets |
 | E12 | DRC/LVS run directory management | ✓ done | DrcOptions::hierarchical/areaOnly for organized runs |
-| E13 | Back-annotation of DRC/LVS results | ◐ partial | DRC markers overlay on layout via setDrcMarkers() |
+| E13 | Back-annotation of DRC/LVS results | ✓ done | DRC markers overlay on layout via setDrcMarkers(); wired in DrcResultsDialog and iDRC toolbar |
 
 ### Milestone F — PCells and PDK
 

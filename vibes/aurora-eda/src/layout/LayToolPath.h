@@ -1,6 +1,7 @@
 #pragma once
 
 #include "layout/LayTool.h"
+#include "geom/GeomPath.h"
 #include "geom/GeomPoint.h"
 
 #include <vector>
@@ -24,6 +25,14 @@ class LayToolPath : public LayTool {
   [[nodiscard]] CornerStyle cornerStyle() const { return cornerStyle_; }
   void setPathWidth(geom::DbUnit w) { width_ = w; }
   void setCornerStyle(CornerStyle s) { cornerStyle_ = s; }
+
+  [[nodiscard]] static geom::PathCornerStyle toGeomCornerStyle(CornerStyle s) {
+    switch (s) {
+      case Round:  return geom::PathCornerStyle::Round;
+      case Square: return geom::PathCornerStyle::Square;
+      default:     return geom::PathCornerStyle::Miter;
+    }
+  }
 
  private:
   void commitPath(LayEditorController& ctrl);

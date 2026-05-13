@@ -35,11 +35,21 @@ LayTool* LayEditorController::activeTool() const { return activeTool_.get(); }
 db::DbId LayEditorController::activeLayerId() const { return activeLayerId_; }
 
 void LayEditorController::mousePress(geom::GeomPoint p) {
-  if (activeTool_) activeTool_->mousePress(*this, snap(p));
+  auto snapped = snap(p);
+  lastPoint_ = snapped;
+  if (activeTool_) activeTool_->mousePress(*this, snapped);
 }
 
 void LayEditorController::mouseMove(geom::GeomPoint p) {
-  if (activeTool_) activeTool_->mouseMove(*this, snap(p));
+  auto snapped = snap(p);
+  if (orthoMode_) {
+    // Constrain to horizontal or vertical from last point
+    auto dx = std::abs(snapped.x - lastPoint_.x);
+    auto dy = std::abs(snapped.y - lastPoint_.y);
+    if (dx >= dy) snapped.y = lastPoint_.y;
+    else          snapped.x = lastPoint_.x;
+  }
+  if (activeTool_) activeTool_->mouseMove(*this, snapped);
 }
 
 void LayEditorController::mouseRelease(geom::GeomPoint p) {

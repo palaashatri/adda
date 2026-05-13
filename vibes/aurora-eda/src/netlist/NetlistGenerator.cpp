@@ -18,6 +18,32 @@ const std::string& getOrDefault(const std::map<std::string, std::string>& m,
 }
 }
 
+namespace {
+
+// Expand bus-style net names like "BUS_01<7:0>" into per-bit SPICE names.
+// Returns the expanded list; if no bus pattern is found, returns {name}.
+std::vector<std::string> expandBusName(const std::string& name) {
+  auto pos = name.find('<');
+  if (pos == std::string::npos) return {name};
+  auto colon = name.find(':', pos);
+  auto end = name.find('>', colon);
+  if (colon == std::string::npos || end == std::string::npos) return {name};
+  try {
+    int msb = std::stoi(name.substr(pos + 1, colon - pos - 1));
+    int lsb = std::stoi(name.substr(colon + 1, end - colon - 1));
+    std::string prefix = name.substr(0, pos);
+    std::vector<std::string> bits;
+    int step = (msb >= lsb) ? -1 : 1;
+    for (int b = msb; ; b += step) {
+      bits.push_back(prefix + "_" + std::to_string(b));
+      if (b == lsb) break;
+    }
+    return bits;
+  } catch (...) { return {name}; }
+}
+
+} // anonymous namespace
+
 std::string NetlistGenerator::generateSpice(const db::DbCellLib& lib, const db::DbCell& cell,
                                             const db::DbView& view) const {
   std::ostringstream out;
@@ -40,7 +66,9 @@ std::string NetlistGenerator::generateSpice(const db::DbCellLib& lib, const db::
   const auto netName = [&](db::DbId netId) -> std::string {
     if (netId == db::kInvalidId) return "0";
     const auto* net = view.findNet(netId);
-    return (net != nullptr) ? net->name() : "0";
+    if (!net) return "0";
+    auto expanded = expandBusName(net->name());
+    return expanded.empty() ? "0" : expanded[0];
   };
 
   // Emit probe markers as .print statements
@@ -148,10 +176,15 @@ std::string NetlistGenerator::generateSpiceMulti(const db::DbCellLib& lib) const
     if (!view) continue;
     sheets.emplace_back(cell, view);
 
-    // Collect net names
+    // Collect net names and expand bus names
     for (const auto nid : view->netIds()) {
       const auto* net = view->findNet(nid);
-      if (net && !net->name().empty()) globalNets[net->name()] = false;
+      if (net && !net->name().empty()) {
+        auto expanded = expandBusName(net->name());
+        for (const auto& en : expanded) {
+          globalNets[en] = false;
+        }
+      }
     }
   }
 
@@ -190,7 +223,10 @@ std::string NetlistGenerator::generateSpiceMulti(const db::DbCellLib& lib) const
             if (ip->name() == mpin->name()) {
               if (ip->netId() != db::kInvalidId) {
                 const auto* n = view->findNet(ip->netId());
-                if (n) connected = n->name();
+                if (n) {
+                  auto expanded = expandBusName(n->name());
+                  connected = expanded.empty() ? "0" : expanded[0];
+                }
               }
               break;
             }

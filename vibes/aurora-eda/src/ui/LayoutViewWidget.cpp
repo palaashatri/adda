@@ -211,7 +211,14 @@ void LayoutViewWidget::paintView(QPainter& painter, const db::DbView& view, long
           qpath.lineTo(sceneToScreen({dbuToScene(pts[i].x + dx), dbuToScene(pts[i].y + dy)}));
         const double w = dbuToScene(path.width()) * zoom_;
         painter.setBrush(Qt::NoBrush);
-        painter.setPen(QPen(fill, std::max(1.0, w), Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin));
+        auto cs = path.cornerStyle();
+        auto join = (cs == geom::PathCornerStyle::Round) ? Qt::RoundJoin
+                  : (cs == geom::PathCornerStyle::Square) ? Qt::MiterJoin
+                  : /*Miter*/ Qt::MiterJoin;
+        auto cap  = (cs == geom::PathCornerStyle::Round)  ? Qt::RoundCap
+                  : (cs == geom::PathCornerStyle::Square)  ? Qt::SquareCap
+                  : /*Miter*/ Qt::FlatCap;
+        painter.setPen(QPen(fill, std::max(1.0, w), Qt::SolidLine, cap, join));
         painter.drawPath(qpath);
         break;
       }
@@ -297,7 +304,12 @@ void LayoutViewWidget::paintToolOverlay(QPainter& painter) const {
     if (pathTool->isDrawing()) {
       const auto& pts = pathTool->points();
       const double penW = std::max(1.0, dbuToScene(pathTool->pathWidth()) * zoom_);
-      painter.setPen(QPen(QColor("#ff8800"), penW, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin));
+      auto cs = pathTool->cornerStyle();
+      auto join = (cs == layout::LayToolPath::Round) ? Qt::RoundJoin
+                : (cs == layout::LayToolPath::Square) ? Qt::MiterJoin : Qt::MiterJoin;
+      auto cap  = (cs == layout::LayToolPath::Round) ? Qt::RoundCap
+                : (cs == layout::LayToolPath::Square) ? Qt::SquareCap : Qt::FlatCap;
+      painter.setPen(QPen(QColor("#ff8800"), penW, Qt::SolidLine, cap, join));
       painter.setBrush(Qt::NoBrush);
       for (std::size_t i = 1; i < pts.size(); ++i) {
         painter.drawLine(

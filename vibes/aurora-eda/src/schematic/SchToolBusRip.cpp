@@ -45,9 +45,9 @@ void SchToolBusRip::mousePress(SchEditorController& ctrl, geom::GeomPoint p) {
   const geom::DbUnit ripLen = ctrl.grid() * 4;
   geom::GeomPoint ripEnd = hitPoint;
   ripEnd.x += ripLen;
-  ctrl.document().addWire(ripNet.id(), {hitPoint, ripEnd});
+  (void)ctrl.document().addWire(ripNet.id(), {hitPoint, ripEnd});
   // Add a net label
-  ctrl.document().addNetLabel(ripNet.id(), ripEnd);
+  (void)ctrl.document().addNetLabel(ripNet.id(), ripEnd);
 }
 
 void SchToolBusRip::mouseMove(SchEditorController& ctrl, geom::GeomPoint p) { cursor_ = p; }

@@ -43,6 +43,7 @@ namespace rec {
   constexpr uint8_t SNAME    = 0x12;
   constexpr uint8_t TEXTTYPE = 0x16;
   constexpr uint8_t STRANS   = 0x1A;
+  constexpr uint8_t PATHTYPE = 0x1B;
   constexpr uint8_t ANGLE    = 0x1C;
   constexpr uint8_t STRING   = 0x19;
 }
@@ -218,6 +219,12 @@ static void writePathElement(std::ostream& o, int gdsLayer, int gdsDatatype,
   writeNoData(o, rec::PATH);
   writeInt16s(o, rec::LAYER,    {static_cast<int16_t>(gdsLayer)});
   writeInt16s(o, rec::DATATYPE, {static_cast<int16_t>(gdsDatatype)});
+
+  // PATHTYPE: 0=round, 1=miter, 2=square (bevel)
+  int16_t pt = 1; // default miter
+  if (path.cornerStyle() == geom::PathCornerStyle::Round)  pt = 0;
+  if (path.cornerStyle() == geom::PathCornerStyle::Square) pt = 2;
+  writeInt16s(o, rec::PATHTYPE, {pt});
 
   const int32_t w = static_cast<int32_t>(path.width());
   writeInt32s(o, rec::WIDTH, std::span<const int32_t>{&w, 1});

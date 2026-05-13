@@ -51,7 +51,7 @@ void SchToolLabel::mousePress(SchEditorController& ctrl, geom::GeomPoint p) {
     if (!name.empty()) {
       auto* net = ctrl.document().view().findNet(hitNetId);
       if (net) {
-        ctrl.document().addNetLabel(hitNetId, hitPoint);
+        (void)ctrl.document().addNetLabel(hitNetId, hitPoint);
         net->setName(name);
       }
     }

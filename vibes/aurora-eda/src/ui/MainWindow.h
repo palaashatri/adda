@@ -117,6 +117,14 @@ class MainWindow : public QMainWindow {
   void onImportDef();
   void onExportVerilog();
   void onExportLef();
+  void onExportDxf();
+  void onExportImage();
+  void onExportCdl();
+  void onExportOasis();
+  void onImportOasis();
+  void onExportCif();
+  void onImportCif();
+  void onImportWizard();
   void onImportGds();
 
   // Library

@@ -16,7 +16,7 @@ void SchToolInstance::mousePress(SchEditorController& ctrl, geom::GeomPoint p) {
   db::DbTransform xform;
   xform.dx = snapped.x;
   xform.dy = snapped.y;
-  view.createInstance(name, masterCellId_, xform);
+  (void)view.createInstance(name, masterCellId_, xform);
 }
 
 void SchToolInstance::mouseMove(SchEditorController& ctrl, geom::GeomPoint p) {

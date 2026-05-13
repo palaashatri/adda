@@ -28,7 +28,7 @@ void LayToolPath::keyPress(LayEditorController& ctrl, int qtKey) {
 
 void LayToolPath::commitPath(LayEditorController& ctrl) {
   if (points_.size() < 2) { cancel(); return; }
-  geom::GeomPath path(points_, width_);
+  geom::GeomPath path(points_, width_, toGeomCornerStyle(cornerStyle_));
   (void)ctrl.document().view().createPath(ctrl.activeLayerId(), path);
   cancel();
 }

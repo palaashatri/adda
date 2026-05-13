@@ -92,6 +92,17 @@ void DrcResultsDialog::onRunDrc() {
   drcViolations_ = engine.run(*layView_, *lib_);
   drcTable_->setRowCount((int)drcViolations_.size());
 
+  // Push violation locations as DRC markers on the layout widget
+  if (layWidget_) {
+    std::vector<geom::GeomBox> markers;
+    for (const auto& v : drcViolations_) {
+      if (v.location.width() > 0 && v.location.height() > 0) {
+        markers.push_back(v.location);
+      }
+    }
+    layWidget_->setDrcMarkers(markers);
+  }
+
   for (int i = 0; i < (int)drcViolations_.size(); ++i) {
     const auto& v = drcViolations_[i];
     const auto typeStr = [&]() -> QString {

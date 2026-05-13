@@ -8,8 +8,16 @@
 #include "layout/LayDefWriter.h"
 #include "layout/LayGdsWriter.h"
 #include "layout/LayLefWriter.h"
+#include "layout/LayDxfWriter.h"
+#include "layout/LayImageExport.h"
+#include "layout/LayOasisWriter.h"
+#include "layout/LayOasisReader.h"
+#include "layout/LayCifIo.h"
+#include "layout/ImportWizard.h"
+#include "netlist/CdlGenerator.h"
 #include "drc_lvs/DrcEngine.h"
 #include "drc_lvs/DrcViolation.h"
+#include "geom/GeomOps.h"
 #include "netlist/VerilogGenerator.h"
 #include "layout/LayToolGuardRing.h"
 #include "layout/LayToolPath.h"
@@ -350,6 +358,16 @@ void MainWindow::setupMenuBar() {
   impMenu->addAction("Export &DEF…",           this, &MainWindow::onExportDef);
   impMenu->addAction("Export &Verilog…",       this, &MainWindow::onExportVerilog);
   impMenu->addAction("Export &LEF…",           this, &MainWindow::onExportLef);
+  impMenu->addSeparator();
+  impMenu->addAction("E&xport DXF…",           this, &MainWindow::onExportDxf);
+  impMenu->addAction("E&xport Image…",         this, &MainWindow::onExportImage);
+  impMenu->addAction("E&xport CDL Netlist…",   this, &MainWindow::onExportCdl);
+  impMenu->addAction("E&xport OASIS…",         this, &MainWindow::onExportOasis);
+  impMenu->addAction("I&mport OASIS…",         this, &MainWindow::onImportOasis);
+  impMenu->addAction("E&xport CIF…",           this, &MainWindow::onExportCif);
+  impMenu->addAction("I&mport CIF…",           this, &MainWindow::onImportCif);
+  impMenu->addSeparator();
+  impMenu->addAction("I&mport Wizard…",        this, &MainWindow::onImportWizard);
 
   // Help
   auto* helpMenu = menuBar()->addMenu("&Help");
@@ -438,6 +456,9 @@ void MainWindow::setupToolToolBar() {
   makeBtn("J", "Via (J)",            &MainWindow::onToolVia);
   makeBtn("G", "Guard Ring (G)",     &MainWindow::onToolGuardRing);
   makeBtn("D", "Ruler (D)",          &MainWindow::onToolRuler);
+  auto* orthoBtn = toolbar->addAction("🔲 Grid"); orthoBtn->setToolTip("Toggle Orthogonal Mode (H/V constraint)");
+  orthoBtn->setCheckable(true);
+  connect(orthoBtn, &QAction::triggered, this, &MainWindow::onToggleGridType);
 
   // Navigation
   toolbar->addSeparator();
@@ -613,6 +634,15 @@ void MainWindow::onToolPath() {
   if (layCtrl_) {
     tabs_->setCurrentIndex(1);
     auto tool = std::make_unique<layout::LayToolPath>();
+    // Corner style selection dialog
+    QStringList styles;
+    styles << "Miter" << "Round" << "Square";
+    bool ok = false;
+    QString chosen = QInputDialog::getItem(this, "Path Corner Style",
+        "Select path corner style:", styles, 0, false, &ok);
+    if (!ok) chosen = "Miter";
+    if (chosen == "Round")  tool->setCornerStyle(layout::LayToolPath::Round);
+    if (chosen == "Square") tool->setCornerStyle(layout::LayToolPath::Square);
     statusBar()->showMessage("Path tool — click to add vertices, Enter to commit, Esc to cancel", 4000);
     layCtrl_->setActiveTool(std::move(tool));
   }
@@ -768,8 +798,19 @@ void MainWindow::onToolBusRip() {
 void MainWindow::onToggleBusMode() {
   // Toggle bus mode on the active wire tool
   if (auto* wt = dynamic_cast<schematic::SchToolWire*>(schCtrl_->activeTool())) {
+    if (!wt->busMode()) {
+      bool ok = false;
+      int msb = QInputDialog::getInt(this, "Bus Width", "MSB (most significant bit):", 7, 0, 255, 1, &ok);
+      if (!ok) return;
+      int lsb = QInputDialog::getInt(this, "Bus Width", "LSB (least significant bit):", 0, 0, 255, 1, &ok);
+      if (!ok) return;
+      if (msb < lsb) std::swap(msb, lsb);
+      wt->setBusWidth(msb, lsb);
+    }
     wt->setBusMode(!wt->busMode());
-    statusBar()->showMessage(wt->busMode() ? "Bus wire mode ON" : "Bus wire mode OFF", 3000);
+    statusBar()->showMessage(wt->busMode()
+        ? QString("Bus wire mode ON [%1:%2]").arg(wt->busMsb()).arg(wt->busLsb())
+        : "Bus wire mode OFF", 3000);
   } else {
     statusBar()->showMessage("Switch to Wire tool first", 3000);
   }
@@ -1429,6 +1470,14 @@ void MainWindow::onRunIdrc() {
   if (!layDoc_) { statusBar()->showMessage("No layout loaded", 3000); return; }
   drc_lvs::DrcEngine engine(app_.tech());
   auto violations = engine.run(layDoc_->view(), app_.projects().workingLibrary());
+  // Push violation markers onto the layout canvas
+  std::vector<geom::GeomBox> markers;
+  for (const auto& v : violations) {
+    if (v.location.width() > 0 && v.location.height() > 0) {
+      markers.push_back(v.location);
+    }
+  }
+  layView_->setDrcMarkers(markers);
   if (violations.empty()) {
     statusBar()->showMessage("DRC: No violations found", 4000);
   } else {
@@ -1461,34 +1510,79 @@ void MainWindow::onLayerOperation() {
     statusBar()->showMessage("Select 2+ shapes for layer operation", 3000);
     return;
   }
+
+  // Dialog: pick operation type
+  QStringList ops;
+  ops << "Union (OR)" << "Intersection (AND)" << "Difference (A - B)";
+  bool ok = false;
+  QString chosen = QInputDialog::getItem(this, "Layer Boolean Operation",
+      "Select operation:", ops, 0, false, &ok);
+  if (!ok) return;
+
   pushLayUndoState();
   auto& view = layCtrl_->document().view();
-  // Simple AND/OR: create a new rect covering the intersection/union of selected rects
-  auto first = view.findShape(*sel->selectedShapes().begin());
-  if (!first || first->kind() != db::DbShapeKind::Rect) return;
-  auto bb = static_cast<const db::DbRect*>(first)->box();
+
+  // Collect all selected rects
+  std::vector<geom::GeomBox> boxes;
+  db::DbId layerId = db::kInvalidId;
   for (const auto sid : sel->selectedShapes()) {
     auto* s = view.findShape(sid);
     if (!s || s->kind() != db::DbShapeKind::Rect) continue;
-    const auto& b = static_cast<const db::DbRect*>(s)->box();
-    bb = geom::GeomBox{std::min(bb.left(), b.left()), std::min(bb.bottom(), b.bottom()),
-                        std::max(bb.right(), b.right()), std::max(bb.top(), b.top())};
+    boxes.push_back(static_cast<const db::DbRect*>(s)->box());
+    if (layerId == db::kInvalidId) layerId = s->layerId();
   }
-  (void)view.createRect(first->layerId(), bb);
+  if (boxes.size() < 2) { statusBar()->showMessage("Need 2+ rectangles", 3000); return; }
+
+  if (chosen == "Union (OR)") {
+    // Merge all boxes iteratively using boxUnion
+    auto merged = geom::boxUnion(boxes[0], boxes[1]);
+    for (std::size_t i = 2; i < boxes.size(); ++i) {
+      std::vector<geom::GeomBox> next;
+      for (const auto& m : merged) {
+        auto res = geom::boxUnion(m, boxes[i]);
+        next.insert(next.end(), res.begin(), res.end());
+      }
+      merged = next;
+    }
+    for (const auto& b : merged)
+      static_cast<void>(view.createRect(layerId, b));
+    statusBar()->showMessage(QString("Union: %1 rect(s) created").arg(merged.size()), 3000);
+  } else if (chosen == "Intersection (AND)") {
+    auto result = geom::boxIntersection(boxes[0], boxes[1]);
+    for (std::size_t i = 2; i < boxes.size() && result.has_value(); ++i)
+      result = geom::boxIntersection(*result, boxes[i]);
+    if (result.has_value()) {
+      static_cast<void>(view.createRect(layerId, *result));
+      statusBar()->showMessage("Intersection created", 3000);
+    } else {
+      statusBar()->showMessage("Intersection is empty — no shape created", 3000);
+    }
+  } else if (chosen == "Difference (A - B)") {
+    auto result = geom::boxDifference(boxes[0], boxes[1]);
+    for (std::size_t i = 2; i < boxes.size(); ++i) {
+      std::vector<geom::GeomBox> next;
+      for (const auto& r : result) {
+        auto diff = geom::boxDifference(r, boxes[i]);
+        next.insert(next.end(), diff.begin(), diff.end());
+      }
+      result = next;
+    }
+    for (const auto& b : result)
+      static_cast<void>(view.createRect(layerId, b));
+    statusBar()->showMessage(QString("Difference: %1 rect(s) created").arg(result.size()), 3000);
+  }
+
   layView_->update();
-  statusBar()->showMessage("Layer union created", 3000);
 }
 
 // ─── Grid ────────────────────────────────────────────────────────────────────
 
 void MainWindow::onToggleGridType() {
   if (!layCtrl_) return;
-  static bool ortho = false;
-  ortho = !ortho;
-  if (layCtrl_) {
-    // Toggle grid type (ortho mode affects tool behavior)
-    statusBar()->showMessage(ortho ? "Orthogonal mode ON" : "Orthogonal mode OFF", 3000);
-  }
+  bool on = !layCtrl_->orthogonalMode();
+  layCtrl_->setOrthogonalMode(on);
+  statusBar()->showMessage(on ? "Orthogonal mode ON — drawing constrained to H/V"
+                               : "Orthogonal mode OFF", 3000);
 }
 
 // ─── FFT ─────────────────────────────────────────────────────────────────────
@@ -1725,6 +1819,132 @@ void MainWindow::onExportLef() {
     statusBar()->showMessage("LEF exported", 4000);
   } else {
     QMessageBox::warning(this, "Export Error", "Failed to write LEF file.");
+  }
+}
+
+// ─── New Import / Export handlers ─────────────────────────────────────────────
+
+void MainWindow::onExportDxf() {
+  const auto path = QFileDialog::getSaveFileName(this, "Export DXF",
+      QDir::homePath(), "DXF (*.dxf);;All Files (*)");
+  if (path.isEmpty()) return;
+  layout::LayDxfWriter writer;
+  if (writer.write(app_.projects().workingLibrary(), path.toStdString())) {
+    log("DXF exported: " + path);
+    statusBar()->showMessage("DXF exported", 4000);
+  } else {
+    QMessageBox::warning(this, "Export Error", "Failed to write DXF file.");
+  }
+}
+
+void MainWindow::onExportImage() {
+  if (!layDoc_) { statusBar()->showMessage("No layout to export", 3000); return; }
+  const auto path = QFileDialog::getSaveFileName(this, "Export Image",
+      QDir::homePath(), "SVG (*.svg);;PDF (*.pdf);;PPM (*.ppm);;All Files (*)");
+  if (path.isEmpty()) return;
+  auto& lib = app_.projects().workingLibrary();
+  const auto& view = layDoc_->view();
+  layout::LayImageExport exporter;
+  bool ok = false;
+  std::string ext = QFileInfo(path).suffix().toLower().toStdString();
+  auto fsPath = std::filesystem::path(path.toStdString());
+  if (ext == "svg") ok = exporter.writeSvg(lib, view, fsPath);
+  else if (ext == "pdf") ok = exporter.writePdf(lib, view, fsPath);
+  else if (ext == "ppm") ok = exporter.writePpm(lib, view, fsPath);
+  else { QMessageBox::warning(this, "Export Error", "Unsupported image format."); return; }
+  if (ok) { log("Image exported: " + path); statusBar()->showMessage("Image exported", 4000); }
+  else { QMessageBox::warning(this, "Export Error", "Failed to export image."); }
+}
+
+void MainWindow::onExportCdl() {
+  const auto path = QFileDialog::getSaveFileName(this, "Export CDL Netlist",
+      QDir::homePath(), "CDL (*.cdl);;All Files (*)");
+  if (path.isEmpty()) return;
+  auto& lib = app_.projects().workingLibrary();
+  for (const auto cid : lib.cellIds()) {
+    auto* cell = lib.findCellById(cid);
+    if (!cell) continue;
+    auto* view = cell->findView(db::DbViewType::Schematic);
+    if (!view) continue;
+    netlist::CdlGenerator gen;
+    std::string cdl = gen.generateCdl(lib, *cell, *view);
+    std::ofstream ofs(path.toStdString());
+    if (ofs) { ofs << cdl; log("CDL exported: " + path); statusBar()->showMessage("CDL exported", 4000); }
+    else { QMessageBox::warning(this, "Export Error", "Failed to write CDL file."); }
+    return;
+  }
+  statusBar()->showMessage("No schematic view found to export", 4000);
+}
+
+void MainWindow::onExportOasis() {
+  const auto path = QFileDialog::getSaveFileName(this, "Export OASIS",
+      QDir::homePath(), "OASIS (*.oas);;All Files (*)");
+  if (path.isEmpty()) return;
+  layout::LayOasisWriter writer;
+  if (writer.write(app_.projects().workingLibrary(), path.toStdString())) {
+    log("OASIS exported: " + path);
+    statusBar()->showMessage("OASIS exported", 4000);
+  } else {
+    QMessageBox::warning(this, "Export Error", "Failed to write OASIS file.");
+  }
+}
+
+void MainWindow::onImportOasis() {
+  const auto path = QFileDialog::getOpenFileName(this, "Import OASIS",
+      QDir::homePath(), "OASIS (*.oas);;All Files (*)");
+  if (path.isEmpty()) return;
+  layout::LayOasisReader reader;
+  if (reader.read(app_.projects().workingLibrary(), path.toStdString())) {
+    refreshLibraryBrowser();
+    log("Imported OASIS: " + path);
+    statusBar()->showMessage("OASIS import successful", 4000);
+  } else {
+    QMessageBox::warning(this, "Import Error", "Failed to import OASIS file.");
+  }
+}
+
+void MainWindow::onExportCif() {
+  const auto path = QFileDialog::getSaveFileName(this, "Export CIF",
+      QDir::homePath(), "CIF (*.cif);;All Files (*)");
+  if (path.isEmpty()) return;
+  layout::LayCifIo cif;
+  if (cif.write(app_.projects().workingLibrary(), path.toStdString())) {
+    log("CIF exported: " + path);
+    statusBar()->showMessage("CIF exported", 4000);
+  } else {
+    QMessageBox::warning(this, "Export Error", "Failed to write CIF file.");
+  }
+}
+
+void MainWindow::onImportCif() {
+  const auto path = QFileDialog::getOpenFileName(this, "Import CIF",
+      QDir::homePath(), "CIF (*.cif);;All Files (*)");
+  if (path.isEmpty()) return;
+  layout::LayCifIo cif;
+  if (cif.read(app_.projects().workingLibrary(), path.toStdString())) {
+    refreshLibraryBrowser();
+    log("Imported CIF: " + path);
+    statusBar()->showMessage("CIF import successful", 4000);
+  } else {
+    QMessageBox::warning(this, "Import Error", "Failed to import CIF file.");
+  }
+}
+
+void MainWindow::onImportWizard() {
+  const auto path = QFileDialog::getOpenFileName(this, "Import Design",
+      QDir::homePath(), "All Supported (*.gds *.oas *.cif *.sp *.cir *.def *.lef);;"
+      "GDS II (*.gds);;OASIS (*.oas);;CIF (*.cif);;SPICE (*.sp *.cir);;"
+      "DEF (*.def);;LEF (*.lef);;All Files (*)");
+  if (path.isEmpty()) return;
+  layout::ImportSelection sel;
+  sel.inputPath = std::filesystem::path(path.toStdString());
+  sel.format = layout::ImportSelection::Format::Auto;
+  if (layout::ImportWizard::runAuto(app_.projects().workingLibrary(), sel)) {
+    refreshLibraryBrowser();
+    log("Imported via wizard: " + path);
+    statusBar()->showMessage("Import successful", 4000);
+  } else {
+    QMessageBox::warning(this, "Import Error", "Import wizard failed.");
   }
 }
 

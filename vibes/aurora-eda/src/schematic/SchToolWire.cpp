@@ -21,14 +21,14 @@ void SchToolWire::mousePress(SchEditorController& ctrl, geom::GeomPoint p) {
       auto& view = doc.view();
       std::string netName;
       if (busMode_) {
-        // Bus mode: name like "BUS_1_00<7:0>"
+        // Bus mode: name like "BUS_01<7:0>" with configurable width
         static int busCounter = 0;
-        netName = std::format("BUS_{:02d}<7:0>", ++busCounter);
+        netName = std::format("BUS_{:02d}<{}:{}>", ++busCounter, busMsb_, busLsb_);
       } else {
         netName = ctrl.nextNetName();
       }
       auto& net = view.createNet(netName);
-      doc.addWire(net.id(), {startPoint_, snapped}, busMode_);
+      (void)doc.addWire(net.id(), {startPoint_, snapped}, busMode_);
     }
     startPoint_ = snapped;
   }
