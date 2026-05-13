@@ -14,9 +14,8 @@ covering the full front-to-back custom design flow:
 - Python-based scripting and automation
 - Cross-platform (Windows, macOS, Linux) via Qt 6, CMake, and vcpkg
 
-The goal is to match the feature depth of commercial custom IC design platforms
-while remaining completely open-source. This project is a clean-room
-implementation — no proprietary code, assets, or APIs are copied or included.
+**⚠️ STATUS: ~38% complete.** This is a work-in-progress. Many features are
+stubbed, partially implemented, or broken. See STATUS.md for the honest audit.
 
 ## Stack
 
@@ -59,72 +58,29 @@ aurora-eda/
   build.sh                  # macOS/Linux build helper
 ```
 
-## CMake Target Hierarchy
+## Known Critical Bugs
 
-```
-aurora_core          ← geom + db + tech + pdk + netlist + sim + drc_lvs + core
-aurora_schematic     → links aurora_core
-aurora_layout        → links aurora_core
-aurora_ui            → links aurora_schematic + aurora_layout + Qt6
-aurora_python        → links aurora_core (pybind11 module)
-aurora_app           → links aurora_ui  (executable: aurora-eda)
-tests/*              → link aurora_core or aurora_layout as needed
-```
+These features are marked "done" in earlier docs but are actually broken or fake:
 
-All subdirectories under `src/` that contribute to `aurora_core` use
-`target_sources(aurora_core PRIVATE … PUBLIC FILE_SET HEADERS …)`.
-Subdirectories creating their own library (`aurora_layout`, etc.) use
-`add_library(…)` followed by `target_link_libraries(… PUBLIC aurora_core)`.
+1. **Undo/Redo** (B14/C16): Pushes literal string `"state"`, restores nothing
+2. **SchToolWire multi-segment** (A14): Each click creates wire on a NEW net, not same net
+3. **Pin label positions** (B4): Uses `mpin->id() * 3000` — meaningless garbage coordinates
+4. **Layout instance selection** (C16): Select tool only finds shapes, not instances
+5. **Cross-probe layout→schematic** (B11): Non-functional — just clears probe
+6. **Edit Symbol** (B8): Opens first cell, not the current one
+7. **Net highlighting**: Zero code — clicking a wire does nothing
+8. **Junction dots**: Zero code — no visual at wire intersections
 
-## Development Rules
+## Feature Roadmap (HONEST)
 
-1. **Never create top-level directories** without explicit instruction.
-2. All C++ sources live under `src/` in the matching subdirectory.
-3. All Python package code lives under `python/aurora/`.
-4. Plugins live under `src/plugins/<plugin-name>/`.
-5. Keep headers and `.cpp` in sync; add new files to the relevant `CMakeLists.txt`.
-6. Update `docs/ARCHITECTURE.md` when adding or changing a module.
-7. Update `docs/PDK_SPEC.md` for PCell / PDK changes.
-8. Update `docs/FILE_FORMAT.md` for new import/export formats.
-9. Update `STATUS.md` after every completed milestone.
+Legend: ✓ done  ◐ partial/needs work  ○ not started  ✗ broken/stub
 
-## Build Quick-Start (Windows)
-
-```bat
-build.bat --install-deps   # one-time: installs CMake, Ninja, VS Build Tools, vcpkg packages
-build.bat --run            # configure → build → test → launch aurora-eda
-build.bat --debug --run    # Debug build
-build.bat --no-ui --no-python  # headless / CI build
-```
-
-## Build Quick-Start (macOS / Linux)
-
-```sh
-./build.sh --install-deps
-./build.sh --run
-./build.sh --no-ui --no-python
-```
-
-## Testing
-
-```
-ctest --test-dir build --output-on-failure
-```
-
-Registered CTest targets: `aurora_db_smoke`, `aurora_geom_ops_test`,
-`aurora_tech_database_test`, `aurora_netlist_test`, `aurora_gds_writer_test`,
-`aurora_gds_reader_test`, `aurora_drc_lvs_test`, `aurora_sim_test`.
-
-## Feature Roadmap
-
-Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
-
-### Milestone A — Core Infrastructure (Tasks 1-8, completed)
+### Milestone A — Core Infrastructure
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
 | A1 | CMake project, C++20, out-of-source build | ✓ done | |
-| A2 | Geometry primitives + operations | ✓ done | GeomPoint/Box/Polygon/Path + ops (snap, Manhattan, intersection, union, width/spacing) |
+| A2 | Geometry primitives + operations | ✓ done | Full GeomPoint/Box/Polygon/Path + ops |
 | A3 | ID-based design database | ✓ done | DbCellLib, DbCell, DbView, shapes, instances, nets, pins, transforms |
 | A4 | Technology database | ✓ done | JSON-based TechDatabase with layer rules, GDS mapping |
 | A5 | PCell C++ registry | ✓ done | PcellDescriptor, PcellRegistry with param merge |
@@ -135,193 +91,193 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | A10 | LVS checker | ✓ done | Net/pin count comparison between schematic and layout |
 | A11 | Application core | ✓ done | CoreApp, ProjectManager, PluginManager, PluginRegistry |
 | A12 | Qt 6 UI shell | ✓ done | MainWindow, menus, toolbars, dock widgets, status bar |
-| A13 | Schematic document + editor controller | ✓ done | SchDocument, SchEditorController, SchWire, SchSymbol |
-| A14 | Schematic tools | ✓ done | SchToolSelect, SchToolWire (multi-segment), SchToolInstance |
+| A13 | Schematic document + editor controller | ◐ partial | SchDocument exists; SchWire broken (new net per segment) |
+| A14 | Schematic tools | ◐ partial | Tools exist; SchToolWire can't draw connected wires; no orthogonal mode |
 | A15 | Layout document + editor controller | ✓ done | LayDocument, LayEditorController with grid/zoom/tool dispatch |
-| A16 | Layout tools | ✓ done | LayToolSelect, LayToolRect, LayToolPolygon |
+| A16 | Layout tools | ◐ partial | Rect/Poly/Path work; Select cannot pick instances |
 | A17 | GDS II writer | ✓ done | Binary GDS writer with SREF hierarchy, STRANS |
-| A18 | View widgets (schematic + layout canvas) | ✓ done | Recursive rendering, grid, zoom/pan, selection markers |
+| A18 | View widgets | ◐ partial | Render grid/zoom/pan/shapes; no net highlight, no junction dots, no crosshair |
 | A19 | Layer palette widget | ✓ done | Color icons, visibility toggles |
-| A20 | Property editor widget | ✓ done | QFormLayout-based property display |
+| A20 | Property editor widget | ◐ partial | QFormLayout exists but never populated with live data |
 | A21 | Simulation dialog | ✓ done | ADE-style OP/DC/AC/Transient setup |
 | A22 | DRC results dialog | ✓ done | Two-tab: violations table + LVS result; double-click zooms |
 | A23 | Waveform viewer | ✓ done | Dark-background, auto-scaling, multiple traces, zoom/pan |
 | A24 | Cell browser dialog | ✓ done | Cell tree, view list, New Cell, double-click to open |
-| A25 | Python bindings (C++) | ✓ done | pybind11 module exposing core DB, tech, geometry, netlist |
-| A26 | Python PCell framework | ✓ done | PcellBase ABC, registry, NMOS example PCell |
+| A25 | Python bindings (C++) | ◐ partial | pybind11 module exists; limited API surface |
+| A26 | Python PCell framework | ◐ partial | PcellBase ABC, registry exist; no evaluation pipeline |
 | A27 | Python simulation helpers | ✓ done | run_spice(), SimResult, SimWaveform dataclasses |
 | A28 | JSON project persistence | ✓ done | Full serialization/deserialization of DbCellLib |
 | A29 | Build scripts + CI | ✓ done | build.sh, build.bat, CTest integration |
-| A30 | Documentation | ✓ done | ARCHITECTURE.md, API_REFERENCE.md, PDK_SPEC.md, FILE_FORMAT.md |
+| A30 | Documentation | ◐ partial | ARCHITECTURE.md, API_REFERENCE.md exist; need updating |
 
-### Milestone B — Schematic Editor (full)
-
-| # | Feature Area | Status | Notes |
-|---|-------------|--------|-------|
-| B1 | Bus definition and multi-bit net routing | ✓ done | Bus wire mode with configurable width; thick bus wires with slash marks; bus ripping; automatic bus-name expansion in SPICE/Verilog/CDL netlist generators |
-| B2 | Bus ripping and naming | ✓ done | SchToolBusRip rips signals from bus wires with named endpoints and net labels |
-| B3 | Wire labels / net name labels | ✓ done | Click-on-wire label tool renames nets; yellow pill labels rendered on schematic |
-| B4 | Pin labels and port definitions | ✓ done | Pin names from symbol view shown next to instance pins on schematic; shows connected net name |
-| B5 | Stimulus markers (vsrc, isrc, etc.) | ✓ done | Place VDC/IDC/VPULSE/VSIN markers on schematic wires; markers rendered as symbols; NetlistGenerator emits source statements; tool with type selection dialog |
-| B6 | Probe markers (voltage, current) | ✓ done | Place vprobe/iprobe markers on wires; rendered as voltmeter/ammeter symbols; NetlistGenerator emits .print statements |
-| B7 | Hierarchical navigation | ✓ done | Double-click instance pushes into its cell; toolbar ▲ button pops back; full nav stack |
-| B8 | Symbol editor (graphical) | ✓ done | SchToolSymbolPin places named pins with direction on symbol view; layout tools draw shapes; Edit Symbol menu opens symbol for editing |
-| B9 | Schematic consistency checks | ✓ done | Checks for floating nets (<2 connections) and unconnected pins; results shown in QMessageBox |
-| B10 | DC operating point annotation | ✓ done | DC op-point map passed to SchematicViewWidget; voltage values rendered as blue pills on wires |
-| B11 | Schematic ↔ Layout cross-probing | ✓ done | Select instance in schematic → toolbar ⇋ highlights matching master cell in both views; auto-clears after 5s |
-| B12 | Parameter passing (hierarchical) | ✓ done | Instance parameter editor dialog; parameters stored on DbInstance and emitted by NetlistGenerator |
-| B13 | Multi-sheet schematics | ✓ done | Off-sheet connectors via net naming; library tree switches sheets; generateSpiceMulti nets across all cells |
-| B14 | Undo/redo for schematic editing | ✓ done | Snapshot-based undo stack; pushed before each tool operation |
-| B15 | Keyboard shortcuts and hotkeys | ✓ done | All tools have single-key shortcuts (S/W/L/M/B/I/R/P/A/V/G/D), view switches (E/L/V), zoom (Z/O/F) |
-
-### Milestone C — Layout Editor (full)
+### Milestone B — Schematic Editor
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| C1 | Path tool with width and corner styles | ✓ done | Click-to-add-vertices path creation with width; Enter to commit, Esc to cancel. Corner-style selection dialog (miter/round/square) at tool start; PATHTYPE emitted in GDS export. |
-| C2 | Via array generator | ✓ done | Drag rectangle, dialog configures columns/rows/size/spacing; generates rect grid |
-| C3 | Guard ring generator | ✓ done | Drag rectangle around protected area; dialog configures ring width/spacing; generates 4-sided ring as rect bars |
-| C4 | Alignment and distribution tools | ✓ done | Align left/right/top/bottom/center H/V + distribute H/V all implemented |
-| C5 | Measurement / ruler tool | ✓ done | Click two points, dashed line with distance/Δx/Δy label overlay on layout canvas |
-| C6 | Interactive DRC (iDRC) | ✓ done | One-click DRC run via ◉ iDRC toolbar button; violations shown in status bar and log |
-| C7 | Constraint-driven layout | ✓ done | Same-net spacing constraints via ⊕ Con toolbar button |
-| C8 | Relative object placement snaps | ✓ done | Snap to edge, center via SnapToObject mode; toggle via ⬕ Snap button |
+| B1 | Bus definition and multi-bit net routing | ◐ partial | Configurable width dialog, thick wires, slash marks, bus ripping; no bus expansion visualization; netlist expansion added but untested |
+| B2 | Bus ripping and naming | ✓ done | SchToolBusRip works |
+| B3 | Wire labels / net name labels | ✓ done | Click-on-wire label tool renames nets; yellow pill labels |
+| B4 | Pin labels and port definitions | ✗ broken | Labels positioned at `pinId * 3000` — garbage coordinates |
+| B5 | Stimulus markers (vsrc, isrc, etc.) | ✓ done | VDC/IDC/VPULSE/VSIN markers with type dialog; correct rendering |
+| B6 | Probe markers (voltage, current) | ✓ done | vprobe/iprobe markers; voltmeter/ammeter symbols |
+| B7 | Hierarchical navigation | ◐ partial | Double-click — schematic pushes into cell; layout navigation broken (select can't find instances) |
+| B8 | Symbol editor (graphical) | ✗ broken | Edit Symbol opens first arbitrary cell, not current one |
+| B9 | Schematic consistency checks | ✓ done | Checks floating nets (<2 connections) and unconnected pins |
+| B10 | DC operating point annotation | ✓ done | Voltage values rendered as blue pills on wires |
+| B11 | Layout cross-probing | ✗ broken | Schematic→Layout works; Layout→Schematic is non-functional |
+| B12 | Parameter passing (hierarchical) | ✓ done | Instance parameter editor dialog; saved to DbInstance, emitted by netlist |
+| B13 | Multi-sheet schematics | ◐ partial | generateSpiceMulti merges cells; no visual sheet navigation |
+| B14 | Undo/redo for schematic editing | ✗ broken | Pushes string "state" — restores nothing |
+| B15 | Keyboard shortcuts and hotkeys | ✓ done | All tools have single-key shortcuts |
+
+### Milestone C — Layout Editor
+
+| # | Feature Area | Status | Notes |
+|---|-------------|--------|-------|
+| C1 | Path tool with width and corner styles | ✓ done | Corner-style dialog; PATHTYPE in GDS; Qt rendering for each style |
+| C2 | Via array generator | ✓ done | Drag rectangle, dialog for cols/rows/size/spacing |
+| C3 | Guard ring generator | ✓ done | Drag rectangle, dialog for width/spacing; 4-sided ring |
+| C4 | Alignment and distribution tools | ✓ done | Align left/right/top/bottom/center H/V + distribute H/V |
+| C5 | Measurement / ruler tool | ✓ done | Click two points, dashed line with distance/Δx/Δy |
+| C6 | Interactive DRC (iDRC) | ✓ done | One-click DRC run via toolbar button; violations shown in status bar and log; markers on canvas |
+| C7 | Constraint-driven layout | ◐ partial | DbConstraint exists; toolbar button wired; no visual constraint display |
+| C8 | Relative object placement snaps | ◐ partial | SnapToObject works in layout; no SnapToObject in schematic |
 | C9 | Parameterized via/contact definitions | ✓ done | Click-to-place via with configurable size/enclosures |
-| C10 | Layout XL / schematic-driven layout | ✓ done | Generate layout views from schematic instances via ⚡ XL button |
-| C11 | Connectivity-aware interactive routing | ✓ done | Path tool snaps to same-net object edges; SnapToObject mode aligns to pins |
-| C12 | Real-time DRC (drawing mode) | ✓ done | DRC runs after each tool operation via iDRC button; violations shown in status bar |
+| C10 | Layout XL / schematic-driven layout | ◐ partial | Generates layout views from schematic; no instance placement mapping |
+| C11 | Connectivity-aware interactive routing | ○ not started | Path tool does not snap to same-net objects |
+| C12 | Real-time DRC (drawing mode) | ○ not started | No DRC during drawing; only on-demand iDRC button |
 | C13 | DRC markers overlay | ✓ done | Red violation markers overlaid on layout canvas |
-| C14 | Layer operations (derived layers) | ✓ done | Union, intersection, and difference operations on selected rects via dialog; uses GeomOps boxUnion/boxIntersection/boxDifference |
-| C15 | Stretch/edit in place | ✓ done | Click-and-drag rectangle edges to stretch via E tool |
-| C16 | Undo/redo for layout editing | ✓ done | Snapshot-based undo stack for layout operations |
-| C17 | Copy/paste with alignment | ✓ done | Clipboard for shapes with offset paste; Cmd+C/Cmd+V |
-| C18 | Array/step-and-repeat | ✓ done | Select shapes, menu triggers dialog for cols/rows/pitch; generates grid |
-| C19 | Grid system (multiple grid types) | ✓ done | Snap grid exists; orthogonal mode toggle constrains drawing to H/V; toolbar button toggle |
+| C14 | Layer operations (derived layers) | ✓ done | Union/Intersection/Difference dialog using GeomOps |
+| C15 | Stretch/edit in place | ✓ done | Click-and-drag rectangle edges to stretch |
+| C16 | Undo/redo for layout editing | ✗ broken | Same fake "state" string push as schematic undo |
+| C17 | Copy/paste with alignment | ✓ done | Clipboard for shapes with 5µm offset paste |
+| C18 | Array/step-and-repeat | ✓ done | Dialog for cols/rows/pitch; generates grid copies |
+| C19 | Grid system (multiple grid types) | ◐ partial | Snap grid + orthogonal mode; no relative grid, no grid type selection, no grid spacing UI |
 
-### Milestone D — Simulation Environment (ADE-class)
+### Milestone D — Simulation Environment
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
 | D1 | ngspice backend (existing) | ✓ done | SimRunner with popen, waveform parsing |
-| D2 | Xyce backend plugin | ✓ done | Simulator type combo (ngspice/Xyce); switches executable path |
-| D3 | Analysis types: Noise, Distortion, Pole-Zero, Sensitivity | ✓ done | Added .NOISE, .DISTO, .PZ to SimSetupDialog with per-type parameter forms; generates correct SPICE commands |
-| D4 | Parametric sweeps | ✓ done | Sweep any parameter via SimSetupDialog; runSweep() generates netlists per step; waveforms tagged with sweep value; overlaid in waveform viewer |
-| D5 | Corner simulation | ✓ done | Run PVT corner matrix via SimSetupDialog; combos of temperature/VDD; .temp and .param substitution |
-| D6 | Monte Carlo analysis | ✓ done | Gaussian/uniform distributions, N runs, `runMonteCarlo()` in SimRunner; dialog with distribution/param/runs controls |
-| D7 | Design optimization | ✓ done | Sweep dialog searches for optimal parameter value; evaluates target expressions |
-| D8 | Waveform calculator / expression-based math | ✓ done | Ctrl+E computes V(net1)-V(net2); addExpressionTrace() with interpolation; supports +, - |
-| D9 | FFT / spectrum analysis | ✓ done | DFT computation on first trace; menu action adds FFT trace to waveform viewer |
-| D10 | Eye diagram tool | ✓ done | Eye diagram from transient data; computeEyeDiagram() overlays segments by period |
-| D11 | Multiple testbenches (config views) | ✓ done | Testbench combo box with New/Save/Load/Delete; per-cell simulation setups |
-| D12 | Simulation state save/restore | ✓ done | Save/load simulation setup to JSON (simulator path, analysis type, sweep params) |
-| D13 | Results browser | ✓ done | Legend with clickable visibility toggles; trace list in waveform viewer |
-| D14 | Waveform overlay and comparison | ✓ done | Legend with semi-transparent background, math difference traces, measurement panel |
-| D15 | Waveform measurements | ✓ done | Two draggable markers with Δt, frequency, rise/fall time computed on first trace |
-| D16 | Expression editor (GUI) | ✓ done | Dialog with trace list, operator buttons, and result name; generates expression traces |
-| D17 | Direct plot from schematic | ✓ done | Plot from Schematic menu action selects net; shows/hides matching waveform traces |
-| D18 | Distributed simulation manager | ✓ done | runMonteCarlo/runSweep already parallelise locally; single-machine deployment is the intended scope |
+| D2 | Xyce backend plugin | ◐ partial | Simulator type combo exists; Xyce executable path configurable |
+| D3 | Analysis types: Noise, Distortion, Pole-Zero | ✓ done | .NOISE, .DISTO, .PZ forms in SimSetupDialog |
+| D4 | Parametric sweeps | ✓ done | Sweep parameter via dialog; multi-run; waveforms tagged |
+| D5 | Corner simulation | ✓ done | Temperature/VDD corner matrix |
+| D6 | Monte Carlo analysis | ✓ done | Gaussian/uniform distributions, N runs |
+| D7 | Design optimization | ◐ partial | Sweep dialog searches for optimal; no objective function editor |
+| D8 | Waveform calculator / expression math | ◐ partial | Only `+` and `-` between two traces; no `*`, `/`, `abs`, `d/dt`, `sqrt` |
+| D9 | FFT / spectrum analysis | ◐ partial | Naive O(N²) DFT — too slow for >10K points; no real FFT algorithm |
+| D10 | Eye diagram tool | ✓ done | Segments transient by period; overlays multiple periods |
+| D11 | Multiple testbenches (config views) | ✓ done | Testbench combo with New/Save/Load/Delete |
+| D12 | Simulation state save/restore | ✓ done | Save/load setup to JSON (simulator path, analysis type, sweep params) |
+| D13 | Results browser | ✓ done | Legend with clickable visibility toggles |
+| D14 | Waveform overlay and comparison | ✓ done | Semi-transparent legend; math difference traces |
+| D15 | Waveform measurements | ✓ done | Two draggable markers with Δt, frequency, rise/fall time |
+| D16 | Expression editor (GUI) | ✓ done | Dialog with trace list, operator buttons, result name |
+| D17 | Direct plot from schematic | ◐ partial | Menu action selects net by name substring matching |
+| D18 | Distributed simulation manager | ○ not started | Single-machine scope; no cluster support |
 
 ### Milestone E — Physical Verification
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| E1 | Deck-based DRC (run standard rule decks) | ✓ done | Configurable DrcOptions enables/disables individual checks |
-| E2 | Hierarchical DRC | ✓ done | DrcOptions::hierarchical flag for cell hierarchy traversal |
-| E3 | DRC by area (region select) | ✓ done | DrcOptions::areaOnly restricts checks to a GeomBox region |
-| E4 | Full device recognition LVS | ✓ done | recognizeDevices() detects MOS from poly/diff overlap; W/L extraction |
-| E5 | Hierarchical LVS (full) | ✓ done | Net/pin + device count comparison between schematic and layout |
-| E6 | Parasitic extraction (RC) | ✓ done | ParasiticExtractor computes coupling capacitance + wire resistance |
-| E7 | Parasitic reduction | ✓ done | `ParasiticReducer` collapses extracted RC into Pi/T/Lumped models |
-| E8 | Antenna rule checking | ✓ done | Antenna ratio check (metal area / gate area) in DrcEngine |
-| E9 | Density checking | ✓ done | Min/max density per layer with bin sampling in DrcEngine |
-| E10 | ERC (electrical rule checking) | ✓ done | Floating nets, multiple drivers, unconnected pins checks |
-| E11 | PERC (power integrity) | ✓ done | `PercChecker` flags IR-drop, current density, missing power/ground nets |
-| E12 | DRC/LVS run directory management | ✓ done | DrcOptions::hierarchical/areaOnly for organized runs |
-| E13 | Back-annotation of DRC/LVS results | ✓ done | DRC markers overlay on layout via setDrcMarkers(); wired in DrcResultsDialog and iDRC toolbar |
+| E1 | Deck-based DRC (run standard rule decks) | ◐ partial | DrcOptions enables/disables checks; no rule deck file format |
+| E2 | Hierarchical DRC | ◐ partial | Flag exists in DrcOptions; recursive traversal not verified |
+| E3 | DRC by area (region select) | ◐ partial | areaOnly flag exists; no UI for region selection |
+| E4 | Full device recognition LVS | ◐ partial | recognizeDevices() finds MOS from poly/diff overlap |
+| E5 | Hierarchical LVS (full) | ◐ partial | Net/pin + device count; hierarchy traversal not verified |
+| E6 | Parasitic extraction (RC) | ✓ done | ParasiticExtractor computes coupling C + wire R |
+| E7 | Parasitic reduction | ✓ done | ParasiticReducer: Pi/T/Lumped models |
+| E8 | Antenna rule checking | ✓ done | Antenna ratio check (metal area / gate area) |
+| E9 | Density checking | ✓ done | Min/max density per layer with bin sampling |
+| E10 | ERC (electrical rule checking) | ✓ done | Floating nets, multiple drivers, unconnected pins |
+| E11 | PERC (power integrity) | ✓ done | PercChecker: IR drop, current density, missing power nets |
+| E12 | DRC/LVS run directory management | ○ not started | No run directory/organization UI |
+| E13 | Back-annotation of DRC/LVS results | ✓ done | DRC markers overlay on layout via setDrcMarkers() |
 
 ### Milestone F — PCells and PDK
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| F1 | C++ PCell framework (existing) | ✓ done | PcellDescriptor, PcellRegistry |
-| F2 | Python PCell framework (existing) | ✓ done | PcellBase ABC, registry, NMOS example |
-| F3 | CDF parameter system | ✓ done | `pdk/Cdf.h` — typed params, units, prompts, choices, validators |
-| F4 | PCell evaluation engine with caching | ✓ done | `PcellEvalCache` — hash params, skip regen on cache hit |
-| F5 | Stretch handles on PCells | ✓ done | `defaultStretchHandlesFor()` defines axis-bound stretch handles |
-| F6 | C compile mode for PCells | ✓ done | Eval cache acts as compiled cache; native MosPcell already C++ |
-| F7 | PCell library: MOS devices | ✓ done | NMOS + PMOS + MATCH_CC (common-centroid) registered |
-| F8 | PCell library: passive devices | ✓ done | RES_POLY, CAP_MIM, IND_SPIRAL in `PcellLibrary` |
-| F9 | PCell library: BJT devices | ✓ done | BJT_NPN (emitter/base/collector geometry) |
-| F10 | PCell library: diode devices | ✓ done | DIODE_PN (junction with optional nwell) |
-| F11 | PCell library: matching structures | ✓ done | MATCH_CC 2×2 common-centroid pattern |
-| F12 | PCell parameter callbacks | ✓ done | `CdfParam::validator` + `derive` callbacks |
-| F13 | PDK installation mechanism | ✓ done | `PdkManager::install` recursively copies PDK trees |
-| F14 | PDK validation tools | ✓ done | `PdkManager::validate` checks tech.json + pcells dir |
+| F1 | C++ PCell framework | ✓ done | PcellDescriptor, PcellRegistry |
+| F2 | Python PCell framework | ◐ partial | PcellBase ABC, registry, NMOS example exist; no integration |
+| F3 | CDF parameter system | ✓ done | Cdf.h — typed params, units, prompts, choices, validators |
+| F4 | PCell evaluation engine with caching | ✓ done | PcellEvalCache — hash params, skip regen |
+| F5 | Stretch handles on PCells | ✓ done | defaultStretchHandlesFor() defined |
+| F6 | C compile mode for PCells | ◐ partial | Native MosPcell is C++; no Python→C compilation |
+| F7 | PCell library: MOS devices | ✓ done | NMOS + PMOS + MATCH_CC registered |
+| F8 | PCell library: passive devices | ✓ done | RES_POLY, CAP_MIM, IND_SPIRAL registered |
+| F9 | PCell library: BJT devices | ✓ done | BJT_NPN registered |
+| F10 | PCell library: diode devices | ✓ done | DIODE_PN registered |
+| F11 | PCell library: matching structures | ✓ done | MATCH_CC 2×2 common-centroid |
+| F12 | PCell parameter callbacks | ✓ done | CdfParam::validator + derive |
+| F13 | PDK installation mechanism | ✓ done | PdkManager::install recursively copies |
+| F14 | PDK validation tools | ✓ done | PdkManager::validate checks tech.json + pcells |
 
 ### Milestone G — Import / Export
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| G1 | GDS II export | ✓ done | Binary GDS writer with hierarchy |
-| G2 | GDS II import | ✓ done | Parses binary GDS; reconstructs cells, hierarchy, geometries, layers. Supports BOUNDARY (rect/polygon), PATH, TEXT, SREF. |
-| G3 | LEF export | ✓ done | Library Exchange Format: cell boundaries, pin locations, obstructions; writes MACRO/LAYER/PIN/OBS from layout views |
-| G4 | LEF import | ✓ done | `LayLefReader` parses MACRO/SIZE/PIN/LAYER/RECT |
-| G5 | DEF export | ✓ done | Design Exchange Format: COMPONENTS placement, NETS connectivity from DbView |
-| G6 | DEF import | ✓ done | Parse DEF COMPONENTS placement and NETS connectivity; reconstructs into DbCellLib |
-| G7 | Verilog structural netlist export | ✓ done | Module/instance/wire/port generation from DbView; direction-aware port declarations |
-| G8 | Verilog structural netlist import | ✓ done | `VerilogImporter` parses modules, ports, wires, named-port instances |
-| G9 | CDL netlist export | ✓ done | `CdlGenerator` emits .SUBCKT/.ENDS with device params |
-| G10 | CDL netlist import | ✓ done | Reuses `SpiceImporter`; CDL is a SPICE superset |
-| G11 | DSPF/RSPF/SDF parasitic export | ✓ done | `DspfGenerator` for all three formats |
-| G12 | OASIS export | ✓ done | `LayOasisWriter` — varint-encoded CELL+RECTANGLE records |
-| G13 | OASIS import | ✓ done | `LayOasisReader` parses matching format |
-| G14 | CIF export/import | ✓ done | `LayCifIo` — DS/DF symbol blocks, L/B records |
-| G15 | DXF export | ✓ done | `LayDxfWriter` — LAYER table + LWPOLYLINE rectangles |
-| G16 | PDF/PNG export (schematic/layout) | ✓ done | `LayImageExport` — SVG, minimal PDF 1.4, PPM raster |
-| G17 | LEF/DEF technology exchange | ✓ done | `LayLefWriter` already emits tech LAYER+SITE; reader parses |
+| G1 | GDS II export | ✓ done | Binary GDS writer with SREF hierarchy |
+| G2 | GDS II import | ✓ done | Parses BOUNDARY, PATH, TEXT, SREF |
+| G3 | LEF export | ✓ done | MACRO/LAYER/PIN/OBS from layout views |
+| G4 | LEF import | ✓ done | LayLefReader parses MACRO/SIZE/PIN/LAYER/RECT |
+| G5 | DEF export | ✓ done | COMPONENTS placement, NETS connectivity |
+| G6 | DEF import | ✓ done | Parse COMPONENTS and NETS |
+| G7 | Verilog structural netlist export | ✓ done | Module/instance/wire/port generation |
+| G8 | Verilog structural netlist import | ✓ done | Modules, ports, wires, named-port instances |
+| G9 | CDL netlist export | ✓ done | CdlGenerator — .SUBCKT/.ENDS with device params |
+| G10 | CDL netlist import | ○ not started | Reuses SpiceImporter partially; needs device param parsing |
+| G11 | DSPF/RSPF/SDF parasitic export | ◐ partial | DspfGenerator exists; not wired to UI menu |
+| G12 | OASIS export | ✓ done | LayOasisWriter — varint-encoded records |
+| G13 | OASIS import | ✓ done | LayOasisReader |
+| G14 | CIF export/import | ✓ done | LayCifIo — DS/DF symbol blocks, L/B records |
+| G15 | DXF export | ✓ done | LayDxfWriter — LAYER table + LWPOLYLINE |
+| G16 | PDF/PNG export (schematic/layout) | ✓ done | LayImageExport — SVG, PDF, PPM |
+| G17 | LEF/DEF technology exchange | ◐ partial | LayLefWriter emits LAYER+SITE; reading depends on tech.json |
 
 ### Milestone H — Project and Library Management
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| H1 | Technology library management | ✓ done | `LibraryManager::setTechFile`; per-library tech association |
-| H2 | Multi-library support | ✓ done | `LibraryManager` priorities + sort; attach/detach |
-| H3 | Library path management | ✓ done | `addSearchPath`; cds.lib-style read/write |
-| H4 | Library versioning | ✓ done | `LibraryManager::setRevision`; diffSnapshots for cell-lib JSON |
-| H5 | Design hierarchy browser | ✓ done | `HierarchyBrowser::build` + `findUsage` |
-| H6 | Design import wizards | ✓ done | `ImportWizard::runAuto` dispatches by extension |
-| H7 | Revision control integration | ✓ done | `LibraryManager::diffSnapshots` line-diff for cell-lib snapshots |
-| H8 | Project archiving | ✓ done | `ProjectArchiver` AURORA-AR-1 single-file bundle |
-| H9 | Design health dashboard | ✓ done | `DesignHealthDashboard::compile` summarizes the library |
+| H1 | Technology library management | ◐ partial | LibraryManager::setTechFile exists; no UI |
+| H2 | Multi-library support | ◐ partial | Priorities + sort; attach/detach; no UI |
+| H3 | Library path management | ○ not started | No path configuration UI |
+| H4 | Library versioning | ○ not started | No revision system |
+| H5 | Design hierarchy browser | ◐ partial | HierarchyBrowser::build exists; no UI |
+| H6 | Design import wizards | ✓ done | ImportWizard::runAuto dispatches by extension; wired to menu |
+| H7 | Revision control integration | ○ not started | Snapshot diff exists in LibraryManager |
+| H8 | Project archiving | ○ not started | ProjectArchiver exists; no UI |
+| H9 | Design health dashboard | ○ not started | DesignHealthDashboard::compile exists; no UI |
 
 ### Milestone I — Scripting and Automation
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| I1 | Python interactive shell (embedded) | ✓ done | `python/aurora/console.py` — embeddable REPL with aurora preloaded |
-| I2 | Comprehensive Python API | ✓ done | `aurora.layout`, `aurora.schematic`, `aurora.sim` helpers |
-| I3 | Macro recording and playback | ✓ done | `core::MacroRecorder` + `python/aurora/macro.py` |
-| I4 | User-defined menu items / toolbar | ✓ done | `ScriptedUiRegistry` + `aurora.ui_callbacks.register(label)` decorator |
-| I5 | Custom DRC rule definitions (Python) | ✓ done | `aurora.custom_rules.register_drc_rule()` + `CustomRuleRegistry` |
-| I6 | Custom simulation analyses (Python) | ✓ done | `aurora.custom_rules.register_analysis()` |
-| I7 | Batch / headless mode | ✓ done | `core::BatchRunner` + `python -m aurora.batch <script>` |
-| I8 | Layout automation scripts | ✓ done | `aurora.layout` — `array_place`, `route_l_shape`, `bounding_box` |
-| I9 | Schematic automation scripts | ✓ done | `aurora.schematic.SchematicBuilder` — wire/instance/netlist API |
+| I1 | Python interactive shell (embedded) | ◐ partial | console.py exists; not embedded in GUI |
+| I2 | Comprehensive Python API | ○ not started | Layout/schematic helpers are Python-side only; no C++ bindings |
+| I3 | Macro recording and playback | ◐ partial | MacroRecorder records strings only (same as undo); not functional |
+| I4 | User-defined menu items / toolbar | ◐ partial | ScriptedUiRegistry exists; no UI to load Python callbacks |
+| I5 | Custom DRC rule definitions (Python) | ◐ partial | CustomRuleRegistry exists; not wired to DrcEngine |
+| I6 | Custom simulation analyses (Python) | ○ not started | Registration API exists; no evaluation |
+| I7 | Batch / headless mode | ○ not started | BatchRunner exists; not wired to CLI |
+| I8 | Layout automation scripts | ◐ partial | Python helpers exist (array_place, route_l_shape); not tested |
+| I9 | Schematic automation scripts | ◐ partial | SchematicBuilder exists; not tested |
 
 ### Milestone J — Advanced UI / Workflow
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| J1 | Customizable workspace layout | ✓ done | `WorkspaceLayout` saves/loads dock positions to a text file |
-| J2 | Dark/light theme support | ✓ done | `ThemeManager::dark()` / `light()` + per-layer color overrides |
-| J3 | Multi-window support | ✓ done | `WorkspaceLayout` supports any dock area incl. "center" — multi-window data path |
-| J4 | Search and replace in design | ✓ done | `DesignSearch::findNet/findInstance/replaceNetName` with regex |
-| J5 | Design rule table editor (GUI) | ✓ done | `TechRuleEditor::setRule/exportJson` (UI wraps the backend) |
-| J6 | Layer purpose pair management (GUI) | ✓ done | `Theme::layerColors` map; `DbLayer` already has purpose field |
-| J7 | Hotkey/macro configuration UI | ✓ done | `HotkeyConfig::bind/save/load` — UI wraps the persistent store |
-| J8 | Startup wizard (new project/PDK) | ✓ done | `StartupSelection` struct; UI fills then drives `PdkManager::install` |
-| J9 | Status/progress system | ✓ done | `ProgressReporter` — task name + fraction; UI shows progress bar |
-| J10 | Notification center | ✓ done | `NotificationCenter` with Info/Warning/Error/Success levels |
+| J1 | Customizable workspace layout | ○ not started | WorkspaceLayout struct declared; never saved/loaded from UI |
+| J2 | Dark/light theme support | ○ not started | ThemeManager declared; never applied as stylesheet |
+| J3 | Multi-window support | ○ not started | Single QTabWidget, no drag-out |
+| J4 | Search and replace in design | ○ not started | DesignSearch declared; never exposed to UI |
+| J5 | Design rule table editor (GUI) | ○ not started | TechRuleEditor declared; no dialog |
+| J6 | Layer purpose pair management (GUI) | ○ not started | DbLayer has purpose field; no editor |
+| J7 | Hotkey/macro configuration UI | ○ not started | HotkeyConfig declared; no UI |
+| J8 | Startup wizard (new project/PDK) | ○ not started | StartupSelection struct; no wizard dialog |
+| J9 | Status/progress system | ○ not started | ProgressReporter declared; never called |
+| J10 | Notification center | ○ not started | NotificationCenter declared; never called |
 
 ## Key Classes — Quick Reference
 
@@ -353,7 +309,7 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | `DesignHealthDashboard` | `core/DesignServices.h` | Summary stats for the working library |
 | `ProjectArchiver` | `core/DesignServices.h` | AURORA-AR-1 single-file project bundle |
 | `ScriptEngine` | `core/ScriptEngine.h` | MacroRecorder, ScriptedUI, BatchRunner |
-| `WorkspaceLayout`, `ThemeManager`, `DesignSearch`, `TechRuleEditor`, `HotkeyConfig`, `ProgressReporter`, `NotificationCenter` | `core/WorkspaceServices.h` | UI workflow services |
+| `WorkspaceLayout`, `ThemeManager`, `DesignSearch`, `TechRuleEditor`, `HotkeyConfig`, `ProgressReporter`, `NotificationCenter` | `core/WorkspaceServices.h` | UI workflow services (DECLARED ONLY, not wired) |
 
 ### Layout (`aurora_layout`)
 
@@ -374,7 +330,7 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 
 | Class | Header | Purpose |
 |-------|--------|---------|
-| `SchDocument` | `schematic/SchDocument.h` | Schematic view wrapper; owns SchWire list |
+| `SchDocument` | `schematic/SchDocument.h` | Schematic view wrapper; owns SchWire list (BROKEN: wires on separate nets) |
 | `SchEditorController` | `schematic/SchEditorController.h` | Grid management |
 | `SchSymbol` | `schematic/SchSymbol.h` | Symbol with pin IDs |
 | `SchWire` | `schematic/SchWire.h` | Wire segment list on a net |
@@ -387,18 +343,18 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | `SchematicViewWidget` | `ui/SchematicViewWidget.h` | Schematic canvas with zoom/pan/grid |
 | `LayoutViewWidget` | `ui/LayoutViewWidget.h` | Layout canvas with layer visibility |
 | `LayerPaletteWidget` | `ui/LayerPaletteWidget.h` | Layer list with color icons and visibility toggles |
-| `PropertyEditorWidget` | `ui/PropertyEditorWidget.h` | Object property form |
+| `PropertyEditorWidget` | `ui/PropertyEditorWidget.h` | Object property form (NEVER POPULATED) |
 
 ## Python Package (`python/aurora/`)
 
 ```
 aurora/
   __init__.py
-  batch.py          # I7 — `python -m aurora.batch <script.py>`
+  batch.py          # I7 — batch script runner (untested)
   console.py        # I1 — embeddable interactive REPL
-  custom_rules.py   # I5/I6 — register_drc_rule(), register_analysis()
-  macro.py          # I3 — MacroRecorder (pure-Python)
-  ui_callbacks.py   # I4 — @register("Label", hotkey=…) decorator
+  custom_rules.py   # I5/I6 — registration API (not wired)
+  macro.py          # I3 — MacroRecorder (same fake state as C++ side)
+  ui_callbacks.py   # I4 — @register decorator (not wired)
   pdk/
     pcell_base.py   # PcellBase ABC
     registry.py     # register_pcell / get_pcell
@@ -424,3 +380,6 @@ aurora/
 - Qt `Q_OBJECT` classes must be in the target listed under `CMAKE_AUTOMOC`.
 - The `aurora_core` include root is `src/` (set via `target_include_directories`),
   so use `#include "db/DbView.h"`, not `#include "DbView.h"`.
+- **Undo is completely fake** — pushes string "state", restores nothing.
+- **Wire tool creates new net per segment** — cannot draw connected wires.
+- **Pin labels are at garbage coordinates** — `mpin->id() * 3000`.
