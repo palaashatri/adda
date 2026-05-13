@@ -21,3 +21,14 @@ def get_pcell(name: str) -> Type[PcellBase]:
 
 def registered_pcells() -> dict[str, Type[PcellBase]]:
     return dict(_PCELLS)
+
+
+def get_all_pcells() -> list[tuple[str, str, str]]:
+    """Return list of (name, module_path, class_name) for all registered PCells.
+
+    Used by the C++ PythonPcellBridge to discover and invoke Python PCells.
+    """
+    result: list[tuple[str, str, str]] = []
+    for name, cls in _PCELLS.items():
+        result.append((name, cls.__module__, cls.__qualname__))
+    return result

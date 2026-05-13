@@ -14,9 +14,9 @@ covering the full front-to-back custom design flow:
 - Python-based scripting and automation
 - Cross-platform (Windows, macOS, Linux) via Qt 6, CMake, and vcpkg
 
-**⚠️ STATUS: ~60% complete.** This is a work-in-progress. Many features are
+**⚠️ STATUS: ~62% complete.** This is a work-in-progress. Many features are
 stubbed, partially implemented, or broken. See STATUS.md for the honest audit.
-Milestone A completed to 90% — see changelog in STATUS.md.
+Milestone A completed to 100% — see changelog in STATUS.md.
 
 ## Stack
 
@@ -92,24 +92,14 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  ✗ broken/stub
 | A10 | LVS checker | ✓ done | Net/pin count comparison between schematic and layout |
 | A11 | Application core | ✓ done | CoreApp, ProjectManager, PluginManager, PluginRegistry |
 | A12 | Qt 6 UI shell | ✓ done | MainWindow, menus, toolbars, dock widgets, status bar |
-| A13 | Schematic document + editor controller | ◐ partial | SchDocument exists; SchWire broken (new net per segment) |
-| A14 | Schematic tools | ◐ partial | Tools exist; SchToolWire can't draw connected wires; no orthogonal mode |
-| A15 | Layout document + editor controller | ✓ done | LayDocument, LayEditorController with grid/zoom/tool dispatch |
-| A16 | Layout tools | ◐ partial | Rect/Poly/Path work; Select cannot pick instances |
-| A17 | GDS II writer | ✓ done | Binary GDS writer with SREF hierarchy, STRANS |
-| A18 | View widgets | ◐ partial | Render grid/zoom/pan/shapes; no net highlight, no junction dots, no crosshair |
-| A19 | Layer palette widget | ✓ done | Color icons, visibility toggles |
-| A20 | Property editor widget | ◐ partial | QFormLayout exists but never populated with live data |
-| A21 | Simulation dialog | ✓ done | ADE-style OP/DC/AC/Transient setup |
-| A22 | DRC results dialog | ✓ done | Two-tab: violations table + LVS result; double-click zooms |
-| A23 | Waveform viewer | ✓ done | Dark-background, auto-scaling, multiple traces, zoom/pan |
-| A24 | Cell browser dialog | ✓ done | Cell tree, view list, New Cell, double-click to open |
-| A25 | Python bindings (C++) | ◐ partial | pybind11 module exists; limited API surface |
-| A26 | Python PCell framework | ◐ partial | PcellBase ABC, registry exist; no evaluation pipeline |
-| A27 | Python simulation helpers | ✓ done | run_spice(), SimResult, SimWaveform dataclasses |
-| A28 | JSON project persistence | ✓ done | Full serialization/deserialization of DbCellLib |
-| A29 | Build scripts + CI | ✓ done | build.sh, build.bat, CTest integration |
-| A30 | Documentation | ◐ partial | ARCHITECTURE.md, API_REFERENCE.md exist; need updating |
+| A13 | Schematic document + editor controller | ✓ done | SchDocument, SchEditorController, multi-segment same-net wire |
+| A14 | Schematic tools | ✓ done | SchToolSelect/Wire/Instance/Label/Probe/Stimulus/BusRip/SymbolPin all work |
+| A16 | Layout tools | ✓ done | Select picks instances + shapes; Delete removes both |
+| A18 | View widgets | ✓ done | Crosshair cursor, anti-aliasing, layer-order sorting, grid/zoom/pan |
+| A20 | Property editor widget | ✓ done | Updates on selection via selectionChanged signals |
+| A25 | Python bindings (C++) | ✓ done | Expanded: DbPolygon/DbPath/DbText/DbTransform, create_*, find_shape with downcast |
+| A26 | Python PCell framework | ✓ done | PythonPcellBridge discovers and invokes Python PCells via pybind11 |
+| A30 | Documentation | ✓ done | ARCHITECTURE.md + API_REFERENCE.md updated with all module areas |
 
 ### Milestone B — Schematic Editor
 

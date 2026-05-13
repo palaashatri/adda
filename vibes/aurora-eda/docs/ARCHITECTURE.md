@@ -7,16 +7,30 @@ front ends.
 
 `aurora_core` owns application lifecycle, project management, plugin loading,
 geometry primitives, technology metadata, native database objects, and netlist
-entry points. The current implementation provides the initial skeleton:
+entry points. Current modules:
 
-- `CoreApp` initializes/shuts down the application and owns managers.
-- `ProjectManager` creates/opens/saves directory-based projects.
-- `PluginManager` loads shared libraries and calls `aurora_register_plugin`.
-- `DbCellLib`, `DbCell`, `DbView`, instances, nets, pins, layers, constraints,
-  and shape classes provide the first ID-based database API.
-- `GeomOps` provides initial grid snapping, rectangle boolean operations, and
-  primitive width/spacing/enclosure checks.
-- `TechDatabase` parses structured `tech.json` files through `nlohmann_json`.
+- `CoreApp` — initializes/shuts down the application, owns managers.
+- `ProjectManager` — create/open/save directory-based projects; includes
+  JSON serialization via nlohmann_json.
+- `PluginManager` — load shared libraries, call `aurora_register_plugin`.
+- `DbCellLib`, `DbCell`, `DbView` — ID-based database: shapes, instances,
+  nets, pins, layers, constraints. Each object has a uint64_t ID; 0 = invalid.
+- `GeomOps` — grid snapping, rectangle boolean ops (union/intersection/diff),
+  Manhattan checks, width/spacing/enclosure checks.
+- `TechDatabase` — parses `tech.json` via nlohmann_json; provides layer rules,
+  GDS mapping, default widths/spacings.
+- `netlist/` — `NetlistGenerator` (SPICE .subckt), `SpiceImporter`, 
+  `VerilogGenerator/Importer`, `CdlGenerator`, `DspfGenerator`.
+- `sim/` — `SimRunner` (ngspice popen), `SimResult`, parametric sweep,
+  Monte Carlo, corner simulation.
+- `drc_lvs/` — `DrcEngine` (width/spacing/Manhattan), `LvsChecker`,
+  `ParasiticExtractor`, `ParasiticReducer`, `PercChecker`.
+- `pdk/` — `PcellDescriptor`/`PcellRegistry`, C++ PCells (`MosPcell`,
+  `PcellLibrary`), `Cdf` parameter system, `PcellEvalCache`, `PdkManager`.
+- `core/` — `LibraryManager` (multi-library, search paths, cds.lib),
+  `DesignServices` (hierarchy browser, archiver, health dashboard),
+  `ScriptEngine` (macro recorder, batch runner),
+  `WorkspaceServices` (theme, layout, search, hotkeys — declared only).
 
 ## Schematic And Layout
 

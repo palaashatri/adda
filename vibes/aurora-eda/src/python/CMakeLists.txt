@@ -3,7 +3,7 @@ if(AURORA_BUILD_PYTHON)
 endif()
 
 if(AURORA_BUILD_PYTHON AND pybind11_FOUND)
-  pybind11_add_module(aurora_python Bindings.cpp)
+  pybind11_add_module(aurora_python Bindings.cpp PythonPcellBridge.cpp)
   target_link_libraries(aurora_python PRIVATE aurora_core aurora_layout aurora_schematic)
   set_target_properties(aurora_python PROPERTIES OUTPUT_NAME aurora)
 else()

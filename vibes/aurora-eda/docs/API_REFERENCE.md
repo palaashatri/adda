@@ -4,29 +4,51 @@
 
 ### `aurora::core::CoreApp`
 
-- `initialize(pluginDirectory = {})`: initializes the app and optionally loads
-  plugins from a directory.
-- `shutdown()`: closes the current project and marks the app uninitialized.
+- `initialize(pluginDirectory = {})`: initializes the app, loads plugins.
+- `shutdown()`: closes the project, marks uninitialized.
 - `projects()`: returns the `ProjectManager`.
 - `plugins()`: returns the `PluginManager`.
+- `tech()`: returns the global `TechDatabase`.
 
 ### `aurora::core::ProjectManager`
 
-- `createProject(path)`: creates `libraries/`, `pdk/`, and `config/` under a
-  project directory and writes `config/project.json`.
-- `openProject(path)`: opens an existing directory-based project.
-- `workingLibrary()`: returns the in-memory working `DbCellLib`.
+- `createProject(path)`: creates project directory structure + manifest.
+- `openProject(path)`: loads a directory-based project with design.json.
+- `saveProject()`: serializes working library + manifest.
+- `workingLibrary()`: returns the in-memory `DbCellLib`.
+- `addLibrarySearchPath(path)`: adds a library search path.
 
 ### `aurora::core::PluginManager`
 
-- `loadPlugin(path)`: dynamically loads a shared library and calls
-  `aurora_register_plugin`.
-- `loadPluginsFromDirectory(path)`: attempts to load every regular file in a
-  directory as a plugin.
+- `loadPlugin(path)`: loads a shared library plugin.
+- `loadPluginsFromDirectory(path)`: loads all regular files as plugins.
+- `registeredPlugins()`: returns list of loaded plugin descriptors.
+
+### `aurora::core::LibraryManager`
+
+- `addSearchPath(path)`: adds library search path.
+- `attachLibrary(path)`: attaches a library by path.
+- `detachLibrary(name)`: detaches a library.
+- `setTechFile(path)`: associates a tech file with the library.
+- `readCdsLib(path)`: reads cds.lib format.
+- `diffSnapshots(a, b)`: line-diff between two cell-lib JSON snapshots.
+
+### `aurora::core::DesignServices`
+
+- `HierarchyBrowser::build(lib)`: builds a hierarchy tree from the library.
+- `ProjectArchiver::archive(project, outputPath)`: creates AURORA-AR-1 bundle.
+- `DesignHealthDashboard::compile(lib)`: cell count, warnings, errors summary.
+
+### `aurora::core::ScriptEngine`
+
+- `MacroRecorder`: records actions as Python strings.
+- `ScriptedUiRegistry`: registers Python callbacks for menu/toolbar items.
+- `CustomRuleRegistry`: registers Python DRC rules and simulation analyses.
+- `BatchRunner`: runs a Python script in headless mode.
 
 ## Database
 
-All database objects use integer IDs. `0` is reserved as `kInvalidId`.
+All database objects use integer IDs (`uint64_t`). `0` is reserved as `kInvalidId`.
 
 ### `DbCellLib`
 
@@ -94,3 +116,47 @@ The pure-Python PCell API starts with:
 - `aurora.pdk.PcellBase`
 - `aurora.pdk.register_pcell(name, cls)`
 - `aurora.pdk.get_pcell(name)`
+- `aurora.pdk.registry.get_all_pcells()` — returns list of (name, module, class)
+  for C++ bridge discovery.
+
+### PythonPcellBridge (C++, requires pybind11)
+
+- `makePythonPcellGenerator(modulePath, className)` — creates a PcellGenerator
+  from a Python PCell class.
+- `registerPythonPcells(registry)` — discovers all registered Python PCells
+  and registers them with the C++ PcellRegistry.
+
+## Simulation
+
+### `SimRunner`
+
+- `writeSpiceNetlist(lib, cell, view)`: writes the SPICE file for ngspice.
+- `run()`: spawns ngspice via popen, parses output.
+- `result()`: returns `SimResult` with waveforms and DC op-point map.
+- `runSweep(lib, cell, view, paramName, values)`: parametric sweep over values.
+- `runMonteCarlo(lib, cell, view, dist, params, n)`: N runs with Gaussian/uniform.
+- `runCorners(lib, cell, view, temps, vdds)`: temperature/VDD corner matrix.
+
+### `SimResult`
+
+- `waveforms`: vector of `SimWaveform` (name, time[], values[]).
+- `dcOperatingPoint`: map of node name → voltage.
+
+## DRC / LVS
+
+### `DrcEngine`
+
+- `run(view, lib, options={})`: runs width, spacing, Manhattan, antenna,
+  density, and ERC checks against TechDatabase rules.
+- Returns `std::vector<DrcViolation>`.
+
+### `LvsChecker`
+
+- `compare(schematicView, layoutView, lib)`: compares net names, pin counts,
+  and device counts. Returns `LvsResult` with `matched` flag and error messages.
+
+### `ParasiticExtractor` / `ParasiticReducer` / `PercChecker`
+
+- Per-layer coupling C + wire R extraction (ParasiticExtractor).
+- Pi/T/Lumped model reduction (ParasiticReducer).
+- IR drop, current density, missing net detection (PercChecker).

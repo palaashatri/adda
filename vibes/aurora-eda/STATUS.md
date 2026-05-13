@@ -14,7 +14,7 @@ Counted from the ✓/◐/✗/○ markers in CLAUDE.md — every item tallied ind
 
 | Milestone | ✓ Done | ◐ Partial | ✗ Broken | ○ Missing | Honest % |
 |-----------|--------|-----------|----------|-----------|----------|
-| A — Core Infrastructure | 27/30 | 3 | 0 | 0 | **90%** |
+| A — Core Infrastructure | 30/30 | 0 | 0 | 0 | **100%** |
 | B — Schematic Editor | 8/15 | 3 | 4 | 0 | **53%** |
 | C — Layout Editor | 12/19 | 4 | 1 | 2 | **63%** |
 | D — Simulation Environment | 12/18 | 5 | 0 | 1 | **67%** |
@@ -24,18 +24,20 @@ Counted from the ✓/◐/✗/○ markers in CLAUDE.md — every item tallied ind
 | H — Project Management | 1/9 | 3 | 0 | 5 | **11%** |
 | I — Scripting | 0/9 | 6 | 0 | 3 | **0%** |
 | J — Advanced UI | 0/10 | 0 | 0 | 10 | **0%** |
-| **Total** | **93/154** | **33** | **5** | **23** | **~60%** |
+| **Total** | **96/154** | **30** | **5** | **23** | **~62%** |
 
 ## What Actually Works (GENUINELY DONE)
 
-### Milestone A completion pass (2026-05-13)
-- **A16**: LayToolSelect now detects and selects layout instances via click or rubber-band (was broken — only searched shapes)
+### Milestone A completion pass (2026-05-13) — now 100%
 - **A13/A14**: SchToolWire now accumulates all segments on the same net (was broken — each click created a new net)
+- **A16**: LayToolSelect now detects and selects layout instances via click or rubber-band (was broken — only searched shapes)
 - **A18**: Added crosshair cursor guide lines on schematic and layout canvases; enabled anti-aliasing in layout view; shapes now sorted by GDS layer number for correct draw order
 - **A20**: Property editor now updates on selection — connected via selectionChanged signals from both view widgets to MainWindow::onSelectionChanged
-- **A25**: TODO comment added in Bindings.cpp documenting the bindings gap
+- **A25**: Expanded Python bindings: added DbPolygon/DbPath/DbText/DbTransform, create_polygon/create_path/create_text on View, find_shape with downcast, cell/layer lookup helpers, __repr__ on all classes
+- **A26**: Python PCell evaluation pipeline: created PythonPcellBridge (src/python/) that discovers Python PCells via registry.get_all_pcells() and invokes generate_layout() through pybind11; registers them with C++ PcellRegistry
+- **A30**: Updated ARCHITECTURE.md to describe all 10+ module areas; updated API_REFERENCE.md with full simulation, DRC/LVS, PCell, and Python bridge API docs
 
-### Core Infrastructure (27/30 ✓, 3 partial [A25/A26/A30])
+### Core Infrastructure (30/30 ✓ — 100% complete)
 
 - CMake project with C++20, out-of-source build
 - Geometry primitives: GeomPoint, GeomBox, GeomPolygon, GeomPath

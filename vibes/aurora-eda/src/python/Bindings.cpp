@@ -15,15 +15,26 @@
 #include "netlist/NetlistGenerator.h"
 #include "tech/TechDatabase.h"
 
-// TODO(A25): Expand Python bindings to cover DbView, DbShape, SchDocument,
-// LayDocument, and other key classes. Currently only exposes basic create_*
-// helpers. A full API would bind shape iteration, instance traversal, net
-// queries, and tool operations so scripts can drive the EDA programmatically.
-
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 namespace py = pybind11;
+
+// ── Helper: downcast a DbShape to its concrete type ───────────────────────────
+static py::object shapeToPython(aurora::db::DbShape& s) {
+  switch (s.kind()) {
+    case aurora::db::DbShapeKind::Rect:
+      return py::cast(static_cast<aurora::db::DbRect&>(s));
+    case aurora::db::DbShapeKind::Polygon:
+      return py::cast(static_cast<aurora::db::DbPolygon&>(s));
+    case aurora::db::DbShapeKind::Path:
+      return py::cast(static_cast<aurora::db::DbPath&>(s));
+    case aurora::db::DbShapeKind::Text:
+      return py::cast(static_cast<aurora::db::DbText&>(s));
+    default:
+      return py::cast(s);
+  }
+}
 
 PYBIND11_MODULE(aurora, m) {
   m.doc() = "aurora-eda Python bindings";
@@ -62,6 +73,14 @@ PYBIND11_MODULE(aurora, m) {
                std::to_string(b.right()) + ", " + std::to_string(b.top()) + ")";
       });
 
+  py::class_<aurora::geom::GeomPolygon>(m, "Polygon")
+      .def(py::init<>())
+      .def("add_point", &aurora::geom::GeomPolygon::addPoint)
+      .def_property_readonly("points", [](const aurora::geom::GeomPolygon& p) {
+        return std::vector<aurora::geom::GeomPoint>(p.points().begin(), p.points().end());
+      })
+      .def("bounding_box", &aurora::geom::GeomPolygon::boundingBox);
+
   // ── Enumerations ──────────────────────────────────────────────────────────
 
   py::enum_<aurora::db::DbViewType>(m, "ViewType")
@@ -88,6 +107,16 @@ PYBIND11_MODULE(aurora, m) {
       .export_values();
 
   // ── Database objects ──────────────────────────────────────────────────────
+
+  py::class_<aurora::db::DbTransform>(m, "Transform")
+      .def(py::init<>())
+      .def_readwrite("dx", &aurora::db::DbTransform::dx)
+      .def_readwrite("dy", &aurora::db::DbTransform::dy)
+      .def_readwrite("rotation_degrees", &aurora::db::DbTransform::rotationDegrees)
+      .def_readwrite("mirror_x", &aurora::db::DbTransform::mirrorX)
+      .def("__repr__", [](const aurora::db::DbTransform& t) {
+        return "Transform(" + std::to_string(t.dx) + ", " + std::to_string(t.dy) + ")";
+      });
 
   py::class_<aurora::db::DbLayer>(m, "Layer")
       .def_property_readonly("id", &aurora::db::DbLayer::id)
@@ -121,9 +150,13 @@ PYBIND11_MODULE(aurora, m) {
       .def_property("name", &aurora::db::DbInstance::name, &aurora::db::DbInstance::setName)
       .def_property("master_cell_id", &aurora::db::DbInstance::masterCellId,
                     &aurora::db::DbInstance::setMasterCellId)
+      .def_property_readonly("transform", &aurora::db::DbInstance::transform)
       .def("set_parameter", &aurora::db::DbInstance::setParameter, py::arg("name"),
            py::arg("value"))
-      .def_property_readonly("parameters", &aurora::db::DbInstance::parameters);
+      .def_property_readonly("parameters", &aurora::db::DbInstance::parameters)
+      .def("__repr__", [](const aurora::db::DbInstance& i) {
+        return "Instance(" + i.name() + ")";
+      });
 
   py::class_<aurora::db::DbShape>(m, "Shape")
       .def_property_readonly("id", &aurora::db::DbShape::id)
@@ -132,7 +165,23 @@ PYBIND11_MODULE(aurora, m) {
 
   py::class_<aurora::db::DbRect, aurora::db::DbShape>(m, "Rect")
       .def_property_readonly("box", &aurora::db::DbRect::box)
-      .def("set_box", &aurora::db::DbRect::setBox);
+      .def("set_box", &aurora::db::DbRect::setBox)
+      .def("__repr__", [](const aurora::db::DbRect& r) {
+        const auto& b = r.box();
+        return "Rect(layer=" + std::to_string(r.layerId()) + " box=" +
+               std::to_string(b.left()) + "," + std::to_string(b.bottom()) + "," +
+               std::to_string(b.right()) + "," + std::to_string(b.top()) + ")";
+      });
+
+  py::class_<aurora::db::DbPolygon, aurora::db::DbShape>(m, "DbPolygon")
+      .def_property_readonly("polygon", &aurora::db::DbPolygon::polygon);
+
+  py::class_<aurora::db::DbPath, aurora::db::DbShape>(m, "DbPath")
+      .def_property_readonly("path", &aurora::db::DbPath::path);
+
+  py::class_<aurora::db::DbText, aurora::db::DbShape>(m, "DbText")
+      .def_property_readonly("text", &aurora::db::DbText::text)
+      .def_property_readonly("origin", &aurora::db::DbText::origin);
 
   py::class_<aurora::db::DbView>(m, "View")
       .def_property_readonly("id", &aurora::db::DbView::id)
@@ -143,6 +192,28 @@ PYBIND11_MODULE(aurora, m) {
               aurora::geom::DbUnit b, aurora::geom::DbUnit r, aurora::geom::DbUnit t)
                -> aurora::db::DbRect& {
              return v.createRect(layerId, aurora::geom::GeomBox{l, b, r, t});
+           },
+           py::return_value_policy::reference)
+      .def("create_polygon",
+           [](aurora::db::DbView& v, aurora::db::DbId layerId,
+              std::vector<aurora::geom::GeomPoint> pts) -> aurora::db::DbPolygon& {
+             aurora::geom::GeomPolygon poly;
+             for (const auto& pt : pts) poly.addPoint(pt);
+             return v.createPolygon(layerId, poly);
+           },
+           py::return_value_policy::reference)
+      .def("create_path",
+           [](aurora::db::DbView& v, aurora::db::DbId layerId,
+              std::vector<aurora::geom::GeomPoint> pts,
+              aurora::geom::DbUnit width) -> aurora::db::DbPath& {
+             return v.createPath(layerId, aurora::geom::GeomPath{std::move(pts), width});
+           },
+           py::return_value_policy::reference)
+      .def("create_text",
+           [](aurora::db::DbView& v, aurora::db::DbId layerId,
+              aurora::geom::GeomPoint origin,
+              const std::string& text) -> aurora::db::DbText& {
+             return v.createText(layerId, origin, text);
            },
            py::return_value_policy::reference)
       .def("create_net", &aurora::db::DbView::createNet, py::return_value_policy::reference)
@@ -161,6 +232,11 @@ PYBIND11_MODULE(aurora, m) {
              return v.createInstance(name, masterCellId);
            },
            py::return_value_policy::reference)
+      .def("find_shape",
+           [](aurora::db::DbView& v, aurora::db::DbId id) -> py::object {
+             auto* s = v.findShape(id);
+             return s ? shapeToPython(*s) : py::none();
+           })
       .def("find_net", py::overload_cast<aurora::db::DbId>(&aurora::db::DbView::findNet),
            py::return_value_policy::reference)
       .def("find_pin", py::overload_cast<aurora::db::DbId>(&aurora::db::DbView::findPin),
@@ -173,10 +249,13 @@ PYBIND11_MODULE(aurora, m) {
              return v.findInstancePins(instanceId);
            },
            py::return_value_policy::reference)
-      .def("shape_ids", &aurora::db::DbView::shapeIds)
-      .def("net_ids", &aurora::db::DbView::netIds)
-      .def("pin_ids", &aurora::db::DbView::pinIds)
-      .def("instance_ids", &aurora::db::DbView::instanceIds);
+      .def_property_readonly("shape_ids", &aurora::db::DbView::shapeIds)
+      .def_property_readonly("net_ids", &aurora::db::DbView::netIds)
+      .def_property_readonly("pin_ids", &aurora::db::DbView::pinIds)
+      .def_property_readonly("instance_ids", &aurora::db::DbView::instanceIds)
+      .def("__repr__", [](const aurora::db::DbView& v) {
+        return "View(cell=" + std::to_string(v.cellId()) + " type=" + std::to_string((int)v.type()) + ")";
+      });
 
   py::class_<aurora::db::DbCell>(m, "Cell")
       .def_property("name", &aurora::db::DbCell::name, &aurora::db::DbCell::setName)
@@ -186,7 +265,15 @@ PYBIND11_MODULE(aurora, m) {
       .def("find_view",
            py::overload_cast<aurora::db::DbViewType>(&aurora::db::DbCell::findView),
            py::return_value_policy::reference)
-      .def("view_ids", &aurora::db::DbCell::viewIds);
+      .def("view_ids", &aurora::db::DbCell::viewIds)
+      .def("find_view_by_id",
+           [](aurora::db::DbCell& c, aurora::db::DbId vid) -> aurora::db::DbView* {
+             return c.findViewById(vid);
+           },
+           py::return_value_policy::reference)
+      .def("__repr__", [](const aurora::db::DbCell& c) {
+        return "Cell(" + c.name() + ")";
+      });
 
   py::class_<aurora::db::DbCellLib>(m, "CellLib")
       .def(py::init<std::string>())
@@ -197,9 +284,19 @@ PYBIND11_MODULE(aurora, m) {
              return lib.findCell(name);
            },
            py::return_value_policy::reference)
+      .def("find_cell_by_id", &aurora::db::DbCellLib::findCellById,
+           py::return_value_policy::reference)
+      .def("find_layer",
+           [](aurora::db::DbCellLib& lib, const std::string& name) {
+             return lib.findLayer(name);
+           },
+           py::return_value_policy::reference)
       .def("create_layer", &aurora::db::DbCellLib::createLayer, py::return_value_policy::reference)
-      .def("cell_ids", &aurora::db::DbCellLib::cellIds)
-      .def("layer_ids", &aurora::db::DbCellLib::layerIds);
+      .def_property_readonly("cell_ids", &aurora::db::DbCellLib::cellIds)
+      .def_property_readonly("layer_ids", &aurora::db::DbCellLib::layerIds)
+      .def("__repr__", [](const aurora::db::DbCellLib& l) {
+        return "CellLib(" + l.name() + ")";
+      });
 
   // ── Technology ────────────────────────────────────────────────────────────
 
@@ -237,7 +334,7 @@ PYBIND11_MODULE(aurora, m) {
            py::return_value_policy::reference)
       .def("find_layer_by_id", &aurora::tech::TechDatabase::findLayerById,
            py::return_value_policy::reference)
-      .def("layer_ids", &aurora::tech::TechDatabase::layerIds)
+      .def_property_readonly("layer_ids", &aurora::tech::TechDatabase::layerIds)
       .def("rules", &aurora::tech::TechDatabase::rules,
            py::return_value_policy::reference_internal)
       .def("default_width_for_layer",
