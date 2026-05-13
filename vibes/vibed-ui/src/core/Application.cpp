@@ -3,6 +3,9 @@
 
 #include "Application.h"
 
+#include <chrono>
+#include <thread>
+
 #include "Event.h"
 #include "Logger.h"
 #include "platform/Platform.h"
@@ -51,13 +54,21 @@ void Application::run() {
             break;
         }
 
-        // TODO: Rendering.
+        if (frameCallback) {
+            frameCallback();
+        } else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        }
     }
 }
 
 void Application::setWindowSize(int w, int h) {
-    windowWidth = w;
+    windowWidth  = w;
     windowHeight = h;
+}
+
+void Application::setFrameCallback(std::function<void()> cb) {
+    frameCallback = std::move(cb);
 }
 
 void Application::shutdown() {

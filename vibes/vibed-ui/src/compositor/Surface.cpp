@@ -6,7 +6,7 @@
 namespace compositor {
 
 Surface::Surface(int width, int height)
-    : w(width), h(height) {}
+    : w(width), h(height), surfaceRenderer(width, height) {}
 
 Surface::~Surface() {}
 
@@ -41,6 +41,18 @@ bool Surface::isVisible() const {
 
 bool Surface::containsPoint(int px, int py) const {
     return px >= posX && py >= posY && px < (posX + w) && py < (posY + h);
+}
+
+render::SoftwareRenderer& Surface::renderer() {
+    return surfaceRenderer;
+}
+
+const uint8_t* Surface::buffer() const {
+    return surfaceRenderer.buffer();
+}
+
+void Surface::clear(uint32_t color) {
+    surfaceRenderer.clear(color);
 }
 
 } // namespace compositor

@@ -1,5 +1,6 @@
 #include "core/CoreApp.h"
 #include "pdk/MosPcell.h"
+#include "pdk/PcellLibrary.h"
 
 namespace aurora::core {
 
@@ -14,6 +15,7 @@ bool CoreApp::initialize(const std::filesystem::path& pluginDirectory) {
 
   // Register built-in PCells
   pdk::registerMosPcells(pcellRegistry_);
+  pdk::registerPcellLibrary(pcellRegistry_);
 
   initialized_ = true;
   return initialized_;

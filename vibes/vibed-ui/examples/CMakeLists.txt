@@ -21,3 +21,20 @@ target_include_directories(demo_button_lab PRIVATE ${CMAKE_SOURCE_DIR}/src)
 add_executable(demo_shell_preview demo_shell_preview.cpp)
 target_link_libraries(demo_shell_preview PRIVATE shell)
 target_include_directories(demo_shell_preview PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+add_executable(demo_file_manager demo_file_manager.cpp)
+target_link_libraries(demo_file_manager PRIVATE core ui render)
+target_include_directories(demo_file_manager PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+# On Windows with MSVC, suppress the console window so only the GUI window appears.
+# /ENTRY:mainCRTStartup keeps standard main() while switching to SUBSYSTEM:WINDOWS.
+if(MSVC)
+    set(DEMO_TARGETS
+        demo_basic demo_controls demo_text_editor
+        demo_event_inspector demo_button_lab demo_shell_preview
+        demo_file_manager
+    )
+    foreach(tgt ${DEMO_TARGETS})
+        target_link_options(${tgt} PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
+    endforeach()
+endif()

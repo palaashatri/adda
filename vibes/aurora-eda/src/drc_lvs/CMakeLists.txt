@@ -4,6 +4,8 @@ target_sources(
     DrcEngine.cpp
     LvsChecker.cpp
     ParasiticExtractor.cpp
+    ParasiticReducer.cpp
+    PercChecker.cpp
   PUBLIC
     FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/..
@@ -12,4 +14,6 @@ target_sources(
       DrcEngine.h
       LvsChecker.h
       ParasiticExtractor.h
+      ParasiticReducer.h
+      PercChecker.h
 )

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug)",
+      "Bash(exist build *)",
+      "PowerShell(Get-ChildItem 'C:\\\\Users\\\\Palaash Atri\\\\.claude\\\\projects\\\\C--Users-Palaash-Atri-code-adda\\\\memory\\\\' -ErrorAction SilentlyContinue | Select-Object Name; if \\(-not \\(Test-Path 'C:\\\\Users\\\\Palaash Atri\\\\.claude\\\\projects\\\\C--Users-Palaash-Atri-code-adda\\\\memory\\\\'\\)\\) { \"Directory does not exist\" } else { \"Directory exists \\(possibly empty\\)\" })",
+      "PowerShell($demo = Start-Process -FilePath \"C:\\\\Users\\\\Palaash Atri\\\\code\\\\adda\\\\vibes\\\\vibed-ui\\\\build\\\\examples\\\\Release\\\\demo_basic.exe\" -PassThru; Start-Sleep -Milliseconds 1500; $alive = !$demo.HasExited; $exitCode = if \\($demo.HasExited\\) { $demo.ExitCode } else { \"still running\" }; Write-Host \"Alive: $alive | Exit: $exitCode\"; if \\(!$demo.HasExited\\) { $demo.Kill\\(\\) })",
+      "Bash(cmake --build build/windows/Release --config Release)",
+      "Bash(cmake --build build --config Release)",
+      "Bash(cmake -B build -G \"Visual Studio 17 2022\" -A x64)",
+      "Bash(findstr \"CMAKE_GENERATOR_PLATFORM\")",
+      "Bash(cmake -B build -G \"Visual Studio 17 2022\")",
+      "Bash(cmake --build build --config Release --target demo_file_manager)"
+    ]
+  }
+}

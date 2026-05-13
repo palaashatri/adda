@@ -4,13 +4,20 @@ add_library(aurora::layout ALIAS aurora_layout)
 target_sources(
   aurora_layout
   PRIVATE
+    ImportWizard.cpp
+    LayCifIo.cpp
     LayDocument.cpp
+    LayDxfWriter.cpp
     LayEditorController.cpp
     LayDefReader.cpp
     LayGdsReader.cpp
     LayDefWriter.cpp
     LayGdsWriter.cpp
+    LayImageExport.cpp
+    LayLefReader.cpp
     LayLefWriter.cpp
+    LayOasisReader.cpp
+    LayOasisWriter.cpp
     LayTool.cpp
     LayToolGuardRing.cpp
     LayToolPath.cpp
@@ -25,13 +32,20 @@ target_sources(
     FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/..
     FILES
+      ImportWizard.h
+      LayCifIo.h
       LayDocument.h
+      LayDxfWriter.h
       LayEditorController.h
       LayDefReader.h
       LayGdsReader.h
       LayDefWriter.h
       LayGdsWriter.h
+      LayImageExport.h
+      LayLefReader.h
       LayLefWriter.h
+      LayOasisReader.h
+      LayOasisWriter.h
       LayTool.h
       LayToolGuardRing.h
       LayToolPath.h

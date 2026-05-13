@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Palaash
 
 #include <chrono>
+#include <cstdio>
 #include <memory>
 #include <string>
 #include <thread>
@@ -67,14 +68,18 @@ int main() {
 
     std::string editorText = "Welcome to the vibed-ui editor. Type to append text.";
     bool dirty = false;
+    bool cursorVisible = true;
+    int frameTick = 0;
 
     auto refreshUi = [&]() {
         const std::string preview = clampEditorText(editorText, 170);
-        editorTextLabel->setText(preview);
+        editorTextLabel->setText(preview + (cursorVisible ? "|" : " "));
 
         const std::string status = dirty
-            ? "Status: Modified | Chars: " + std::to_string(editorText.size())
-            : "Status: Saved | Chars: " + std::to_string(editorText.size());
+            ? "Modified  |  Chars: " + std::to_string(editorText.size()) +
+              "  |  Backspace/Del to erase  |  Save writes editor_output.txt"
+            : "Ready     |  Chars: " + std::to_string(editorText.size()) +
+              "  |  Type to edit";
         statusLabel->setText(status);
     };
 
@@ -85,9 +90,20 @@ int main() {
     });
 
     saveButton->setOnClick([&]() {
-        // TODO: Persist editor buffer to a file in the project workspace.
-        dirty = false;
-        statusLabel->setText("Status: Save requested (stub)");
+        FILE* fp = nullptr;
+#if defined(_MSC_VER)
+        fopen_s(&fp, "editor_output.txt", "w");
+#else
+        fp = std::fopen("editor_output.txt", "w");
+#endif
+        if (fp != nullptr) {
+            std::fwrite(editorText.c_str(), 1, editorText.size(), fp);
+            std::fclose(fp);
+            dirty = false;
+            statusLabel->setText("Status: Saved to editor_output.txt | Chars: " + std::to_string(editorText.size()));
+        } else {
+            statusLabel->setText("Status: Save failed - check write permissions");
+        }
     });
 
     editorFrame->addChild(editorTextLabel);
@@ -121,7 +137,8 @@ int main() {
             if (event.type == core::EventType::KeyDown) {
                 const int inputCode = event.textCode != 0 ? event.textCode : event.keyCode;
 
-                if (inputCode == 8 || inputCode == 127) {
+                if (inputCode == 8 || inputCode == 127 || inputCode == 46) {
+                    // 8 = backspace (WM_CHAR), 127 = Unix DEL, 46 = VK_DELETE
                     if (!editorText.empty()) {
                         editorText.pop_back();
                         dirty = true;
@@ -144,6 +161,14 @@ int main() {
                     refreshUi();
                 }
             }
+        }
+
+        // Toggle cursor visibility every 30 frames (~0.5 s at 60 fps).
+        ++frameTick;
+        if (frameTick >= 30) {
+            frameTick = 0;
+            cursorVisible = !cursorVisible;
+            refreshUi();
         }
 
         renderer.clear(0xFF101010U);

@@ -5,43 +5,29 @@
 
 namespace render {
 
-ModernRenderer::ModernRenderer() {}
+ModernRenderer::ModernRenderer(int width, int height)
+    : delegate(width, height) {}
 
 ModernRenderer::~ModernRenderer() {}
 
 void ModernRenderer::clear(uint32_t color) {
-    (void)color;
-    // TODO: Implement modern renderer clear path.
+    delegate.clear(color);
 }
 
 void ModernRenderer::drawRect(int x, int y, int w, int h, uint32_t color) {
-    (void)x;
-    (void)y;
-    (void)w;
-    (void)h;
-    (void)color;
-    // TODO: Implement modern renderer rectangle path.
+    delegate.drawRect(x, y, w, h, color);
 }
 
 void ModernRenderer::drawRoundedRect(int x, int y, int w, int h, int radius, uint32_t color) {
-    (void)x;
-    (void)y;
-    (void)w;
-    (void)h;
-    (void)radius;
-    (void)color;
-    // TODO: Implement modern renderer rounded rectangle path.
+    delegate.drawRoundedRect(x, y, w, h, radius, color);
 }
 
 void ModernRenderer::drawText(int x, int y, const std::string& text) {
-    (void)x;
-    (void)y;
-    (void)text;
-    // TODO: Implement modern renderer text path.
+    delegate.drawText(x, y, text);
 }
 
 void ModernRenderer::present() {
-    // TODO: Implement modern renderer present path.
+    delegate.present();
 }
 
 } // namespace render

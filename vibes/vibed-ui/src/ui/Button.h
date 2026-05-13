@@ -22,6 +22,8 @@ public:
 private:
     std::string label;
     std::function<void()> onClick;
+    bool hovered = false;
+    bool pressed = false;
 };
 
 } // namespace ui

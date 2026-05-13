@@ -18,9 +18,19 @@ public:
     void pumpEvents() override;
     void blit(const uint8_t* buffer, int w, int h) override;
 
+    bool isHdrCapable() const override { return hdrCapable; }
+    int  displayRefreshRate() const override { return refreshRateHz; }
+    void waitForVSync() override;
+    void setHdrEnabled(bool enabled) override { hdrEnabled = enabled; }
+
 private:
-    HWND hwnd = nullptr;
-    HDC hdc = nullptr;
+    void detectDisplayCapabilities();
+
+    HWND hwnd        = nullptr;
+    HDC  hdc         = nullptr;
+    bool hdrCapable  = false;
+    bool hdrEnabled  = false;
+    int  refreshRateHz = 60;
 };
 
 } // namespace platform

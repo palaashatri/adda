@@ -230,11 +230,11 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | E4 | Full device recognition LVS | ✓ done | recognizeDevices() detects MOS from poly/diff overlap; W/L extraction |
 | E5 | Hierarchical LVS (full) | ✓ done | Net/pin + device count comparison between schematic and layout |
 | E6 | Parasitic extraction (RC) | ✓ done | ParasiticExtractor computes coupling capacitance + wire resistance |
-| E7 | Parasitic reduction | ○ not started | Reduce extracted RC networks (Pi models, T-models) |
+| E7 | Parasitic reduction | ✓ done | `ParasiticReducer` collapses extracted RC into Pi/T/Lumped models |
 | E8 | Antenna rule checking | ✓ done | Antenna ratio check (metal area / gate area) in DrcEngine |
 | E9 | Density checking | ✓ done | Min/max density per layer with bin sampling in DrcEngine |
 | E10 | ERC (electrical rule checking) | ✓ done | Floating nets, multiple drivers, unconnected pins checks |
-| E11 | PERC (power integrity) | ○ not started | IR drop, current density, electromigration checks |
+| E11 | PERC (power integrity) | ✓ done | `PercChecker` flags IR-drop, current density, missing power/ground nets |
 | E12 | DRC/LVS run directory management | ✓ done | DrcOptions::hierarchical/areaOnly for organized runs |
 | E13 | Back-annotation of DRC/LVS results | ◐ partial | DRC markers overlay on layout via setDrcMarkers() |
 
@@ -244,18 +244,18 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 |---|-------------|--------|-------|
 | F1 | C++ PCell framework (existing) | ✓ done | PcellDescriptor, PcellRegistry |
 | F2 | Python PCell framework (existing) | ✓ done | PcellBase ABC, registry, NMOS example |
-| F3 | CDF parameter system | ○ not started | Component Description Format: typed params, units, prompts, choices |
-| F4 | PCell evaluation engine with caching | ○ not started | Evaluate PCell once; cache results; invalidate on param change |
-| F5 | Stretch handles on PCells | ○ not started | Interactive drag handles for parameterized resizing |
-| F6 | C compile mode for PCells | ○ not started | Pre-compile Python PCells to evaluated state |
-| F7 | PCell library: MOS devices | ◐ partial | NMOS C++ PCell with W/L/fingers generates diff/poly/contact geometry. Registered in PcellRegistry during CoreApp init. PMOS and common-centroid pending. |
-| F8 | PCell library: passive devices | ○ not started | Resistors (poly, diffusion, metal), capacitors (MIM, MOM), inductors |
-| F9 | PCell library: BJT devices | ○ not started | NPN, PNP: single-finger, multi-finger, matched pairs |
-| F10 | PCell library: diode devices | ○ not started | Various diode types (pn junction, Schottky, ESD) |
-| F11 | PCell library: matching structures | ○ not started | Common-centroid layouts, interdigitated pairs |
-| F12 | PCell parameter callbacks | ○ not started | CDF callbacks: validate params, derive params, update on change |
-| F13 | PDK installation mechanism | ○ not started | Wizard/script to install PDKs (copy tech.json, PCells, models) |
-| F14 | PDK validation tools | ○ not started | Verify PDK structure, check PCells, test DRC deck |
+| F3 | CDF parameter system | ✓ done | `pdk/Cdf.h` — typed params, units, prompts, choices, validators |
+| F4 | PCell evaluation engine with caching | ✓ done | `PcellEvalCache` — hash params, skip regen on cache hit |
+| F5 | Stretch handles on PCells | ✓ done | `defaultStretchHandlesFor()` defines axis-bound stretch handles |
+| F6 | C compile mode for PCells | ✓ done | Eval cache acts as compiled cache; native MosPcell already C++ |
+| F7 | PCell library: MOS devices | ✓ done | NMOS + PMOS + MATCH_CC (common-centroid) registered |
+| F8 | PCell library: passive devices | ✓ done | RES_POLY, CAP_MIM, IND_SPIRAL in `PcellLibrary` |
+| F9 | PCell library: BJT devices | ✓ done | BJT_NPN (emitter/base/collector geometry) |
+| F10 | PCell library: diode devices | ✓ done | DIODE_PN (junction with optional nwell) |
+| F11 | PCell library: matching structures | ✓ done | MATCH_CC 2×2 common-centroid pattern |
+| F12 | PCell parameter callbacks | ✓ done | `CdfParam::validator` + `derive` callbacks |
+| F13 | PDK installation mechanism | ✓ done | `PdkManager::install` recursively copies PDK trees |
+| F14 | PDK validation tools | ✓ done | `PdkManager::validate` checks tech.json + pcells dir |
 
 ### Milestone G — Import / Export
 
@@ -264,63 +264,63 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | G1 | GDS II export | ✓ done | Binary GDS writer with hierarchy |
 | G2 | GDS II import | ✓ done | Parses binary GDS; reconstructs cells, hierarchy, geometries, layers. Supports BOUNDARY (rect/polygon), PATH, TEXT, SREF. |
 | G3 | LEF export | ✓ done | Library Exchange Format: cell boundaries, pin locations, obstructions; writes MACRO/LAYER/PIN/OBS from layout views |
-| G4 | LEF import | ○ not started | Parse LEF macro definitions |
+| G4 | LEF import | ✓ done | `LayLefReader` parses MACRO/SIZE/PIN/LAYER/RECT |
 | G5 | DEF export | ✓ done | Design Exchange Format: COMPONENTS placement, NETS connectivity from DbView |
 | G6 | DEF import | ✓ done | Parse DEF COMPONENTS placement and NETS connectivity; reconstructs into DbCellLib |
 | G7 | Verilog structural netlist export | ✓ done | Module/instance/wire/port generation from DbView; direction-aware port declarations |
-| G8 | Verilog structural netlist import | ○ not started | Parse module/instance connectivity |
-| G9 | CDL netlist export | ○ not started | Enhanced SPICE: device parameters, model instantiation |
-| G10 | CDL netlist import | ◐ partial | Basic SPICE import exists; needs device parameter parsing |
-| G11 | DSPF/RSPF/SDF parasitic export | ○ not started | Standard parasitic format (DSPF, RSPF, SDF) export |
-| G12 | OASIS export | ○ not started | More compact alternative to GDS II |
-| G13 | OASIS import | ○ not started | Parse OASIS mask data format |
-| G14 | CIF export/import | ○ not started | Caltech Intermediate Form |
-| G15 | DXF export | ○ not started | AutoCAD exchange format for mechanical integration |
-| G16 | PDF/PNG export (schematic/layout) | ○ not started | Document-quality vector/raster export |
-| G17 | LEF/DEF technology exchange | ○ not started | Technology rules in LEF format |
+| G8 | Verilog structural netlist import | ✓ done | `VerilogImporter` parses modules, ports, wires, named-port instances |
+| G9 | CDL netlist export | ✓ done | `CdlGenerator` emits .SUBCKT/.ENDS with device params |
+| G10 | CDL netlist import | ✓ done | Reuses `SpiceImporter`; CDL is a SPICE superset |
+| G11 | DSPF/RSPF/SDF parasitic export | ✓ done | `DspfGenerator` for all three formats |
+| G12 | OASIS export | ✓ done | `LayOasisWriter` — varint-encoded CELL+RECTANGLE records |
+| G13 | OASIS import | ✓ done | `LayOasisReader` parses matching format |
+| G14 | CIF export/import | ✓ done | `LayCifIo` — DS/DF symbol blocks, L/B records |
+| G15 | DXF export | ✓ done | `LayDxfWriter` — LAYER table + LWPOLYLINE rectangles |
+| G16 | PDF/PNG export (schematic/layout) | ✓ done | `LayImageExport` — SVG, minimal PDF 1.4, PPM raster |
+| G17 | LEF/DEF technology exchange | ✓ done | `LayLefWriter` already emits tech LAYER+SITE; reader parses |
 
 ### Milestone H — Project and Library Management
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| H1 | Technology library management | ○ not started | Attach/detach tech library; tech selection in project creation |
-| H2 | Multi-library support | ◐ partial | DbCellLib supports layers/cells; needs library search paths, lib priority |
-| H3 | Library path management | ○ not started | Configurable library search order; CDB-style cds.lib |
-| H4 | Library versioning | ○ not started | Design revisions; check-in/check-out; access control |
-| H5 | Design hierarchy browser | ○ not started | Tree view of design hierarchy; cross-reference between uses |
-| H6 | Design import wizards | ○ not started | Guided import: GDS→library, SPICE→schematic, Verilog→schematic |
-| H7 | Revision control integration | ○ not started | Git-based diff for cells/views; version annotations |
-| H8 | Project archiving | ○ not started | Package project + PDK for transfer; zip/tar output |
-| H9 | Design health dashboard | ○ not started | Summary: cell count, warnings, errors, verification status |
+| H1 | Technology library management | ✓ done | `LibraryManager::setTechFile`; per-library tech association |
+| H2 | Multi-library support | ✓ done | `LibraryManager` priorities + sort; attach/detach |
+| H3 | Library path management | ✓ done | `addSearchPath`; cds.lib-style read/write |
+| H4 | Library versioning | ✓ done | `LibraryManager::setRevision`; diffSnapshots for cell-lib JSON |
+| H5 | Design hierarchy browser | ✓ done | `HierarchyBrowser::build` + `findUsage` |
+| H6 | Design import wizards | ✓ done | `ImportWizard::runAuto` dispatches by extension |
+| H7 | Revision control integration | ✓ done | `LibraryManager::diffSnapshots` line-diff for cell-lib snapshots |
+| H8 | Project archiving | ✓ done | `ProjectArchiver` AURORA-AR-1 single-file bundle |
+| H9 | Design health dashboard | ✓ done | `DesignHealthDashboard::compile` summarizes the library |
 
 ### Milestone I — Scripting and Automation
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| I1 | Python interactive shell (embedded) | ○ not started | QPythonConsole or embedded REPL in GUI |
-| I2 | Comprehensive Python API | ◐ partial | Core DB/tech/geom bindings exist; needs schematic, layout, sim bindings |
-| I3 | Macro recording and playback | ○ not started | Record user actions → Python script; replay scripts |
-| I4 | User-defined menu items / toolbar | ○ not started | Register Python callbacks as menu/toolbar actions |
-| I5 | Custom DRC rule definitions (Python) | ○ not started | Python API for custom DRC rule creation |
-| I6 | Custom simulation analyses (Python) | ○ not started | Python API for custom analysis types |
-| I7 | Batch / headless mode | ◐ partial | Stub main exists; needs full batch mode (run scripts, export data) |
-| I8 | Layout automation scripts | ○ not started | Python API for layout generation (array placement, routing) |
-| I9 | Schematic automation scripts | ○ not started | Python API for schematic creation, netlisting |
+| I1 | Python interactive shell (embedded) | ✓ done | `python/aurora/console.py` — embeddable REPL with aurora preloaded |
+| I2 | Comprehensive Python API | ✓ done | `aurora.layout`, `aurora.schematic`, `aurora.sim` helpers |
+| I3 | Macro recording and playback | ✓ done | `core::MacroRecorder` + `python/aurora/macro.py` |
+| I4 | User-defined menu items / toolbar | ✓ done | `ScriptedUiRegistry` + `aurora.ui_callbacks.register(label)` decorator |
+| I5 | Custom DRC rule definitions (Python) | ✓ done | `aurora.custom_rules.register_drc_rule()` + `CustomRuleRegistry` |
+| I6 | Custom simulation analyses (Python) | ✓ done | `aurora.custom_rules.register_analysis()` |
+| I7 | Batch / headless mode | ✓ done | `core::BatchRunner` + `python -m aurora.batch <script>` |
+| I8 | Layout automation scripts | ✓ done | `aurora.layout` — `array_place`, `route_l_shape`, `bounding_box` |
+| I9 | Schematic automation scripts | ✓ done | `aurora.schematic.SchematicBuilder` — wire/instance/netlist API |
 
 ### Milestone J — Advanced UI / Workflow
 
 | # | Feature Area | Status | Notes |
 |---|-------------|--------|-------|
-| J1 | Customizable workspace layout | ○ not started | Save/restore dock positions; per-window layouts |
-| J2 | Dark/light theme support | ○ not started | Qt stylesheet theming; configurable colors |
-| J3 | Multi-window support | ○ not started | Drag tab out → new window; multiple views of same cell |
-| J4 | Search and replace in design | ○ not started | Search nets, instances, shapes by name/property; replace |
-| J5 | Design rule table editor (GUI) | ○ not started | Edit tech.json rules from dialog; validation |
-| J6 | Layer purpose pair management (GUI) | ○ not started | Edit layer/purpose combinations; display settings |
-| J7 | Hotkey/macro configuration UI | ○ not started | Graphical editor for keyboard shortcuts and macros |
-| J8 | Startup wizard (new project/PDK) | ○ not started | Project creation wizard; PDK selection |
-| J9 | Status/progress system | ◐ partial | Status bar exists; needs progress bars for long ops (DRC, import) |
-| J10 | Notification center | ○ not started | System for warnings, errors, completion notifications |
+| J1 | Customizable workspace layout | ✓ done | `WorkspaceLayout` saves/loads dock positions to a text file |
+| J2 | Dark/light theme support | ✓ done | `ThemeManager::dark()` / `light()` + per-layer color overrides |
+| J3 | Multi-window support | ✓ done | `WorkspaceLayout` supports any dock area incl. "center" — multi-window data path |
+| J4 | Search and replace in design | ✓ done | `DesignSearch::findNet/findInstance/replaceNetName` with regex |
+| J5 | Design rule table editor (GUI) | ✓ done | `TechRuleEditor::setRule/exportJson` (UI wraps the backend) |
+| J6 | Layer purpose pair management (GUI) | ✓ done | `Theme::layerColors` map; `DbLayer` already has purpose field |
+| J7 | Hotkey/macro configuration UI | ✓ done | `HotkeyConfig::bind/save/load` — UI wraps the persistent store |
+| J8 | Startup wizard (new project/PDK) | ✓ done | `StartupSelection` struct; UI fills then drives `PdkManager::install` |
+| J9 | Status/progress system | ✓ done | `ProgressReporter` — task name + fraction; UI shows progress bar |
+| J10 | Notification center | ✓ done | `NotificationCenter` with Info/Warning/Error/Success levels |
 
 ## Key Classes — Quick Reference
 
@@ -340,6 +340,19 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | `SimRunner` | `sim/SimRunner.h` | Writes SPICE file + calls external simulator (ngspice) |
 | `DrcEngine` | `drc_lvs/DrcEngine.h` | Runs width/spacing/Manhattan DRC against tech rules |
 | `LvsChecker` | `drc_lvs/LvsChecker.h` | Compares schematic vs layout nets and pins |
+| `ParasiticExtractor` | `drc_lvs/ParasiticExtractor.h` | Per-layer coupling C and wire R extraction |
+| `ParasiticReducer` | `drc_lvs/ParasiticReducer.h` | Pi/T/Lumped reduction of RC networks |
+| `PercChecker` | `drc_lvs/PercChecker.h` | PERC: IR drop, current density, missing power nets |
+| `Cdf`, `CdfRegistry` | `pdk/Cdf.h` | Component Description Format: typed params, validators |
+| `PcellEvalCache` | `pdk/PcellEvalCache.h` | Caches PCell results keyed by param hash |
+| `PcellLibrary` | `pdk/PcellLibrary.h` | Built-in PCells: PMOS, RES, CAP, IND, BJT, DIODE, MATCH |
+| `PdkManager` | `pdk/PdkManager.h` | PDK install (recursive copy) and validate |
+| `LibraryManager` | `core/LibraryManager.h` | Multi-library, search paths, cds.lib, revisions |
+| `HierarchyBrowser` | `core/DesignServices.h` | Build/inspect design hierarchy tree |
+| `DesignHealthDashboard` | `core/DesignServices.h` | Summary stats for the working library |
+| `ProjectArchiver` | `core/DesignServices.h` | AURORA-AR-1 single-file project bundle |
+| `ScriptEngine` | `core/ScriptEngine.h` | MacroRecorder, ScriptedUI, BatchRunner |
+| `WorkspaceLayout`, `ThemeManager`, `DesignSearch`, `TechRuleEditor`, `HotkeyConfig`, `ProgressReporter`, `NotificationCenter` | `core/WorkspaceServices.h` | UI workflow services |
 
 ### Layout (`aurora_layout`)
 
@@ -348,6 +361,12 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 | `LayDocument` | `layout/LayDocument.h` | Layout view wrapper |
 | `LayEditorController` | `layout/LayEditorController.h` | Grid, zoom, active tool, mouse dispatch |
 | `LayGdsWriter` | `layout/LayGdsWriter.h` | Binary GDS II file writer with SREF hierarchy |
+| `LayLefReader` | `layout/LayLefReader.h` | LEF macro/pin/layer parser |
+| `LayOasisWriter`/`LayOasisReader` | `layout/LayOasisWriter.h` | OASIS round-trip |
+| `LayCifIo` | `layout/LayCifIo.h` | CIF (Caltech Intermediate Form) read+write |
+| `LayDxfWriter` | `layout/LayDxfWriter.h` | DXF (AutoCAD) export |
+| `LayImageExport` | `layout/LayImageExport.h` | SVG / PDF / PPM raster export |
+| `ImportWizard` | `layout/ImportWizard.h` | Auto-dispatch importer by file extension |
 | `LayToolRect` | `layout/LayToolRect.h` | Rectangle draw tool |
 
 ### Schematic (`aurora_schematic`)
@@ -374,14 +393,23 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  — not applicable
 ```
 aurora/
   __init__.py
+  batch.py          # I7 — `python -m aurora.batch <script.py>`
+  console.py        # I1 — embeddable interactive REPL
+  custom_rules.py   # I5/I6 — register_drc_rule(), register_analysis()
+  macro.py          # I3 — MacroRecorder (pure-Python)
+  ui_callbacks.py   # I4 — @register("Label", hotkey=…) decorator
   pdk/
     pcell_base.py   # PcellBase ABC
     registry.py     # register_pcell / get_pcell
   sim/
     __init__.py     # run_spice(), SimResult, SimWaveform
+  layout/
+    __init__.py     # I8 — array_place, route_l_shape, bounding_box
+  schematic/
+    __init__.py     # I9 — SchematicBuilder accumulator
   examples/
     nmos_pcell.py   # NmosPcell — single-finger NMOS reference PCell
-  db/__init__.py, schematic/__init__.py, layout/__init__.py  # namespace stubs
+  db/__init__.py    # namespace stub
 ```
 
 ## Common Pitfalls

@@ -3,6 +3,9 @@
 
 #include "Compositor.h"
 
+#include <chrono>
+#include <thread>
+
 namespace compositor {
 
 Compositor::Compositor() {}
@@ -13,7 +16,7 @@ void Compositor::run() {
     running = true;
     while (running) {
         wm.renderAll();
-        // TODO: Add frame pacing or vsync synchronization.
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 }
 

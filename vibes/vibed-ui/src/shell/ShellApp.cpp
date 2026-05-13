@@ -8,7 +8,6 @@
 
 #include "../core/Event.h"
 #include "../platform/Platform.h"
-#include "../render/legacy/SoftwareRenderer.h"
 
 namespace shell {
 
@@ -22,29 +21,32 @@ bool ShellApp::initialize() {
     }
 
     panel.setFrame(0, 0, 800, 40);
-    launcher.setFrame(0, 40, 220, 380);
+    launcher.setFrame(0, 0, 220, 380);
     panel.setBackgroundColor(0xFF222222U);
     launcher.setBackgroundColor(0xFF444444U);
 
+    // Background canvas for the desktop area behind panel and launcher.
     shellSurface = std::make_shared<compositor::Surface>(800, 600);
     shellSurface->setPosition(0, 0);
 
+    // Panel occupies the top 40 px.
     panelSurface = std::make_shared<compositor::Surface>(800, 40);
     panelSurface->setPosition(0, 0);
 
+    // Launcher sits below the panel.
     launcherSurface = std::make_shared<compositor::Surface>(220, 380);
     launcherSurface->setPosition(0, 40);
 
-    compositorInstance.windowManager().addSurface(shellSurface);
-    compositorInstance.windowManager().addSurface(panelSurface);
-    compositorInstance.windowManager().addSurface(launcherSurface);
+    compositor::WindowManager& wm = compositorInstance.windowManager();
+    wm.setViewport(800, 600);
+    wm.addSurface(shellSurface);
+    wm.addSurface(panelSurface);
+    wm.addSurface(launcherSurface);
 
     return true;
 }
 
 void ShellApp::run() {
-    render::SoftwareRenderer renderer(800, 600);
-
     bool shouldExit = false;
     while (!shouldExit) {
         if (platform::activePlatform() != nullptr) {
@@ -63,9 +65,10 @@ void ShellApp::run() {
             launcher.onEvent(static_cast<int>(event.type), event.x, event.y);
         }
 
-        compositorInstance.windowManager().renderAll();
+        // Update panel/launcher highlight based on compositor focus.
+        const std::shared_ptr<compositor::Surface> focused =
+            compositorInstance.windowManager().focusedSurface();
 
-        const std::shared_ptr<compositor::Surface> focused = compositorInstance.windowManager().focusedSurface();
         if (focused == panelSurface) {
             panel.setBackgroundColor(0xFF2F3A46U);
             launcher.setBackgroundColor(0xFF444444U);
@@ -77,10 +80,20 @@ void ShellApp::run() {
             launcher.setBackgroundColor(0xFF444444U);
         }
 
-        renderer.clear(0xFF111111U);
-        panel.draw(renderer);
-        launcher.draw(renderer);
-        renderer.present();
+        // Render desktop background into its surface.
+        shellSurface->clear(0xFF111111U);
+
+        // Render panel into its dedicated surface.
+        panelSurface->clear(0xFF111111U);
+        panel.draw(panelSurface->renderer());
+
+        // Render launcher into its dedicated surface.
+        launcherSurface->clear(0xFF111111U);
+        launcher.draw(launcherSurface->renderer());
+
+        // Compositor composites all surfaces and blits the result to screen.
+        compositorInstance.windowManager().renderAll();
+
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 }

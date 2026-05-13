@@ -7,6 +7,8 @@
 #include <cstring>
 
 #include <windowsx.h>
+#include <dwmapi.h>
+#include <dxgi1_6.h>
 
 #include "core/Event.h"
 
@@ -18,9 +20,20 @@ LRESULT CALLBACK VibedUiWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARA
     (void)wParam;
     (void)lParam;
 
-    if (message == WM_DESTROY) {
-        PostQuitMessage(0);
-        return 0;
+    switch (message) {
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            return 0;
+        case WM_PAINT:
+            // Rendering is driven by our own loop; just validate the dirty
+            // region so Windows doesn't re-post WM_PAINT every frame.
+            ValidateRect(hwnd, nullptr);
+            return 0;
+        case WM_ERASEBKGND:
+            // Suppress GDI background erase to eliminate flicker on resize.
+            return 1;
+        default:
+            break;
     }
 
     return DefWindowProcA(hwnd, message, wParam, lParam);
@@ -80,7 +93,62 @@ bool WinPlatform::createWindow(int w, int h, const char* title) {
     UpdateWindow(hwnd);
 
     hdc = GetDC(hwnd);
-    return hdc != nullptr;
+    if (hdc == nullptr) {
+        return false;
+    }
+
+    detectDisplayCapabilities();
+    return true;
+}
+
+void WinPlatform::detectDisplayCapabilities() {
+    // Refresh rate from the monitor this window is on
+    HMONITOR hMon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY);
+    MONITORINFOEXA monInfo = {};
+    monInfo.cbSize = sizeof(monInfo);
+    if (GetMonitorInfoA(hMon, &monInfo) != 0) {
+        DEVMODEA devMode = {};
+        devMode.dmSize = sizeof(devMode);
+        if (EnumDisplaySettingsA(monInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode) != 0) {
+            if (devMode.dmDisplayFrequency > 1) {
+                refreshRateHz = static_cast<int>(devMode.dmDisplayFrequency);
+            }
+        }
+    }
+
+    // HDR capability via DXGI 1.6 (Windows 10 17134+ SDK)
+    IDXGIFactory1* factory = nullptr;
+    HRESULT hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1),
+                                    reinterpret_cast<void**>(&factory));
+    if (FAILED(hr) || factory == nullptr) {
+        return;
+    }
+
+    IDXGIAdapter1* adapter = nullptr;
+    for (UINT ai = 0; factory->EnumAdapters1(ai, &adapter) != DXGI_ERROR_NOT_FOUND; ++ai) {
+        IDXGIOutput* output = nullptr;
+        for (UINT oi = 0; adapter->EnumOutputs(oi, &output) != DXGI_ERROR_NOT_FOUND; ++oi) {
+            IDXGIOutput6* output6 = nullptr;
+            if (SUCCEEDED(output->QueryInterface(__uuidof(IDXGIOutput6),
+                          reinterpret_cast<void**>(&output6)))) {
+                DXGI_OUTPUT_DESC1 desc = {};
+                if (SUCCEEDED(output6->GetDesc1(&desc))) {
+                    // PQ (ST.2084) colour space or peak brightness > 400 nits → HDR capable
+                    if (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 ||
+                        desc.MaxLuminance > 400.0f) {
+                        hdrCapable = true;
+                    }
+                }
+                output6->Release();
+            }
+            output->Release();
+        }
+        adapter->Release();
+        if (hdrCapable) {
+            break;
+        }
+    }
+    factory->Release();
 }
 
 void WinPlatform::pumpEvents() {
@@ -152,6 +220,14 @@ void WinPlatform::pumpEvents() {
     }
 }
 
+void WinPlatform::waitForVSync() {
+    // Synchronise with the DWM compositor tick.
+    // On Windows 11 with a VRR-capable display the DWM itself operates at a
+    // variable refresh rate, so this call paces presentation without fixing
+    // the frame rate to any single static interval.
+    DwmFlush();
+}
+
 void WinPlatform::blit(const uint8_t* buffer, int w, int h) {
     if (hdc == nullptr || buffer == nullptr || w <= 0 || h <= 0) {
         return;
@@ -177,6 +253,8 @@ void WinPlatform::blit(const uint8_t* buffer, int w, int h) {
     HDC memoryDc = CreateCompatibleDC(hdc);
     if (memoryDc != nullptr) {
         HGDIOBJ oldObject = SelectObject(memoryDc, dib);
+        // Sync to the DWM VRR compositor tick before presenting.
+        DwmFlush();
         BitBlt(hdc, 0, 0, w, h, memoryDc, 0, 0, SRCCOPY);
         SelectObject(memoryDc, oldObject);
         DeleteDC(memoryDc);
