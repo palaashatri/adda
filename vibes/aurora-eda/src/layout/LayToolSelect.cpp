@@ -1,6 +1,7 @@
 #include "layout/LayToolSelect.h"
 #include "layout/LayEditorController.h"
 #include "layout/LayDocument.h"
+#include "db/DbInstance.h"
 #include "db/DbView.h"
 #include "db/DbShape.h"
 #include "geom/GeomBox.h"
@@ -32,10 +33,24 @@ void LayToolSelect::mouseRelease(LayEditorController& ctrl, geom::GeomPoint p) {
   const bool isClick = (dx < 200 && dy < 200);
 
   auto& view = ctrl.document().view();
-  selected_.clear();
+  selectedShapes_.clear();
+  selectedInstances_.clear();
 
   if (isClick) {
-    // Point selection: find shape whose bounding box contains p
+    // Try instances first (they render on top)
+    for (const auto instId : view.instanceIds()) {
+      const auto* inst = view.findInstance(instId);
+      if (!inst) continue;
+      const auto ox = inst->transform().dx;
+      const auto oy = inst->transform().dy;
+      geom::GeomBox instBox{ox - 100, oy - 100, ox + 100, oy + 100};
+      if (instBox.contains({p.x, p.y})) {
+        selectedInstances_.insert(instId);
+        pressPoint_.reset();
+        return;
+      }
+    }
+    // Try shapes
     for (const auto shapeId : view.shapeIds()) {
       const auto* shape = view.findShape(shapeId);
       if (!shape) continue;
@@ -62,7 +77,7 @@ void LayToolSelect::mouseRelease(LayEditorController& ctrl, geom::GeomPoint p) {
           break;
       }
       if (bb.contains({p.x, p.y})) {
-        selected_.insert(shapeId);
+        selectedShapes_.insert(shapeId);
         break;
       }
     }
@@ -77,8 +92,16 @@ void LayToolSelect::mouseRelease(LayEditorController& ctrl, geom::GeomPoint p) {
       if (!shape) continue;
       if (shape->kind() == db::DbShapeKind::Rect) {
         if (selBox.intersects(static_cast<const db::DbRect*>(shape)->box()))
-          selected_.insert(shapeId);
+          selectedShapes_.insert(shapeId);
       }
+    }
+    for (const auto instId : view.instanceIds()) {
+      const auto* inst = view.findInstance(instId);
+      if (!inst) continue;
+      const auto ox = inst->transform().dx;
+      const auto oy = inst->transform().dy;
+      geom::GeomBox ib{ox, oy, ox, oy};
+      if (selBox.intersects(ib)) selectedInstances_.insert(instId);
     }
   }
   pressPoint_.reset();
@@ -86,15 +109,16 @@ void LayToolSelect::mouseRelease(LayEditorController& ctrl, geom::GeomPoint p) {
 
 void LayToolSelect::keyPress(LayEditorController& ctrl, int qtKey) {
   if (qtKey == 16777216) { // Escape
-    selected_.clear();
+    clearSelection();
     rubberBand_ = false;
     pressPoint_.reset();
     return;
   }
-  if ((qtKey == 16777223 || qtKey == 16777219) && !selected_.empty()) { // Delete/Backspace
+  if ((qtKey == 16777223 || qtKey == 16777219) && (!selectedShapes_.empty() || !selectedInstances_.empty())) {
     auto& view = ctrl.document().view();
-    for (const auto id : selected_) view.removeShape(id);
-    selected_.clear();
+    for (const auto id : selectedShapes_) view.removeShape(id);
+    for (const auto id : selectedInstances_) view.removeInstance(id);
+    clearSelection();
   }
 }
 

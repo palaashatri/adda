@@ -39,8 +39,9 @@ class SchematicViewWidget : public QWidget {
   void setDcAnnotation(const std::map<std::string, double>& ann) { dcAnnotation_ = ann; }
   [[nodiscard]] const std::map<std::string, double>& dcAnnotation() const { return dcAnnotation_; }
 
- signals:
+  signals:
   void coordinatesChanged(QPointF scenePt);
+  void selectionChanged();
 
  protected:
   void mouseMoveEvent(QMouseEvent* event) override;

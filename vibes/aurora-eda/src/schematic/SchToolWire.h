@@ -1,5 +1,6 @@
 #pragma once
 
+#include "db/DbTypes.h"
 #include "schematic/SchTool.h"
 #include "geom/GeomPoint.h"
 
@@ -30,6 +31,7 @@ class SchToolWire : public SchTool {
   bool busMode_{false};
   int busMsb_{7};
   int busLsb_{0};
+  db::DbId currentNetId_{db::kInvalidId};
 };
 
 }  // namespace aurora::schematic

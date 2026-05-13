@@ -121,9 +121,12 @@ void SchematicViewWidget::mouseReleaseEvent(QMouseEvent* event) {
     panning_ = false;
     unsetCursor();
   }
+  const auto scenePt = screenToScene(event->position());
   if (event->button() == Qt::LeftButton && ctrl_) {
-    ctrl_->mouseRelease(toDbPoint(event->position()));
+    ctrl_->mouseRelease({static_cast<geom::DbUnit>(scenePt.x() * dbuPerMicron_),
+                         static_cast<geom::DbUnit>(scenePt.y() * dbuPerMicron_)});
     update();
+    emit selectionChanged();
   }
 }
 
@@ -540,6 +543,15 @@ void SchematicViewWidget::paintEvent(QPaintEvent*) {
     painter.setPen(QPen(QColor("#c8553d"), 2));
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(QRectF{pt.x() - 5.0, pt.y() - 5.0, 10.0, 10.0});
+  }
+
+  // Crosshair cursor (K5)
+  if (hasMouseTracking() && !lastMousePos_.isNull()) {
+    painter.setPen(QPen(QColor("#d0d0d0"), 1, Qt::DashLine));
+    painter.drawLine(QPointF(lastMousePos_.x(), 0),
+                     QPointF(lastMousePos_.x(), (double)height()));
+    painter.drawLine(QPointF(0, lastMousePos_.y()),
+                     QPointF((double)width(), lastMousePos_.y()));
   }
 }
 

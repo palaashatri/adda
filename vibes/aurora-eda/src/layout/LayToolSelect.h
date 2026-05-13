@@ -18,14 +18,16 @@ class LayToolSelect : public LayTool {
   void mouseRelease(LayEditorController& ctrl, geom::GeomPoint p) override;
   void keyPress(LayEditorController& ctrl, int qtKey) override;
 
-  [[nodiscard]] const std::set<db::DbId>& selectedShapes() const { return selected_; }
+  [[nodiscard]] const std::set<db::DbId>& selectedShapes() const { return selectedShapes_; }
+  [[nodiscard]] const std::set<db::DbId>& selectedInstances() const { return selectedInstances_; }
   [[nodiscard]] bool isRubberBanding() const { return rubberBand_; }
   [[nodiscard]] geom::GeomPoint rubberBandStart() const { return rbStart_; }
   [[nodiscard]] geom::GeomPoint rubberBandEnd() const { return rbEnd_; }
-  void clearSelection() { selected_.clear(); }
+  void clearSelection() { selectedShapes_.clear(); selectedInstances_.clear(); }
 
  private:
-  std::set<db::DbId> selected_;
+  std::set<db::DbId> selectedShapes_;
+  std::set<db::DbId> selectedInstances_;
   std::optional<geom::GeomPoint> pressPoint_;
   geom::GeomPoint rbStart_{}, rbEnd_{};
   bool rubberBand_{false};

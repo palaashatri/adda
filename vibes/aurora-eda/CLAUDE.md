@@ -14,8 +14,9 @@ covering the full front-to-back custom design flow:
 - Python-based scripting and automation
 - Cross-platform (Windows, macOS, Linux) via Qt 6, CMake, and vcpkg
 
-**⚠️ STATUS: ~38% complete.** This is a work-in-progress. Many features are
+**⚠️ STATUS: ~60% complete.** This is a work-in-progress. Many features are
 stubbed, partially implemented, or broken. See STATUS.md for the honest audit.
+Milestone A completed to 90% — see changelog in STATUS.md.
 
 ## Stack
 
@@ -278,6 +279,54 @@ Legend: ✓ done  ◐ partial/needs work  ○ not started  ✗ broken/stub
 | J8 | Startup wizard (new project/PDK) | ○ not started | StartupSelection struct; no wizard dialog |
 | J9 | Status/progress system | ○ not started | ProgressReporter declared; never called |
 | J10 | Notification center | ○ not started | NotificationCenter declared; never called |
+
+### Milestone K — EDA Essentials (What a REAL EDA has that's missing here)
+
+**⚠️ Priority:** These are the features that distinguish an EDA from a drawing program.
+Most are completely unimplemented. Adding them would make aurora-eda actually usable.
+
+| # | Feature | Why It Matters | Effort |
+|---|---------|---------------|--------|
+| K1 | **Proper schematic component library** — Standard symbols (NMOS, PMOS, R, C, L, D, BJT, op-amp, VCC/GND) with correct IEEE/ANSI shapes, not just colored rectangles | Without standard symbols, schematics are unreadable | High |
+| K2 | **Multi-segment wire on same net** — Click-to-click-to-click creates one wire object, each segment on the same net. Currently each click creates a new net. | Fundamental schematic entry is broken | Medium |
+| K3 | **Net highlighting** — Click on wire/pin → all connected wires, pins, and instance pins highlight in color. | Required for any real schematic/layout work | Medium |
+| K4 | **Wire junction dots** — Black filled circles at wire T-junctions and 4-way intersections. | Schematic clarity; currently zero code | Small |
+| K5 | **Crosshair cursor** — Full-window vertical + horizontal guide lines snapping to cursor, with coordinate readout on edges. | Standard in all EDA tools | Small |
+| K6 | **Real-time DRC during drawing** — Shapes turn red the moment they violate a design rule, not just when you click "iDRC". | Prevents errors before they happen | High |
+| K7 | **Layer draw order** — Shapes sorted by GDS layer number: diffusion before poly before metal. Currently drawn in creation order. | Layout is physically incorrect without this | Small |
+| K8 | **Anti-aliased rendering** — Smooth lines and curves at all zoom levels. Currently off, so shapes look jagged. | Visual quality | Trivial |
+| K9 | **Property editor population** — Click any shape/instance in layout or schematic → right panel shows its properties (layer, coordinates, dimensions, name, parameters). Currently shows blank form. | Essential for editing | Medium |
+| K10 | **Proper undo/redo** — Serialize cell state before each operation, restore on undo. Currently pushes string "state" and restores nothing. | Undo is the most basic feature | Medium |
+| K11 | **Orthogonal schematic wires** — Wire tool constrains to 45/90 degrees like every EDA. Currently free-angle (only layout has orthogonal). | Schematic readability | Small |
+| K12 | **Instance selection in layout** — Click on instance, see bounding box highlight, press Delete to remove. Currently select tool ignores instances. | Cannot interact with placed cells | Small |
+| K13 | **Net-aware routing** — Path tool snaps to same-net objects, colors net while routing. Currently draws blind paths. | Layout connectivity requires this | High |
+| K14 | **Grid control UI** — Dropdown/input for grid spacing (100nm, 1µm, 5µm, etc.), toggle between dot grid and line grid. Currently hardcoded 100 DBU. | Precision layout requires grid control | Small |
+| K15 | **Design hierarchy tree** — Expandable tree of all cells with their views, instance count, bounding box. Navigate by clicking. | Large designs unusable without hierarchy | Medium |
+| K16 | **Search nets/instances** — Ctrl+F dialog: type name fragment → find and highlight matching nets/instances in canvas. | Essential for any non-trivial design | Small |
+| K17 | **Measurement markers in layout** — Persistent dimension lines (width, spacing) that you can create and leave on the canvas. Currently ruler clears after one use. | Layout verification | Small |
+| K18 | **Tool options panel** — When using Wire tool, show grid, width, layer selector. When using Rect tool, show width/height, layer. Changes per tool. | Intuitive UX | Medium |
+| K19 | **Status bar context** — Show active tool name, current layer, cursor coordinates (in µm), grid spacing, zoom level. | User awareness | Small |
+| K20 | **Context menus (right-click)** — Right-click on object: Select, Properties, Delete, Copy, Move. Right-click on canvas: Create Rect, Create Wire, Paste. | Speed of use | Medium |
+| K21 | **Proper toolbar icons** — Tool buttons show recognizable icons (wire = bent line, select = arrow, rect = box, sim = waveform), not text letters. | Professional appearance | Medium |
+| K22 | **Dark/light theme** — Toggle between dark (EDA standard) and light themes. ThemeManager exists but never applied. | Eye strain reduction | Medium |
+| K23 | **Schematic SnapToObject** — Wires snap to pins and existing wire endpoints when within snap radius (only layout has this). | Schematic entry speed | Small |
+| K24 | **Dimension labels during drawing** — While dragging a rectangle, show "W × H µm" overlay next to cursor. Currently no feedback during drag. | Real-time precision feedback | Small |
+| K25 | **Multi-window / tab drag-out** — Drag schematic tab into separate window, view schematic + layout side-by-side. Currently one QTabWidget. | Multi-monitor workflow | Large |
+| K26 | **Pin direction shapes** — Output pins show triangle pointing out, input pins show triangle pointing in. Currently all pins are 4x4 pixel squares. | Schematic readability | Medium |
+| K27 | **Bus expansion visualization** — Bus wire shows individual bit labels fanning out to connected wires. Currently just a thick line with slashes. | Digital signal clarity | Medium |
+| K28 | **Waveform calculator library** — Full math: `V(net1) * I(M1)`, `RMS(V(out))`, `1/Δt`, `integ(V(net))`, `abs(V(net))`, etc. Currently only `+` and `-`. | Real circuit analysis requires this | High |
+| K29 | **Real FFT** — O(N log N) FFT with windowing (Hanning, Hamming, Blackman). Currently naive O(N²) DFT. | Spectrum analysis is unusably slow | Medium |
+| K30 | **Multi-sheet navigation UI** — Sheet tabs / tree showing all schematic sheets, click to switch. Currently generateSpiceMulti exists but no sheet switching UI. | Large schematics require sheets | Medium |
+| K31 | **Instance bounding box highlight** — Selected instance shows colored dashed bounding box with cell name. Currently no visual indicator for instance selection in layout. | Required for instance interaction | Small |
+| K32 | **Edit selected symbol** — Edit Symbol opens the symbol view for the CURRENT cell. Currently opens the first arbitrary cell. | Symbol editing is broken | Small |
+| K33 | **Cross-probe bidirectional** — Select in layout → same net highlighted in schematic (and vice versa). Currently schematic→layout works, layout→schematic just clears. | Debugging requires this | Medium |
+| K34 | **PCell invocation UI** — Parameter form dialog when placing PCells (W=?, L=?, fingers=?). Currently NMOS PCell generates fixed geometry. | PCells unusable without param editing | Medium |
+| K35 | **Python evaluation pipeline** — Python PCells actually produce layout geometry through pybind11 pipeline. Currently Python PcellBase ABC exists but never called. | Python PCell framework is decoration | Large |
+| K36 | **Project file browser** — Tree view of all files in the project (libraries, cells, tech files, run directories). | Project navigation | Medium |
+| K37 | **Console/log dock** — Scrollable log pane showing tool actions, DRC results, import/export status, errors. Currently statusBar only shows transient messages. | Debugging and audit trail | Small |
+| K38 | **Welcome screen** — Recent projects grid, "New Project", "Open existing", "Import design" buttons on startup. | First-run experience | Medium |
+| K39 | **SPICE netlist cross-probe** — Click on net in generated SPICE netlist → highlights that net in schematic. Click on schematic → highlights net in SPICE. | Simulation-debug loop | Medium |
+| K40 | **Waveform save/load** — Save plotted waveforms to file, load them back later without re-running simulation. | Simulation workflow | Medium |
 
 ## Key Classes — Quick Reference
 

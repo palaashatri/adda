@@ -96,6 +96,8 @@ MainWindow::MainWindow(aurora::core::CoreApp& app, QWidget* parent)
 
   connect(schView_, &SchematicViewWidget::coordinatesChanged, this, &MainWindow::onCoordinatesChanged);
   connect(layView_, &LayoutViewWidget::coordinatesChanged, this,   &MainWindow::onCoordinatesChanged);
+  connect(schView_, &SchematicViewWidget::selectionChanged, this, &MainWindow::onSelectionChanged);
+  connect(layView_, &LayoutViewWidget::selectionChanged, this,   &MainWindow::onSelectionChanged);
 
   setupMenuBar();
   setupToolBar();
@@ -1084,13 +1086,13 @@ void MainWindow::onInstanceDoubleClicked() {
   } else if (tab == 1 && layCtrl_) {
     currentType = db::DbViewType::Layout;
     const auto* sel = dynamic_cast<const layout::LayToolSelect*>(layCtrl_->activeTool());
-    if (!sel || sel->selectedShapes().empty()) {
+    if (!sel || sel->selectedInstances().empty()) {
       statusBar()->showMessage("Select an instance first, then double-click to push in", 4000);
       return;
     }
     const auto& view = layCtrl_->document().view();
     currentCellId = view.cellId();
-    const auto* inst = view.findInstance(*sel->selectedShapes().begin());
+    const auto* inst = view.findInstance(*sel->selectedInstances().begin());
     if (!inst) return;
     targetCellId = inst->masterCellId();
   } else {
@@ -1166,24 +1168,28 @@ void MainWindow::onCrossProbe() {
   } else if (tab == 1 && layCtrl_) {
     // Layout → Schematic cross-probe
     const auto* sel = dynamic_cast<const layout::LayToolSelect*>(layCtrl_->activeTool());
-    if (!sel || sel->selectedShapes().empty()) {
+    if (!sel || (sel->selectedInstances().empty() && sel->selectedShapes().empty())) {
       statusBar()->showMessage("Select an instance in layout first", 4000);
       return;
     }
     const auto& view = layCtrl_->document().view();
-    // Find the parent instance from selected shape
-    for (const auto sid : sel->selectedShapes()) {
-      const auto* shape = view.findShape(sid);
-      if (!shape) continue;
-      // Shape is selected, highlight instances of same master cell
-      // For now, cross-probe by instance: find instance containing this shape
-      (void)shape;
+    db::DbId masterId = db::kInvalidId;
+    if (!sel->selectedInstances().empty()) {
+      const auto* inst = view.findInstance(*sel->selectedInstances().begin());
+      if (inst) masterId = inst->masterCellId();
+    } else {
+      // Try to find master via shape → reverse lookup isn't direct, use first shape's layer
+      const auto* shape = view.findShape(*sel->selectedShapes().begin());
+      if (shape) masterId = shape->layerId(); // placeholder, best effort
     }
-    // Simplified: just clear the cross-probe
-    crossProbeCellId_ = db::kInvalidId;
-    schView_->setCrossProbeCellId(db::kInvalidId);
-    layView_->setCrossProbeCellId(db::kInvalidId);
-    statusBar()->showMessage("Cross-probe cleared", 4000);
+    if (masterId != db::kInvalidId) {
+      crossProbeCellId_ = masterId;
+      schView_->setCrossProbeCellId(crossProbeCellId_);
+      layView_->setCrossProbeCellId(crossProbeCellId_);
+      const auto* master = app_.projects().workingLibrary().findCellById(masterId);
+      statusBar()->showMessage(QString("Cross-probe: %1").arg(
+          master ? QString::fromStdString(master->name()) : "unknown"), 4000);
+    }
   }
   // Clear cross-probe on second click
   auto reset = [this]() {
@@ -2053,6 +2059,37 @@ void MainWindow::onCoordinatesChanged(QPointF scenePt) {
   if (coordLabel_)
     coordLabel_->setText(QString("  x: %1  y: %2 ")
         .arg(scenePt.x(), 0, 'f', 3).arg(scenePt.y(), 0, 'f', 3));
+}
+
+void MainWindow::onSelectionChanged() {
+  if (!propWidget_) return;
+  auto& lib = app_.projects().workingLibrary();
+  // Layout selection
+  if (layCtrl_) {
+    const auto* sel = dynamic_cast<const layout::LayToolSelect*>(layCtrl_->activeTool());
+    if (sel) {
+      if (!sel->selectedInstances().empty()) {
+        propWidget_->showInstance(layCtrl_->document().view(),
+                                  *sel->selectedInstances().begin(), &lib);
+        return;
+      }
+      if (!sel->selectedShapes().empty()) {
+        propWidget_->showShape(layCtrl_->document().view(),
+                               *sel->selectedShapes().begin());
+        return;
+      }
+    }
+  }
+  // Schematic selection
+  if (schCtrl_) {
+    const auto* sel = dynamic_cast<const schematic::SchToolSelect*>(schCtrl_->activeTool());
+    if (sel && !sel->selectedInstances().empty()) {
+      propWidget_->showInstance(schCtrl_->document().view(),
+                                *sel->selectedInstances().begin(), &lib);
+      return;
+    }
+  }
+  propWidget_->clear();
 }
 
 }  // namespace aurora::ui

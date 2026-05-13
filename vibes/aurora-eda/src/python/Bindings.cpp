@@ -15,6 +15,11 @@
 #include "netlist/NetlistGenerator.h"
 #include "tech/TechDatabase.h"
 
+// TODO(A25): Expand Python bindings to cover DbView, DbShape, SchDocument,
+// LayDocument, and other key classes. Currently only exposes basic create_*
+// helpers. A full API would bind shape iteration, instance traversal, net
+// queries, and tool operations so scripts can drive the EDA programmatically.
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 

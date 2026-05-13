@@ -98,6 +98,7 @@ class MainWindow : public QMainWindow {
   void onAddConstraint();
   void onGenerateFromSchematic();
   void onSnapModeChanged();
+  void onSelectionChanged();
   void onComputeFft();
   void onComputeEye();
   void onExpressionEditor();

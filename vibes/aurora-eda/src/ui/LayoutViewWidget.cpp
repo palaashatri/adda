@@ -116,6 +116,7 @@ void LayoutViewWidget::mouseReleaseEvent(QMouseEvent* event) {
     ctrl_->mouseRelease({static_cast<geom::DbUnit>(scenePt.x() * dbuPerMicron_),
                          static_cast<geom::DbUnit>(scenePt.y() * dbuPerMicron_)});
     update();
+    emit selectionChanged();
   }
 }
 
@@ -157,14 +158,29 @@ void LayoutViewWidget::setLayerVisible(db::DbId layerId, bool visible) {
 
 void LayoutViewWidget::paintView(QPainter& painter, const db::DbView& view, long long dx,
                                  long long dy) const {
-  // Collect selected shapes for highlight
+  // Collect selected shapes and instances for highlight
   std::set<db::DbId> selectedIds;
+  std::set<db::DbId> selectedInstIds;
   if (ctrl_) {
-    if (const auto* sel = dynamic_cast<const layout::LayToolSelect*>(ctrl_->activeTool()))
+    if (const auto* sel = dynamic_cast<const layout::LayToolSelect*>(ctrl_->activeTool())) {
       selectedIds = sel->selectedShapes();
+      selectedInstIds = sel->selectedInstances();
+    }
   }
 
-  for (const auto shapeId : view.shapeIds()) {
+  // Sort shape IDs by layer for correct draw order (K7)
+  std::vector<db::DbId> sortedShapeIds(view.shapeIds().begin(), view.shapeIds().end());
+  std::sort(sortedShapeIds.begin(), sortedShapeIds.end(),
+      [&](db::DbId a, db::DbId b) {
+        if (!lib_) return a < b;
+        const auto* la = lib_->findLayer(view.findShape(a) ? view.findShape(a)->layerId() : db::kInvalidId);
+        const auto* lb = lib_->findLayer(view.findShape(b) ? view.findShape(b)->layerId() : db::kInvalidId);
+        int ga = la ? la->gdsLayer() : 0;
+        int gb = lb ? lb->gdsLayer() : 0;
+        return ga < gb;
+      });
+
+  for (const auto shapeId : sortedShapeIds) {
     const auto* shape = view.findShape(shapeId);
     if (!shape) continue;
     if (hiddenLayers_.count(shape->layerId())) continue;
@@ -236,6 +252,17 @@ void LayoutViewWidget::paintView(QPainter& painter, const db::DbView& view, long
   for (const auto instId : view.instanceIds()) {
     const auto* inst = view.findInstance(instId);
     if (!inst) continue;
+
+    // Instance selection highlight (K31)
+    const bool instSelected = selectedInstIds.count(instId) > 0;
+    if (instSelected) {
+      const auto ox = dbuToScene(inst->transform().dx + dx);
+      const auto oy = dbuToScene(inst->transform().dy + dy);
+      auto osp = sceneToScreen({ox, oy});
+      painter.setPen(QPen(QColor("#ffcc00"), 2, Qt::DashLine));
+      painter.setBrush(QColor(255, 204, 0, 40));
+      painter.drawRect(osp.x() - 20, osp.y() - 20, 40, 40);
+    }
 
     // Cross-probe highlight
     if (crossProbeCellId_ != db::kInvalidId && inst->masterCellId() == crossProbeCellId_) {
@@ -432,11 +459,20 @@ void LayoutViewWidget::paintDocument(QPainter& painter) const {
 void LayoutViewWidget::paintEvent(QPaintEvent*) {
   QPainter painter(this);
   painter.fillRect(rect(), QColor("#111418"));
-  painter.setRenderHint(QPainter::Antialiasing, false);
+  painter.setRenderHint(QPainter::Antialiasing, true);
 
   paintGrid(painter);
   paintDocument(painter);
   paintToolOverlay(painter);
+
+  // Crosshair cursor (K5) — guide lines through last mouse position
+  if (hasMouseTracking() && !lastMousePos_.isNull()) {
+    painter.setPen(QPen(QColor("#3a5068"), 1, Qt::DashLine));
+    painter.drawLine(QPointF(lastMousePos_.x(), 0),
+                     QPointF(lastMousePos_.x(), (double)height()));
+    painter.drawLine(QPointF(0, lastMousePos_.y()),
+                     QPointF((double)width(), lastMousePos_.y()));
+  }
 }
 
 }  // namespace aurora::ui

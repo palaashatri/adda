@@ -2,6 +2,7 @@
 #include "schematic/SchEditorController.h"
 #include "schematic/SchDocument.h"
 #include "db/DbView.h"
+#include "db/DbNet.h"
 
 #include <format>
 
@@ -15,20 +16,24 @@ void SchToolWire::mousePress(SchEditorController& ctrl, geom::GeomPoint p) {
     startPoint_ = snapped;
     cursor_ = snapped;
     drawing_ = true;
+    // Reset current net — will be created on first segment
+    currentNetId_ = db::kInvalidId;
   } else {
     if (startPoint_.x != snapped.x || startPoint_.y != snapped.y) {
       auto& doc = ctrl.document();
       auto& view = doc.view();
-      std::string netName;
-      if (busMode_) {
-        // Bus mode: name like "BUS_01<7:0>" with configurable width
-        static int busCounter = 0;
-        netName = std::format("BUS_{:02d}<{}:{}>", ++busCounter, busMsb_, busLsb_);
-      } else {
-        netName = ctrl.nextNetName();
+      // Use the same net for all segments
+      if (currentNetId_ == db::kInvalidId) {
+        std::string netName;
+        if (busMode_) {
+          static int busCounter = 0;
+          netName = std::format("BUS_{:02d}<{}:{}>", ++busCounter, busMsb_, busLsb_);
+        } else {
+          netName = ctrl.nextNetName();
+        }
+        currentNetId_ = view.createNet(netName).id();
       }
-      auto& net = view.createNet(netName);
-      (void)doc.addWire(net.id(), {startPoint_, snapped}, busMode_);
+      (void)doc.addWire(currentNetId_, {startPoint_, snapped}, busMode_);
     }
     startPoint_ = snapped;
   }
@@ -41,11 +46,13 @@ void SchToolWire::mouseMove(SchEditorController& ctrl, geom::GeomPoint p) {
 void SchToolWire::keyPress(SchEditorController& ctrl, SchKeyEvent key) {
   if (key == SchKeyEvent::Escape || key == SchKeyEvent::Enter) {
     drawing_ = false;
+    currentNetId_ = db::kInvalidId;
   }
 }
 
 void SchToolWire::deactivate(SchEditorController& ctrl) {
   drawing_ = false;
+  currentNetId_ = db::kInvalidId;
 }
 
 }  // namespace aurora::schematic

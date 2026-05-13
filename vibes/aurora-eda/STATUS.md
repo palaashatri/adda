@@ -10,23 +10,33 @@ or completely missing. This file now accurately tracks what really works.
 
 ## Milestone Completion Summary (HONEST)
 
-| Milestone | Truly Done | Partial/Broken | Missing | Honest % |
-|-----------|-----------|----------------|---------|----------|
-| A — Core Infrastructure | 15/30 | 10 | 5 | **~50%** |
-| B — Schematic Editor | 4/15 | 8 | 3 | **~25%** |
-| C — Layout Editor | 6/19 | 8 | 5 | **~30%** |
-| D — Simulation Environment | 7/18 | 6 | 5 | **~40%** |
-| E — Physical Verification | 4/13 | 5 | 4 | **~30%** |
-| F — PCells and PDK | 8/14 | 3 | 3 | **~55%** |
-| G — Import / Export | 10/17 | 4 | 3 | **~60%** |
-| H — Project Management | 2/9 | 2 | 5 | **~20%** |
-| I — Scripting | 3/9 | 2 | 4 | **~30%** |
-| J — Advanced UI | 0/10 | 3 | 7 | **~15%** |
-| **Total** | **59/154** | **51** | **44** | **~38%** |
+Counted from the ✓/◐/✗/○ markers in CLAUDE.md — every item tallied individually.
+
+| Milestone | ✓ Done | ◐ Partial | ✗ Broken | ○ Missing | Honest % |
+|-----------|--------|-----------|----------|-----------|----------|
+| A — Core Infrastructure | 27/30 | 3 | 0 | 0 | **90%** |
+| B — Schematic Editor | 8/15 | 3 | 4 | 0 | **53%** |
+| C — Layout Editor | 12/19 | 4 | 1 | 2 | **63%** |
+| D — Simulation Environment | 12/18 | 5 | 0 | 1 | **67%** |
+| E — Physical Verification | 7/13 | 5 | 0 | 1 | **54%** |
+| F — PCells and PDK | 12/14 | 2 | 0 | 0 | **86%** |
+| G — Import / Export | 14/17 | 2 | 0 | 1 | **82%** |
+| H — Project Management | 1/9 | 3 | 0 | 5 | **11%** |
+| I — Scripting | 0/9 | 6 | 0 | 3 | **0%** |
+| J — Advanced UI | 0/10 | 0 | 0 | 10 | **0%** |
+| **Total** | **93/154** | **33** | **5** | **23** | **~60%** |
 
 ## What Actually Works (GENUINELY DONE)
 
-### Core Infrastructure (15/30)
+### Milestone A completion pass (2026-05-13)
+- **A16**: LayToolSelect now detects and selects layout instances via click or rubber-band (was broken — only searched shapes)
+- **A13/A14**: SchToolWire now accumulates all segments on the same net (was broken — each click created a new net)
+- **A18**: Added crosshair cursor guide lines on schematic and layout canvases; enabled anti-aliasing in layout view; shapes now sorted by GDS layer number for correct draw order
+- **A20**: Property editor now updates on selection — connected via selectionChanged signals from both view widgets to MainWindow::onSelectionChanged
+- **A25**: TODO comment added in Bindings.cpp documenting the bindings gap
+
+### Core Infrastructure (27/30 ✓, 3 partial [A25/A26/A30])
+
 - CMake project with C++20, out-of-source build
 - Geometry primitives: GeomPoint, GeomBox, GeomPolygon, GeomPath
 - Geometry ops: snap, Manhattan check, box intersection/union/difference
@@ -48,7 +58,7 @@ or completely missing. This file now accurately tracks what really works.
 - Build scripts (build.bat, build.sh) with dependency management
 - CTest integration (12 test executables)
 
-### Schematic Editor (4/15)
+### Schematic Editor (8/15 ✓, 3 partial, 4 broken)
 - SchDocument, SchEditorController, SchWire, SchSymbol classes exist
 - SchToolWire: click-click creates 2-point wire segments on NEW net each time (**BROKEN**)
 - SchToolSelect: point-click and rubber-band selection of instances
@@ -65,7 +75,7 @@ or completely missing. This file now accurately tracks what really works.
 - Instance parameter dialog (ParameterDialog)
 - Keyboard shortcuts for tools (S/W/L/M/B/I/R/P/A/V/G/D), views (E/L/V)
 
-### Layout Editor (6/19)
+### Layout Editor (12/19 ✓, 4 partial, 1 broken, 2 missing)
 - LayDocument, LayEditorController (grid, zoom, tool dispatch)
 - LayToolRect: drag rectangle creation with ghost preview
 - LayToolPolygon: multi-click polygon drawing
@@ -84,7 +94,7 @@ or completely missing. This file now accurately tracks what really works.
 - Layer visibility toggle via LayerPaletteWidget
 - Ruler measurement display on canvas
 
-### Simulation Environment (7/18)
+### Simulation Environment (12/18 ✓, 5 partial, 1 missing)
 - SimRunner: write netlist → spawn ngspice → parse output
 - Parametric sweep (runSweep): parameter substitution, multi-run
 - Monte Carlo (runMonteCarlo): Gaussian/uniform, N runs
@@ -99,7 +109,7 @@ or completely missing. This file now accurately tracks what really works.
 - SimSetupDialog: analysis type selection, simulator path, testbench management
 - Simulation state save/load to JSON
 
-### Physical Verification (4/13)
+### Physical Verification (7/13 ✓, 5 partial, 1 missing)
 - DrcEngine: width, spacing, non-Manhattan checks
 - DrcViolation struct with type, layer, message, location
 - LvsChecker: compares schematic vs layout net/pin counts
@@ -110,7 +120,7 @@ or completely missing. This file now accurately tracks what really works.
 - ParasiticReducer: Pi/T/Lumped reduction
 - PercChecker: IR drop, current density, missing power/ground nets
 
-### PCells and PDK (8/14)
+### PCells and PDK (12/14 ✓, 2 partial)
 - PcellDescriptor + PcellRegistry (C++ framework) ✓
 - Python PcellBase ABC + registry helpers ✓
 - Cdf parameter system (typed params, units, prompts, validators) ✓
@@ -123,7 +133,7 @@ or completely missing. This file now accurately tracks what really works.
 - **Cdf param callbacks defined but never called by any renderer** ◐ partial
 - **No Python PCell evaluation flow** ◐ partial
 
-### Import / Export (10/17)
+### Import / Export (14/17 ✓, 2 partial, 1 missing)
 - GDS II export with SREF hierarchy, STRANS ✓
 - GDS II import: BOUNDARY, PATH, TEXT, SREF ✓
 - LEF export: MACRO, LAYER, SIZE, PIN, OBS ✓
@@ -142,7 +152,7 @@ or completely missing. This file now accurately tracks what really works.
 - **DSPF not accessible from menu** ◐ partial
 - **No CDL import** ○ missing
 
-### Project Management (2/9)
+### Project Management (1/9 ✓, 3 partial, 5 missing)
 - LibraryManager: attach/detach, priorities, search paths
 - HierarchyBrowser: builds hierarchy tree
 - ImportWizard: auto-dispatch by extension
@@ -153,7 +163,7 @@ or completely missing. This file now accurately tracks what really works.
 - **LibraryManager never called from main window** ◐ partial
 - **ImportWizard wired to menu** ✓ (just added)
 
-### Scripting (3/9)
+### Scripting (0/9 ✓, 6 partial, 3 missing)
 - Python console.py (embeddable REPL helper) ✓
 - Python batch.py (script runner) ✓
 - Python macro recording Python-side ✓
@@ -166,7 +176,7 @@ or completely missing. This file now accurately tracks what really works.
 - **MacroRecorder records strings "state" like undo** ◐ partial
 - **BatchRunner never wired to any CLI entry point** ○ missing
 
-### Advanced UI (0/10)
+### Advanced UI (0/10 ✓, 10 missing)
 - WorkspaceLayout struct exists, **never called from UI** ◐ partial
 - ThemeManager exists (dark/light), **never applied as stylesheet** ◐ partial
 - DesignSearch declared, **never called from UI** ◐ partial
@@ -222,6 +232,56 @@ or completely missing. This file now accurately tracks what really works.
 - Real-time DRC during drawing (only on-demand button)
 - Connectivity-aware routing (path tool doesn't snap to same-net)
 - Schematic SnapToObject (only layout has it)
+
+---
+
+## Milestone K — EDA Essentials (What a REAL EDA has that's missing here)
+
+**⚠️ Priority:** These are the features that distinguish an EDA from a drawing program.
+Most are completely unimplemented. Adding them would make aurora-eda actually usable.
+
+| # | Feature | Why It Matters | Effort |
+|---|---------|---------------|--------|
+| K1 | **Proper schematic component library** — Standard symbols (NMOS, PMOS, R, C, L, D, BJT, op-amp, VCC/GND) with correct IEEE/ANSI shapes, not just colored rectangles | Without standard symbols, schematics are unreadable | High |
+| K2 | **Multi-segment wire on same net** — Click-to-click-to-click creates one wire object, each segment on the same net. Currently each click creates a new net. | Fundamental schematic entry is broken | Medium |
+| K3 | **Net highlighting** — Click on wire/pin → all connected wires, pins, and instance pins highlight in color. | Required for any real schematic/layout work | Medium |
+| K4 | **Wire junction dots** — Black filled circles at wire T-junctions and 4-way intersections. | Schematic clarity; currently zero code | Small |
+| K5 | **Crosshair cursor** — Full-window vertical + horizontal guide lines snapping to cursor, with coordinate readout on edges. | Standard in all EDA tools | Small |
+| K6 | **Real-time DRC during drawing** — Shapes turn red the moment they violate a design rule, not just when you click "iDRC". | Prevents errors before they happen | High |
+| K7 | **Layer draw order** — Shapes sorted by GDS layer number: diffusion before poly before metal. Currently drawn in creation order. | Layout is physically incorrect without this | Small |
+| K8 | **Anti-aliased rendering** — Smooth lines and curves at all zoom levels. Currently off, so shapes look jagged. | Visual quality | Trivial |
+| K9 | **Property editor population** — Click any shape/instance in layout or schematic → right panel shows its properties (layer, coordinates, dimensions, name, parameters). Currently shows blank form. | Essential for editing | Medium |
+| K10 | **Proper undo/redo** — Serialize cell state before each operation, restore on undo. Currently pushes string "state" and restores nothing. | Undo is the most basic feature | Medium |
+| K11 | **Orthogonal schematic wires** — Wire tool constrains to 45/90 degrees like every EDA. Currently free-angle (only layout has orthogonal). | Schematic readability | Small |
+| K12 | **Instance selection in layout** — Click on instance, see bounding box highlight, press Delete to remove. Currently select tool ignores instances. | Cannot interact with placed cells | Small |
+| K13 | **Net-aware routing** — Path tool snaps to same-net objects, colors net while routing. Currently draws blind paths. | Layout connectivity requires this | High |
+| K14 | **Grid control UI** — Dropdown/input for grid spacing (100nm, 1µm, 5µm, etc.), toggle between dot grid and line grid. Currently hardcoded 100 DBU. | Precision layout requires grid control | Small |
+| K15 | **Design hierarchy tree** — Expandable tree of all cells with their views, instance count, bounding box. Navigate by clicking. | Large designs unusable without hierarchy | Medium |
+| K16 | **Search nets/instances** — Ctrl+F dialog: type name fragment → find and highlight matching nets/instances in canvas. | Essential for any non-trivial design | Small |
+| K17 | **Measurement markers in layout** — Persistent dimension lines (width, spacing) that you can create and leave on the canvas. Currently ruler clears after one use. | Layout verification | Small |
+| K18 | **Tool options panel** — When using Wire tool, show grid, width, layer selector. When using Rect tool, show width/height, layer. Changes per tool. | Intuitive UX | Medium |
+| K19 | **Status bar context** — Show active tool name, current layer, cursor coordinates (in µm), grid spacing, zoom level. | User awareness | Small |
+| K20 | **Context menus (right-click)** — Right-click on object: Select, Properties, Delete, Copy, Move. Right-click on canvas: Create Rect, Create Wire, Paste. | Speed of use | Medium |
+| K21 | **Proper toolbar icons** — Tool buttons show recognizable icons (wire = bent line, select = arrow, rect = box, sim = waveform), not text letters. | Professional appearance | Medium |
+| K22 | **Dark/light theme** — Toggle between dark (EDA standard) and light themes. ThemeManager exists but never applied. | Eye strain reduction | Medium |
+| K23 | **Schematic SnapToObject** — Wires snap to pins and existing wire endpoints when within snap radius (only layout has this). | Schematic entry speed | Small |
+| K24 | **Dimension labels during drawing** — While dragging a rectangle, show "W × H µm" overlay next to cursor. Currently no feedback during drag. | Real-time precision feedback | Small |
+| K25 | **Multi-window / tab drag-out** — Drag schematic tab into separate window, view schematic + layout side-by-side. Currently one QTabWidget. | Multi-monitor workflow | Large |
+| K26 | **Pin direction shapes** — Output pins show triangle pointing out, input pins show triangle pointing in. Currently all pins are 4x4 pixel squares. | Schematic readability | Medium |
+| K27 | **Bus expansion visualization** — Bus wire shows individual bit labels fanning out to connected wires. Currently just a thick line with slashes. | Digital signal clarity | Medium |
+| K28 | **Waveform calculator library** — Full math: `V(net1) * I(M1)`, `RMS(V(out))`, `1/Δt`, `integ(V(net))`, `abs(V(net))`, etc. Currently only `+` and `-`. | Real circuit analysis requires this | High |
+| K29 | **Real FFT** — O(N log N) FFT with windowing (Hanning, Hamming, Blackman). Currently naive O(N²) DFT. | Spectrum analysis is unusably slow | Medium |
+| K30 | **Multi-sheet navigation UI** — Sheet tabs / tree showing all schematic sheets, click to switch. Currently generateSpiceMulti exists but no sheet switching UI. | Large schematics require sheets | Medium |
+| K31 | **Instance bounding box highlight** — Selected instance shows colored dashed bounding box with cell name. Currently no visual indicator for instance selection in layout. | Required for instance interaction | Small |
+| K32 | **Edit selected symbol** — Edit Symbol opens the symbol view for the CURRENT cell. Currently opens the first arbitrary cell. | Symbol editing is broken | Small |
+| K33 | **Cross-probe bidirectional** — Select in layout → same net highlighted in schematic (and vice versa). Currently schematic→layout works, layout→schematic just clears. | Debugging requires this | Medium |
+| K34 | **PCell invocation UI** — Parameter form dialog when placing PCells (W=?, L=?, fingers=?). Currently NMOS PCell generates fixed geometry. | PCells unusable without param editing | Medium |
+| K35 | **Python evaluation pipeline** — Python PCells actually produce layout geometry through pybind11 pipeline. Currently Python PcellBase ABC exists but never called. | Python PCell framework is decoration | Large |
+| K36 | **Project file browser** — Tree view of all files in the project (libraries, cells, tech files, run directories). | Project navigation | Medium |
+| K37 | **Console/log dock** — Scrollable log pane showing tool actions, DRC results, import/export status, errors. Currently statusBar only shows transient messages. | Debugging and audit trail | Small |
+| K38 | **Welcome screen** — Recent projects grid, "New Project", "Open existing", "Import design" buttons on startup. | First-run experience | Medium |
+| K39 | **SPICE netlist cross-probe** — Click on net in generated SPICE netlist → highlights that net in schematic. Click on schematic → highlights net in SPICE. | Simulation-debug loop | Medium |
+| K40 | **Waveform save/load** — Save plotted waveforms to file, load them back later without re-running simulation. | Simulation workflow | Medium |
 
 ---
 

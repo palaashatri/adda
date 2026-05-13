@@ -44,8 +44,9 @@ class LayoutViewWidget : public QWidget {
   void setDrcMarkers(const std::vector<aurora::geom::GeomBox>& markers) { drcMarkers_ = markers; update(); }
   void clearDrcMarkers() { drcMarkers_.clear(); update(); }
 
- signals:
+  signals:
   void coordinatesChanged(QPointF scenePt);
+  void selectionChanged();
 
  protected:
   void mouseMoveEvent(QMouseEvent* event) override;
