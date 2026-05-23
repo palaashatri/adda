@@ -5,9 +5,15 @@ torchaudio
 diffusers
 transformers
 accelerate
+optimum
 huggingface_hub
 Pillow
 soundfile
 numpy
-Requests
+requests
+scipy
+psutil
 pyinstaller
+# Optional accelerated backends — fall back gracefully if not installed:
+faster-whisper
+llama-cpp-python
