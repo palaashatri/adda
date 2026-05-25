@@ -1,1 +1,0 @@
-"""Tabs module for PyForge."""
