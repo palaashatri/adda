@@ -1,0 +1,170 @@
+.root {
+    -fx-font-family: "SF Pro Text", "Inter", "System";
+    -fx-background-color: #f5f5f7;
+    -fx-text-fill: #1d1d1f;
+}
+
+.aurora-window,
+.aurora-editor-shell {
+    -fx-background-color: #f5f5f7;
+}
+
+.aurora-toolbar {
+    -fx-background-color: rgba(248, 248, 248, 0.86);
+    -fx-border-color: rgba(0, 0, 0, 0.08);
+    -fx-border-width: 1 0 1 0;
+}
+
+.aurora-toolbar-button,
+.button {
+    -fx-background-radius: 7;
+    -fx-border-radius: 7;
+    -fx-background-color: rgba(255, 255, 255, 0.82);
+    -fx-border-color: rgba(0, 0, 0, 0.10);
+    -fx-text-fill: #1d1d1f;
+    -fx-padding: 6 11 6 11;
+}
+
+.aurora-toolbar-button:hover,
+.button:hover {
+    -fx-background-color: #ffffff;
+}
+
+.aurora-sidebar {
+    -fx-background-color: rgba(245, 245, 247, 0.78);
+    -fx-border-color: rgba(0, 0, 0, 0.08);
+    -fx-border-width: 0 1 0 0;
+}
+
+.aurora-inspector {
+    -fx-background-color: rgba(250, 250, 252, 0.92);
+    -fx-border-color: rgba(0, 0, 0, 0.08);
+    -fx-border-width: 0 0 0 1;
+}
+
+.aurora-canvas {
+    -fx-background-color: #ececef;
+}
+
+.aurora-canvas-scroll {
+    -fx-background: transparent;
+    -fx-background-color: transparent;
+}
+
+.aurora-canvas-content {
+    -fx-padding: 32;
+}
+
+.aurora-page {
+    -fx-background-color: white;
+    -fx-background-radius: 4;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 20, 0.2, 0, 4);
+}
+
+.aurora-document-tab {
+    -fx-background-color: rgba(250, 250, 252, 0.94);
+    -fx-border-color: rgba(0, 0, 0, 0.06);
+    -fx-border-width: 0 0 1 0;
+}
+
+.aurora-tab-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+}
+
+.aurora-tab-subtitle {
+    -fx-text-fill: #6e6e73;
+    -fx-font-size: 12px;
+}
+
+.aurora-panel-title {
+    -fx-font-weight: 700;
+    -fx-text-fill: #1d1d1f;
+}
+
+.aurora-sidebar-item,
+.aurora-inspector-section {
+    -fx-background-radius: 7;
+    -fx-padding: 7 9 7 9;
+    -fx-text-fill: #2b2b2f;
+}
+
+.aurora-sidebar-item:hover {
+    -fx-background-color: rgba(0, 122, 255, 0.10);
+}
+
+.aurora-status-bar {
+    -fx-background-color: rgba(248, 248, 248, 0.9);
+    -fx-border-color: rgba(0, 0, 0, 0.08);
+    -fx-border-width: 1 0 0 0;
+    -fx-text-fill: #4b4b51;
+}
+
+.aurora-launcher {
+    -fx-background-color: linear-gradient(to bottom, #fbfbfd, #eef2f7);
+}
+
+.aurora-launcher-title {
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #1d1d1f;
+}
+
+.aurora-launcher-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: #6e6e73;
+}
+
+.aurora-primary-action {
+    -fx-background-color: #0a84ff;
+    -fx-border-color: #0a84ff;
+    -fx-text-fill: white;
+    -fx-font-weight: 700;
+}
+
+.aurora-page-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: 700;
+}
+
+.aurora-body-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #424245;
+}
+
+.aurora-sheet-grid {
+    -fx-background-color: white;
+    -fx-border-color: rgba(0, 0, 0, 0.12);
+}
+
+.aurora-sheet-header {
+    -fx-background-color: #f1f3f6;
+    -fx-border-color: rgba(0, 0, 0, 0.10);
+    -fx-padding: 6;
+    -fx-font-size: 11px;
+    -fx-text-fill: #5f6368;
+}
+
+.aurora-sheet-cell {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-background-color: white;
+    -fx-border-color: rgba(0, 0, 0, 0.10);
+    -fx-padding: 5 7 5 7;
+}
+
+.aurora-slide-thumb {
+    -fx-background-color: white;
+    -fx-background-radius: 5;
+    -fx-border-color: rgba(0, 0, 0, 0.12);
+    -fx-border-radius: 5;
+    -fx-padding: 12;
+}
+
+.aurora-popover {
+    -fx-background-color: rgba(255, 255, 255, 0.96);
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(0, 0, 0, 0.12);
+    -fx-border-radius: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.22), 24, 0.2, 0, 8);
+}

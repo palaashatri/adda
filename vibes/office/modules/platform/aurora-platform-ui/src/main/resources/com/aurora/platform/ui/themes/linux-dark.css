@@ -1,0 +1,5 @@
+@import "macos-dark.css";
+
+.root {
+    -fx-font-family: "Inter", "Ubuntu", "System";
+}

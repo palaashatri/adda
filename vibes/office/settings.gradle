@@ -1,0 +1,40 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'aurora-office'
+
+include ':modules:platform:aurora-platform-core'
+include ':modules:platform:aurora-platform-ui'
+include ':modules:platform:aurora-platform-rendering'
+include ':modules:platform:aurora-platform-docmodel'
+include ':modules:platform:aurora-platform-storage'
+include ':modules:platform:aurora-platform-ai'
+include ':modules:platform:aurora-platform-plugins'
+include ':modules:platform:aurora-platform-collaboration'
+
+include ':modules:apps:aurora-launcher'
+include ':modules:apps:aurora-write'
+include ':modules:apps:aurora-sheet'
+include ':modules:apps:aurora-deck'
+
+include ':modules:formats:aurora-format-native'
+include ':modules:formats:aurora-format-docx'
+include ':modules:formats:aurora-format-xlsx'
+include ':modules:formats:aurora-format-pptx'
+include ':modules:formats:aurora-format-pdf'
+include ':modules:formats:aurora-format-odf'
+
+include ':modules:tests:aurora-testkit'
+include ':modules:tests:aurora-golden-tests'
+include ':modules:tests:aurora-performance-tests'

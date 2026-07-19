@@ -1,0 +1,10 @@
+.gradle/
+.gradle-home/
+build/
+out/
+*.class
+*.log
+.DS_Store
+*.awrite
+*.asheet
+*.adeck

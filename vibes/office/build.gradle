@@ -1,0 +1,176 @@
+import org.gradle.api.plugins.JavaPlugin
+
+def currentOs = org.gradle.internal.os.OperatingSystem.current()
+def currentArch = System.getProperty('os.arch').toLowerCase(Locale.ROOT)
+
+ext {
+    javafxVersion = '21.0.5'
+    junitVersion = '5.10.2'
+    poiVersion = '5.3.0'
+    javafxPlatform = currentOs.isMacOsX()
+            ? (currentArch.contains('aarch64') || currentArch.contains('arm64') ? 'mac-aarch64' : 'mac')
+            : currentOs.isWindows()
+            ? (currentArch.contains('aarch64') || currentArch.contains('arm64') ? 'win-aarch64' : 'win')
+            : (currentArch.contains('aarch64') || currentArch.contains('arm64') ? 'linux-aarch64' : 'linux')
+}
+
+allprojects {
+    group = 'com.aurora'
+    version = '0.1.0'
+}
+
+def auroraProjects = subprojects.findAll { it.name.startsWith('aurora-') }
+def libraryProjects = auroraProjects.findAll { it.path != ':modules:apps:aurora-launcher' }
+
+configure(libraryProjects) {
+    apply plugin: 'java-library'
+}
+
+configure(auroraProjects) {
+    plugins.withType(JavaPlugin).configureEach {
+        tasks.withType(JavaCompile).configureEach {
+            options.encoding = 'UTF-8'
+            options.release = 17
+        }
+
+        tasks.withType(Test).configureEach {
+            useJUnitPlatform()
+        }
+
+        dependencies {
+            testImplementation platform("org.junit:junit-bom:${rootProject.ext.junitVersion}")
+            testImplementation 'org.junit.jupiter:junit-jupiter'
+            testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+        }
+    }
+}
+
+project(':modules:platform:aurora-platform-ui') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-core')
+        api "org.openjfx:javafx-base:${rootProject.ext.javafxVersion}:${rootProject.ext.javafxPlatform}"
+        api "org.openjfx:javafx-graphics:${rootProject.ext.javafxVersion}:${rootProject.ext.javafxPlatform}"
+        api "org.openjfx:javafx-controls:${rootProject.ext.javafxVersion}:${rootProject.ext.javafxPlatform}"
+    }
+}
+
+project(':modules:platform:aurora-platform-storage') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-core')
+    }
+}
+
+project(':modules:platform:aurora-platform-docmodel') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-core')
+    }
+}
+
+project(':modules:platform:aurora-platform-rendering') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-core')
+    }
+}
+
+project(':modules:platform:aurora-platform-plugins') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-core')
+    }
+}
+
+project(':modules:apps:aurora-write') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-ai')
+        api project(':modules:platform:aurora-platform-core')
+        api project(':modules:platform:aurora-platform-docmodel')
+        api project(':modules:platform:aurora-platform-ui')
+    }
+}
+
+project(':modules:apps:aurora-sheet') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-ai')
+        api project(':modules:platform:aurora-platform-core')
+        api project(':modules:platform:aurora-platform-docmodel')
+        api project(':modules:platform:aurora-platform-ui')
+    }
+}
+
+project(':modules:apps:aurora-deck') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-ai')
+        api project(':modules:platform:aurora-platform-core')
+        api project(':modules:platform:aurora-platform-docmodel')
+        api project(':modules:platform:aurora-platform-ui')
+    }
+}
+
+project(':modules:formats:aurora-format-native') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-core')
+        api project(':modules:platform:aurora-platform-storage')
+    }
+}
+
+project(':modules:formats:aurora-format-pdf') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-core')
+    }
+}
+
+project(':modules:formats:aurora-format-docx') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-core')
+        api "org.apache.poi:poi-ooxml:${rootProject.ext.poiVersion}"
+    }
+}
+
+project(':modules:formats:aurora-format-xlsx') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-core')
+        api "org.apache.poi:poi-ooxml:${rootProject.ext.poiVersion}"
+    }
+}
+
+project(':modules:formats:aurora-format-pptx') {
+    dependencies {
+        api project(':modules:platform:aurora-platform-core')
+        api "org.apache.poi:poi-ooxml:${rootProject.ext.poiVersion}"
+    }
+}
+
+project(':modules:tests:aurora-performance-tests') {
+    dependencies {
+        testImplementation project(':modules:platform:aurora-platform-docmodel')
+        testImplementation project(':modules:apps:aurora-sheet')
+    }
+}
+
+project(':modules:apps:aurora-launcher') {
+    apply plugin: 'application'
+
+    application {
+        mainClass = 'com.aurora.launcher.AuroraLauncherApp'
+        applicationDefaultJvmArgs = [
+                '-Dprism.order=metal,sw',
+                '-Dapple.awt.application.name=Aurora Office'
+        ]
+    }
+
+    dependencies {
+        implementation project(':modules:platform:aurora-platform-ai')
+        implementation project(':modules:platform:aurora-platform-core')
+        implementation project(':modules:platform:aurora-platform-docmodel')
+        implementation project(':modules:platform:aurora-platform-plugins')
+        implementation project(':modules:platform:aurora-platform-storage')
+        implementation project(':modules:platform:aurora-platform-ui')
+        implementation project(':modules:formats:aurora-format-native')
+        implementation project(':modules:formats:aurora-format-pdf')
+        implementation project(':modules:formats:aurora-format-docx')
+        implementation project(':modules:formats:aurora-format-xlsx')
+        implementation project(':modules:formats:aurora-format-pptx')
+        implementation project(':modules:apps:aurora-write')
+        implementation project(':modules:apps:aurora-sheet')
+        implementation project(':modules:apps:aurora-deck')
+    }
+}
