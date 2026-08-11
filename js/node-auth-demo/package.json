@@ -9,12 +9,12 @@
   "author": "Palaash Atri",
   "license": "ISC",
   "dependencies": {
-    "body-parser": "^1.20.5",
+    "body-parser": "^1.20.6",
     "ejs": "^3.1.9",
     "express": "^4.22.2",
     "express-session": "^1.18.2",
     "passport": "^0.7.0",
-    "mongoose": "^8.22.1",
+    "mongoose": "^8.24.1",
     "passport-local": "^1.0.0",
     "passport-local-mongoose": "^6.3.0"
   }
