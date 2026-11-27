@@ -25,6 +25,11 @@
       <artifactId>picocli</artifactId>
     </dependency>
     <dependency>
+      <groupId>dev.jitscope</groupId>
+      <artifactId>jitscope-mcp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
