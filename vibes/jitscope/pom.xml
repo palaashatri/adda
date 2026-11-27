@@ -20,10 +20,10 @@
   </licenses>
 
   <modules>
-    <module>jitscope-core</module>
-    <module>jitscope-cli</module>
-    <module>jitscope-mcp</module>
     <module>jitscope-workloads</module>
+    <module>jitscope-core</module>
+    <module>jitscope-mcp</module>
+    <module>jitscope-cli</module>
   </modules>
 
   <properties>
