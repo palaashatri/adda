@@ -48,6 +48,13 @@ public final class RecordingData {
     /** Raw compilation phase events keyed by compileId. */
     public final List<CompilerPhase> compilerPhases = new ArrayList<>();
 
+    /** jdk.CodeCacheStatistics snapshots (JDK21 per-segment + JDK25 unified schemas read defensively). */
+    public final List<dev.jitscope.core.model.CodeCacheInfo.CodeCacheSnapshot> codeCacheStatistics = new ArrayList<>();
+    /** jdk.CodeCacheFull count. */
+    public long codeCacheFullCount;
+    /** jdk.CodeCacheConfiguration (first observed). */
+    public dev.jitscope.core.model.CodeCacheInfo.CodeCacheConfiguration codeCacheConfiguration;
+
     /** jdk.CompilationFailure. */
     public record CompilationFailure(int compileId, String compiler, String message, Instant timestamp) {}
 

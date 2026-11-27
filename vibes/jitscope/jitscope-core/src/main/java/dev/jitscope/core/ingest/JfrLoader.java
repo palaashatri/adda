@@ -114,6 +114,9 @@ public final class JfrLoader {
             case "jdk.ObjectAllocationSample" -> readObjectAllocationSample(data, e);
             case "jdk.ObjectAllocationInNewTLAB" -> readTlabAllocation(data, e, true);
             case "jdk.ObjectAllocationOutsideTLAB" -> readTlabAllocation(data, e, false);
+            case "jdk.CodeCacheStatistics" -> readCodeCacheStatistics(data, e);
+            case "jdk.CodeCacheFull" -> data.codeCacheFullCount++;
+            case "jdk.CodeCacheConfiguration" -> readCodeCacheConfiguration(data, e);
             case "jdk.ActiveSetting" -> readActiveSetting(data, e, eventIdToName);
             case "jdk.JVMInformation" -> readJvmInfo(data, e);
             default -> { /* ignore other event types */ }
@@ -212,6 +215,54 @@ public final class JfrLoader {
         List<RecordingData.Frame> frames = readFrames(e, data, "jdk.ObjectAllocation*");
         data.allocSamples.add(new RecordingData.AllocSample(ts == null ? Instant.EPOCH : ts, obj, size, thread, frames,
                 inNewTlab, !inNewTlab));
+    }
+
+    private static void readCodeCacheStatistics(RecordingData data, RecordedEvent e) {
+        Instant ts = safeInstant(e);
+        String codeBlobType = JfrFields.getString(e, "codeBlobType",
+                JfrFields.getString(e, "name", JfrFields.getString(e, "codeCache", "")));
+        long unallocated = JfrFields.getLong(e, "unallocatedCapacity", -1L);
+        long fullCount = JfrFields.getLong(e, "fullCount", 0L);
+        long methodCount = JfrFields.getLong(e, "methodCount", 0L);
+
+        long reservedTotal;
+        long used;
+        // JDK 25 unified schema
+        long startAddress = JfrFields.getLong(e, "startAddress", -1L);
+        long topAddress = JfrFields.getLong(e, "reservedTopAddress", -1L);
+        if (startAddress >= 0 && topAddress > startAddress) {
+            reservedTotal = topAddress - startAddress;
+            used = unallocated >= 0 ? (reservedTotal - unallocated) : JfrFields.getLong(e, "used", 0L);
+        } else {
+            // JDK 21 per-segment schema
+            long total = JfrFields.getLong(e, "total", -1L);
+            long reserved = JfrFields.getLong(e, "reserved", total);
+            reservedTotal = reserved > 0 ? reserved : total;
+            used = JfrFields.getLong(e, "used", unallocated >= 0 ? (reservedTotal - unallocated) : 0L);
+            if (total > 0 && reservedTotal <= 0) {
+                reservedTotal = total;
+            }
+        }
+        double occupancy;
+        if (reservedTotal > 0) {
+            occupancy = Math.max(0.0, Math.min(1.0, (double) used / (double) reservedTotal));
+        } else {
+            occupancy = -1.0;
+        }
+        data.codeCacheStatistics.add(new dev.jitscope.core.model.CodeCacheInfo.CodeCacheSnapshot(
+                ts == null ? Instant.EPOCH : ts, codeBlobType, Math.max(0, reservedTotal), Math.max(0, used),
+                Math.max(0, unallocated), fullCount, methodCount, occupancy));
+    }
+
+    private static void readCodeCacheConfiguration(RecordingData data, RecordedEvent e) {
+        long reserved = JfrFields.getLong(e, "reservedSize", JfrFields.getLong(e, "reservedSizeBytes", 0L));
+        long nonProfiled = JfrFields.getLong(e, "nonProfiledSize", 0L);
+        long profiled = JfrFields.getLong(e, "profiledSize", 0L);
+        long nonNmethod = JfrFields.getLong(e, "nonNmethodSize", 0L);
+        long expansion = JfrFields.getLong(e, "expansionSize", 0L);
+        String codeBlobType = JfrFields.getString(e, "codeBlobType", "");
+        data.codeCacheConfiguration = new dev.jitscope.core.model.CodeCacheInfo.CodeCacheConfiguration(
+                reserved, nonProfiled, profiled, nonNmethod, expansion, codeBlobType);
     }
 
     private static void readActiveSetting(RecordingData data, RecordedEvent e, Map<Long, String> eventIdToName) {

@@ -6,6 +6,8 @@ public enum EvidenceLevel {
     OBSERVED,
     /** Inferred by correlation; not directly proven by an event. */
     INFERRED,
+    /** Temporally correlated (e.g. samples increased after a deopt); not proven causation. */
+    CORRELATED,
     /** Insufficient data to assert. */
     UNKNOWN
 }
