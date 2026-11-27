@@ -70,9 +70,24 @@ public final class RecordingAnalyzer {
                         java.util.Optional.ofNullable(data.codeCacheConfiguration)));
 
         List<dev.jitscope.core.model.PathologyFinding> findings = PathologyDetectors.detectAll(base);
-        return new RecordingAnalysis(
+        RecordingAnalysis analyzed = new RecordingAnalysis(
                 base.metadata(), base.compilations(), base.deoptimizations(), base.inlining(), base.lifecycles(),
                 base.executionSampleTotal(), base.cpuTimeSamples(), base.warnings(), findings,
                 base.executionSamples(), base.codeCache());
+
+        // Phase 5: optional -XX:+LogCompilation enrichment (OBSERVED upgrades)
+        if (logCompilationPath != null) {
+            try {
+                var logData = dev.jitscope.core.ingest.LogCompilationParser.parse(logCompilationPath);
+                return LogCompilationEnricher.enrich(analyzed, logData);
+            } catch (IOException e) {
+                List<String> w = new ArrayList<>(analyzed.warnings());
+                w.add("logcompilation parse failed (not silently swallowed): " + e.getMessage());
+                return new RecordingAnalysis(analyzed.metadata(), analyzed.compilations(), analyzed.deoptimizations(),
+                        analyzed.inlining(), analyzed.lifecycles(), analyzed.executionSampleTotal(),
+                        analyzed.cpuTimeSamples(), w, analyzed.findings(), analyzed.executionSamples(), analyzed.codeCache());
+            }
+        }
+        return analyzed;
     }
 }
