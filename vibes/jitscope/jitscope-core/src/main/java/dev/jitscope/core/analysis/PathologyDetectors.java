@@ -147,7 +147,7 @@ public final class PathologyDetectors {
                 evidence.add("JVM-wide deopt storm total=" + totalDeopts);
             }
 
-            EvidenceLevel level = interpretedIncreased ? EvidenceLevel.CORRELATED : EvidenceLevel.OBSERVED;
+            EvidenceLevel level = interpretedIncreased ? EvidenceLevel.INFERRED : EvidenceLevel.OBSERVED;
             out.add(new PathologyFinding(
                     "deopt-storm:" + method.fqn(),
                     PathologyType.DEOPT_STORM,
