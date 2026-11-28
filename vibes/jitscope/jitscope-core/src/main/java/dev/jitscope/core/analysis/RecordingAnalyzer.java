@@ -21,6 +21,20 @@ public final class RecordingAnalyzer {
         return analyze(jfrPath, null);
     }
 
+    private static List<dev.jitscope.core.model.Sample> toModelSamples(List<RecordingData.Sample> in) {
+        List<dev.jitscope.core.model.Sample> out = new ArrayList<>();
+        for (RecordingData.Sample s : in) {
+            List<dev.jitscope.core.model.SampleFrame> frames = new ArrayList<>();
+            for (RecordingData.Frame f : s.frames()) {
+                frames.add(new dev.jitscope.core.model.SampleFrame(
+                        new dev.jitscope.core.model.MethodKey(f.className(), f.methodName(), f.descriptor()),
+                        f.type(), f.lineNumber(), f.bytecodeIndex()));
+            }
+            out.add(new dev.jitscope.core.model.Sample(s.timestamp(), s.thread(), frames));
+        }
+        return out;
+    }
+
     public static RecordingAnalysis analyze(Path jfrPath, Path logCompilationPath) throws IOException {
         RecordingData data = JfrLoader.load(jfrPath);
         ConfigAudit audit = ConfigAuditor.audit(data);
@@ -39,7 +53,7 @@ public final class RecordingAnalyzer {
         List<String> warnings = new ArrayList<>(data.warnings);
         warnings.addAll(audit.warnings());
 
-        return new RecordingAnalysis(
+        RecordingAnalysis base = new RecordingAnalysis(
                 metadata,
                 data.compilations,
                 data.deoptimizations,
@@ -48,6 +62,17 @@ public final class RecordingAnalyzer {
                 result.executionSampleTotal(),
                 result.cpuTimeSamples(),
                 warnings,
-                List.of());
+                List.of(),
+                toModelSamples(data.executionSamples),
+                new dev.jitscope.core.model.CodeCacheInfo(
+                        data.codeCacheStatistics,
+                        data.codeCacheFullCount,
+                        java.util.Optional.ofNullable(data.codeCacheConfiguration)));
+
+        List<dev.jitscope.core.model.PathologyFinding> findings = PathologyDetectors.detectAll(base);
+        return new RecordingAnalysis(
+                base.metadata(), base.compilations(), base.deoptimizations(), base.inlining(), base.lifecycles(),
+                base.executionSampleTotal(), base.cpuTimeSamples(), base.warnings(), findings,
+                base.executionSamples(), base.codeCache());
     }
 }

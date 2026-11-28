@@ -17,7 +17,9 @@ public record RecordingAnalysis(
         long executionSampleTotal,
         Optional<CpuTimeSamples> cpuTimeSamples,
         List<String> warnings,
-        List<PathologyFinding> findings) {
+        List<PathologyFinding> findings,
+        List<Sample> executionSamples,
+        CodeCacheInfo codeCache) {
 
     public RecordingAnalysis {
         compilations = compilations == null ? List.of() : List.copyOf(compilations);
@@ -27,5 +29,7 @@ public record RecordingAnalysis(
         warnings = warnings == null ? List.of() : List.copyOf(warnings);
         findings = findings == null ? List.of() : List.copyOf(findings);
         cpuTimeSamples = cpuTimeSamples == null ? Optional.empty() : cpuTimeSamples;
+        executionSamples = executionSamples == null ? List.of() : List.copyOf(executionSamples);
+        codeCache = codeCache == null ? CodeCacheInfo.EMPTY : codeCache;
     }
 }
