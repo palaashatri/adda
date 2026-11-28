@@ -4,10 +4,8 @@ package dev.jitscope.core.model;
 public enum EvidenceLevel {
     /** Directly observed in a JFR event (or LogCompilation XML). */
     OBSERVED,
-    /** Inferred by correlation; not directly proven by an event. */
+    /** Inferred by correlation (e.g. 'CORRELATED' temporal signal in evidence); not proven causation. */
     INFERRED,
-    /** Temporally correlated (e.g. samples increased after a deopt); not proven causation. */
-    CORRELATED,
     /** Insufficient data to assert. */
     UNKNOWN
 }

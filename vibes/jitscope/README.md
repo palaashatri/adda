@@ -73,7 +73,7 @@ and exact counts vary per run/JDK; nothing is fabricated.)
 ## Pathologies (evidence-aware)
 
 `HOT_UNDEROPTIMIZED`, `DEOPT_STORM`, `INLINING_ALLOCATION_CLIFF`, `CODE_CACHE_PRESSURE`. Every
-finding carries `EvidenceLevel` (`OBSERVED`/`INFERRED`/`CORRELATED`/`UNKNOWN`), structured evidence,
+finding carries `EvidenceLevel` (`OBSERVED`/`INFERRED`/`UNKNOWN`; correlation noted in evidence as `CORRELATED`, not a separate level; §4 `CORRELATED` maps to `INFERRED`), structured evidence,
 and a recommendation. **Statistical honesty:** seeing `Inlined` frames is observed proof of inlining
 on that path; absence of `Inlined` is *not* proof of inlining failure; correlation ≠ causation;
 `made_not_entrant`/`made_non_compilable` are only `OBSERVED` with `-XX:+LogCompilation`. Sampling:
